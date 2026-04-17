@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole { student instructor admin }
+enum CourseLevel { debutant intermediaire avance }
+enum LessonType { video notebook quiz project lecture }
+enum SubscriptionPlan { free premium pro }
+enum EnrollmentStatus { active completed abandoned }
+
+model User {
+  id           String           @id @default(cuid())
+  clerkId      String           @unique
+  email        String           @unique
+  name         String
+  avatarUrl    String?
+  bio          String?
+  githubUrl    String?
+  linkedinUrl  String?
+  role         UserRole         @default(student)
+  plan         SubscriptionPlan @default(free)
+  xpPoints     Int              @default(0)
+  streakDays   Int              @default(0)
+  lastActiveAt DateTime         @default(now())
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  enrollments  Enrollment[]
+  progress     Progress[]
+  certificates Certificate[]
+  badges       UserBadge[]
+  courses      Course[]         @relation("InstructorCourses")
+
+  @@map("users")
+}
+
+model Course {
+  id            String      @id @default(cuid())
+  slug          String      @unique
+  title         String
+  description   String
+  level         CourseLevel
+  durationHours Float
+  thumbnail     String?
+  published     Boolean     @default(false)
+  price         Float       @default(0)
+  instructorId  String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  instructor    User        @relation("InstructorCourses", fields: [instructorId], references: [id])
+  modules       Module[]
+  enrollments   Enrollment[]
+  certificates  Certificate[]
+  tags          CourseTag[]
+
+  @@map("courses")
+}
+
+model Module {
+  id       String   @id @default(cuid())
+  courseId String
+  title    String
+  order    Int
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id              String     @id @default(cuid())
+  moduleId        String
+  title           String
+  type            LessonType
+  durationMinutes Int
+  videoAssetId    String?
+  content         String?
+  order           Int
+  isFree          Boolean    @default(false)
+  module          Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress        Progress[]
+
+  @@map("lessons")
+}
+
+model Enrollment {
+  id          String           @id @default(cuid())
+  userId      String
+  courseId    String
+  status      EnrollmentStatus @default(active)
+  enrolledAt  DateTime         @default(now())
+  completedAt DateTime?
+  user        User             @relation(fields: [userId], references: [id])
+  course      Course           @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Progress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  quizScore   Int?
+  timeSpentMin Int      @default(0)
+  user        User      @relation(fields: [userId], references: [id])
+  lesson      Lesson    @relation(fields: [lessonId], references: [id])
+
+  @@unique([userId, lessonId])
+  @@map("progress")
+}
+
+model Certificate {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId    String
+  issuedAt    DateTime @default(now())
+  verifyCode  String   @unique @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  course      Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@map("certificates")
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  title       String
+  description String
+  iconUrl     String
+  xpReward    Int         @default(0)
+  users       UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+
+  @@id([userId, badgeId])
+  @@map("user_badges")
+}
+
+model CourseTag {
+  courseId String
+  tag      String
+  course   Course @relation(fields: [courseId], references: [id])
+
+  @@id([courseId, tag])
+  @@map("course_tags")
+}
