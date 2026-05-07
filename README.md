@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" alt="MLAcademy" width="120" />
+  <img src="AcademyFrontend/public/mlacademy_logo.png" alt="MLAcademy" width="120" />
 </p>
 
 <h1 align="center">MLAcademy</h1>

@@ -34,3 +34,5 @@ Thumbs.db
 # Misc
 *.log
 .turbo/
+*.sqlite3
+media/
