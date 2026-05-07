@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" alt="MLAcademy" width="120" />
+  <img src="AcademyFrontend/public/mlacademy_logo.png" alt="MLAcademy" width="120" />
 </p>
 
 <h1 align="center">MLAcademy</h1>
@@ -7,78 +7,65 @@
 
 <p align="center">
   <a href="#"><img src="https://img.shields.io/badge/Next.js-14-black?logo=nextdotjs" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Django-5.2-092E20?logo=django" /></a>
   <a href="#"><img src="https://img.shields.io/badge/FastAPI-0.111-009688?logo=fastapi" /></a>
-  <a href="#"><img src="https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql" /></a>
   <a href="#"><img src="https://img.shields.io/badge/TypeScript-5.4-blue?logo=typescript" /></a>
 </p>
 
 ---
 
-## Présentation
+## 🚀 Présentation
 
 MLAcademy est une plateforme e-learning dédiée à l'apprentissage du Machine Learning et de la Data Science en langue française. Elle propose des parcours structurés, des notebooks Python interactifs, des certifications et une communauté active.
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 MLAcademy/
-├── frontend/          # Next.js 14 — Interface utilisateur
-├── backend-api/       # tRPC + Prisma — API principale
-├── backend-python/    # FastAPI — Exécution de code Python
-├── packages/shared/   # Types et utilitaires partagés
-└── .github/           # CI/CD et templates
+├── AcademyFrontend/   # Next.js 14 — Interface utilisateur & Design Premium
+├── MLBackend/         # Django Rest Framework — API, Auth & Business Logic
+├── MLSandbox/         # FastAPI — Exécution de code Python sécurisée
+├── Judge0/            # Infrastructure d'exécution de code (Docker)
+├── docs/              # Spécifications et Roadmap
+└── docker/            # Configuration d'infrastructure
 ```
 
-## Stack Technique
+## 🛠️ Stack Technique
 
 | Couche | Technologie |
 |--------|------------|
-| Frontend | Next.js 14, TypeScript, Tailwind CSS |
-| Backend | tRPC, Prisma, PostgreSQL |
-| Exécution code | FastAPI, Python 3.11 |
-| Auth | Clerk |
-| Vidéo | Mux.io |
-| Stockage | Cloudflare R2 |
-| Paiements | Stripe |
-| Cache | Redis (Upstash) |
+| **Frontend** | Next.js 14, TypeScript, Tailwind CSS, Monaco Editor |
+| **Backend** | Django 5, DRF, PostgreSQL / SQLite |
+| **Exécution code** | FastAPI, Python 3.11, Judge0 |
+| **Auth** | Django AllAuth + JWT |
+| **Vidéo** | Mux.io |
+| **Paiements** | Stripe |
 
-## Démarrage rapide
+## 🏃 Démarrage rapide
 
+### 1. Cloner le repo
 ```bash
-# 1. Cloner le repo
-git clone https://github.com/TON_USERNAME/MLAcademy.git
+git clone https://github.com/votre-compte/MLAcademy.git
 cd MLAcademy
-
-# 2. Installer les dépendances
-pnpm install
-
-# 3. Configurer l'environnement
-cp .env.example .env.local
-# Remplir les variables dans .env.local
-
-# 4. Initialiser la base de données
-cd backend-api && pnpm db:migrate && pnpm db:seed
-
-# 5. Lancer en développement
-pnpm dev
 ```
 
-## Parcours disponibles
+### 2. Installation automatique
+```bash
+make setup
+```
 
-| Parcours | Niveau | Durée |
-|----------|--------|-------|
-| P0 — Fondamentaux | Débutant | ~40h |
-| P1 — Machine Learning | Intermédiaire | ~60h |
-| P2 — Data Science Pro | Avancé | ~50h |
-| P3 — Maths pour le ML | Tous niveaux | ~30h |
+### 3. Lancement des services
+Il est recommandé de lancer les services dans des terminaux séparés :
+- **Backend :** `make dev-backend` (Port 8000)
+- **Frontend :** `make dev-frontend` (Port 3000)
+- **Sandbox :** `make dev-sandbox` (Port 8001)
 
-## Roadmap
+## 🎯 Roadmap
 
-- [x] Architecture et structure du projet
-- [ ] Phase 1 — MVP (Mois 1-3)
-- [ ] Phase 2 — Enrichissement (Mois 4-6)
-- [ ] Phase 3 — Communauté & Scale (Mois 7-12)
+- [x] Phase 1 — MVP (Authentification, Catalogue, Player)
+- [x] Phase 2 — Interactif (Notebooks, Quizz, Projets)
+- [ ] Phase 3 — Certification & Communauté
 
-## Licence
+## 📄 Licence
 
-Propriétaire — © 2025 MLAcademy. Tous droits réservés.
+Propriétaire — © 2026 MLAcademy. Tous droits réservés.

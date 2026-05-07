@@ -1,0 +1,22 @@
+.project-page {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.badge {
+  display: inline-block;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.text-error {
+  color: #ef4444;
+}
+
+/* Ensure textarea and inputs look nice */
+textarea {
+  resize: vertical;
+  min-height: 150px;
+}
