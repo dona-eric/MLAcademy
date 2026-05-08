@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Geist, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 import {
@@ -8,13 +8,18 @@ import {
   MainWrapper,
 } from "../components/layout/ConditionalLayoutHelpers";
 
-const inter = Inter({
-  variable: "--font-inter",
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
 });
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
@@ -32,10 +37,9 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      data-scroll-behavior="smooth"
-      className={`${inter.variable} ${outfit.variable}`}
+      className={`${geist.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} antialiased`}
     >
-      <body>
+      <body className="bg-[var(--bg-base)] text-[var(--text-primary)] min-h-screen flex flex-col">
         <AuthProvider>
           <ConditionalHeader />
           <MainWrapper>{children}</MainWrapper>
