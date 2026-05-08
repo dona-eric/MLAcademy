@@ -1,10 +1,14 @@
 from django.conf import settings
 from django.db import models
-from courses.models import Lesson, Course
+from courses.models import Lesson, Course, LearningPath, LearningPathCourse, CertificationExam
 
+
+# 
+#  ENROLLMENT (Inscription à un Cours)
+# ─────────────────────────────────────────────
 
 class Enrollment(models.Model):
-    """Inscription d'un étudiant à un cours."""
+    """Inscription d'un étudiant à un cours individuel."""
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name="enrollments", verbose_name="Étudiant"
@@ -19,8 +23,8 @@ class Enrollment(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Date de complétion")
 
     class Meta:
-        verbose_name = "Inscription"
-        verbose_name_plural = "Inscriptions"
+        verbose_name = "Inscription Cours"
+        verbose_name_plural = "Inscriptions Cours"
         unique_together = [["user", "course"]]
         ordering = ["-enrolled_at"]
 
@@ -44,6 +48,103 @@ class Enrollment(models.Model):
             self.completed_at = timezone.now()
         self.save(update_fields=["progress_percentage", "is_completed", "completed_at"])
 
+        # Si le cours est dans un parcours, mettre à jour la progression du parcours
+        path_courses = LearningPathCourse.objects.filter(course=self.course)
+        for pc in path_courses:
+            path_enrollment = PathEnrollment.objects.filter(
+                user=self.user, learning_path=pc.learning_path
+            ).first()
+            if path_enrollment:
+                path_enrollment.update_progress()
+
+
+# ─────────────────────────────────────────────
+#  PATH ENROLLMENT (Inscription à un Parcours)
+# ─────────────────────────────────────────────
+
+class PathEnrollment(models.Model):
+    """
+    Inscription d'un étudiant à un parcours complet (certification).
+    Gère la progression globale à travers tous les cours du parcours.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="path_enrollments", verbose_name="Étudiant"
+    )
+    learning_path = models.ForeignKey(
+        LearningPath, on_delete=models.CASCADE,
+        related_name="enrollments", verbose_name="Parcours"
+    )
+    enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription")
+    progress_percentage = models.PositiveIntegerField(default=0, verbose_name="Progression (%)")
+    is_completed = models.BooleanField(default=False, verbose_name="Parcours terminé")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Date de complétion")
+    is_certified = models.BooleanField(default=False, verbose_name="Certifié")
+
+    class Meta:
+        verbose_name = "Inscription Parcours"
+        verbose_name_plural = "Inscriptions Parcours"
+        unique_together = [["user", "learning_path"]]
+        ordering = ["-enrolled_at"]
+
+    def __str__(self):
+        status = "🎓 Certifié" if self.is_certified else f"{self.progress_percentage}%"
+        return f"{self.user.email} → {self.learning_path.title} ({status})"
+
+    def update_progress(self):
+        """
+        Recalcule la progression basée sur les cours OBLIGATOIRES terminés.
+        """
+        required_courses = LearningPathCourse.objects.filter(
+            learning_path=self.learning_path, is_required=True
+        )
+        total = required_courses.count()
+        if total == 0:
+            return
+        completed = Enrollment.objects.filter(
+            user=self.user,
+            course__in=required_courses.values('course'),
+            is_completed=True
+        ).count()
+        self.progress_percentage = int((completed / total) * 100)
+        self.is_completed = self.progress_percentage == 100
+        if self.is_completed and not self.completed_at:
+            from django.utils import timezone
+            self.completed_at = timezone.now()
+        self.save(update_fields=["progress_percentage", "is_completed", "completed_at"])
+
+    def can_take_certification_exam(self):
+        """
+        Vérifie si l'étudiant peut passer l'examen de certification.
+        Tous les cours obligatoires doivent être terminés.
+        """
+        required_courses = LearningPathCourse.objects.filter(
+            learning_path=self.learning_path, is_required=True
+        )
+        for pc in required_courses:
+            enrollment = Enrollment.objects.filter(
+                user=self.user, course=pc.course, is_completed=True
+            ).first()
+            if not enrollment:
+                return False
+        return True
+
+    def auto_enroll_courses(self):
+        """
+        Inscrit automatiquement l'étudiant à tous les cours du parcours.
+        """
+        path_courses = LearningPathCourse.objects.filter(
+            learning_path=self.learning_path
+        ).select_related('course')
+        for pc in path_courses:
+            Enrollment.objects.get_or_create(
+                user=self.user, course=pc.course
+            )
+
+
+# ─────────────────────────────────────────────
+#  LESSON PROGRESS & NOTES (F-05)
+# ─────────────────────────────────────────────
 
 class UserLessonProgress(models.Model):
     """F-05 : Suivi de progression pour une leçon."""
@@ -80,6 +181,10 @@ class UserNote(models.Model):
     def __str__(self):
         return f"Note de {self.user} sur {self.lesson.title} à {self.video_timecode}s"
 
+
+# ─────────────────────────────────────────────
+#  QUIZ (F-07)
+# ─────────────────────────────────────────────
 
 class QuizQuestion(models.Model):
     """F-07 : Question d'un quiz associé à une leçon."""
@@ -128,6 +233,8 @@ class UserQuizAttempt(models.Model):
         return f"Tentative de {self.user} sur {self.lesson.title} - Score: {self.score}%"
 
 
+#  CODE SUBMISSION (F-06)
+
 class UserCodeSubmission(models.Model):
     """F-06 : Enregistrement du code soumis dans le notebook/éditeur."""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="code_submissions")
@@ -146,9 +253,8 @@ class UserCodeSubmission(models.Model):
         return f"Code de {self.user} pour {self.lesson.title}"
 
 
-# ─────────────────────────────────────────────
-#  PEER REVIEW (F-06 / F-04)
-# ─────────────────────────────────────────────
+#  PEER REVIEW (F-04)
+
 from courses.models import Project
 
 class ProjectSubmission(models.Model):
@@ -172,8 +278,6 @@ class ProjectSubmission(models.Model):
     class Meta:
         verbose_name = "Soumission de Projet"
         verbose_name_plural = "Soumissions de Projets"
-        # On peut soumettre plusieurs fois le même projet (par ex si rejeté), 
-        # donc pas d'unique_together strict sans logique supplémentaire.
 
     def __str__(self):
         return f"Soumission de {self.user} pour {self.project.title} ({self.get_status_display()})"
@@ -191,16 +295,69 @@ class ProjectPeerReview(models.Model):
     class Meta:
         verbose_name = "Correction par les pairs"
         verbose_name_plural = "Corrections par les pairs"
-        unique_together = [["reviewer", "submission"]]  # Un pair ne corrige qu'une fois une même soumission
+        unique_together = [["reviewer", "submission"]]
 
     def __str__(self):
         return f"Évaluation de {self.reviewer} pour la soumission {self.submission.id}"
 
 
+#  CERTIFICATION (Exam Attempts & Certificates)
+
+class CertificationExamAttempt(models.Model):
+    """Tentative d'examen de certification."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="exam_attempts"
+    )
+    exam = models.ForeignKey(
+        CertificationExam, on_delete=models.CASCADE,
+        related_name="attempts"
+    )
+    score = models.PositiveIntegerField(verbose_name="Score obtenu (%)")
+    passed = models.BooleanField(verbose_name="Réussi")
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Tentative d'Examen"
+        verbose_name_plural = "Tentatives d'Examen"
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        status = "✅ Réussi" if self.passed else "❌ Échoué"
+        return f"{self.user.email} - {self.exam.title} ({self.score}%) {status}"
+
+
 class Certificate(models.Model):
-    """Certificat de complétion d'un cours (UE)."""
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificates")
-    course = models.ForeignKey('courses.Course', on_delete=models.CASCADE, related_name="certificates")
+    """
+    Certificat délivré à un étudiant.
+    Peut être :
+    - Un certificat de suivi de cours (attestation) → course renseigné
+    - Un certificat de parcours certifiant (certification pro) → learning_path renseigné
+    """
+    CERT_TYPE_CHOICES = [
+        ('course_completion', "Attestation de suivi de cours"),
+        ('path_certification', "Certification professionnelle"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name="certificates"
+    )
+    course = models.ForeignKey(
+        'courses.Course', on_delete=models.CASCADE,
+        related_name="certificates", null=True, blank=True,
+        verbose_name="Cours (si attestation)"
+    )
+    learning_path = models.ForeignKey(
+        LearningPath, on_delete=models.CASCADE,
+        related_name="certificates", null=True, blank=True,
+        verbose_name="Parcours (si certification)"
+    )
+    cert_type = models.CharField(
+        max_length=25, choices=CERT_TYPE_CHOICES,
+        default='course_completion', verbose_name="Type"
+    )
     issued_at = models.DateTimeField(auto_now_add=True)
     certificate_id = models.CharField(max_length=100, unique=True, blank=True)
     final_score = models.PositiveIntegerField(default=0)
@@ -208,13 +365,14 @@ class Certificate(models.Model):
     class Meta:
         verbose_name = "Certificat"
         verbose_name_plural = "Certificats"
-        unique_together = [["user", "course"]]
 
     def save(self, *args, **kwargs):
         if not self.certificate_id:
             import uuid
-            self.certificate_id = str(uuid.uuid4())[:12].upper()
+            prefix = "CERT" if self.cert_type == "path_certification" else "ATT"
+            self.certificate_id = f"{prefix}-{str(uuid.uuid4())[:8].upper()}"
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Certificat {self.certificate_id} - {self.user.email} - {self.course.title}"
+        target = self.learning_path.title if self.learning_path else self.course.title
+        return f"{self.get_cert_type_display()} {self.certificate_id} - {self.user.email} - {target}"

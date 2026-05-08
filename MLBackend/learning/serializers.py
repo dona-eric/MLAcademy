@@ -1,7 +1,15 @@
 from rest_framework import serializers
-from .models import UserLessonProgress, UserNote, QuizQuestion, QuizChoice, UserQuizAttempt, UserCodeSubmission, Enrollment
-from .models import ProjectSubmission, ProjectPeerReview
+from .models import (
+    Enrollment, PathEnrollment, UserLessonProgress, UserNote,
+    QuizQuestion, QuizChoice, UserQuizAttempt, UserCodeSubmission,
+    ProjectSubmission, ProjectPeerReview, CertificationExamAttempt, Certificate
+)
+from courses.models import LearningPath, LearningPathCourse, Course
 
+
+# ─────────────────────────────────────────────
+#  ENROLLMENT
+# ─────────────────────────────────────────────
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(source='course.title', read_only=True)
@@ -25,6 +33,36 @@ class EnrollmentSerializer(serializers.ModelSerializer):
         return None
 
 
+class PathEnrollmentSerializer(serializers.ModelSerializer):
+    path_title = serializers.CharField(source='learning_path.title', read_only=True)
+    path_slug = serializers.CharField(source='learning_path.slug', read_only=True)
+    path_level = serializers.CharField(source='learning_path.level', read_only=True)
+    path_thumbnail = serializers.SerializerMethodField(read_only=True)
+    can_take_exam = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = PathEnrollment
+        fields = [
+            'id', 'learning_path', 'path_title', 'path_slug', 'path_level',
+            'path_thumbnail', 'enrolled_at', 'progress_percentage',
+            'is_completed', 'is_certified', 'completed_at', 'can_take_exam'
+        ]
+        read_only_fields = ['enrolled_at', 'progress_percentage', 'is_completed', 'is_certified', 'completed_at']
+
+    def get_path_thumbnail(self, obj):
+        request = self.context.get('request')
+        if obj.learning_path.thumbnail and request:
+            return request.build_absolute_uri(obj.learning_path.thumbnail.url)
+        return None
+
+    def get_can_take_exam(self, obj):
+        return obj.can_take_certification_exam()
+
+
+# ─────────────────────────────────────────────
+#  PROGRESSION & NOTES
+# ─────────────────────────────────────────────
+
 class UserLessonProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserLessonProgress
@@ -38,6 +76,10 @@ class UserNoteSerializer(serializers.ModelSerializer):
         fields = ['id', 'lesson', 'content', 'video_timecode', 'created_at', 'updated_at']
         read_only_fields = ['lesson']
 
+
+# ─────────────────────────────────────────────
+#  QUIZ
+# ─────────────────────────────────────────────
 
 class QuizChoiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -68,6 +110,10 @@ class UserQuizAttemptSerializer(serializers.ModelSerializer):
         read_only_fields = ['lesson', 'score', 'passed']
 
 
+# ─────────────────────────────────────────────
+#  CODE SUBMISSION
+# ─────────────────────────────────────────────
+
 class UserCodeSubmissionSerializer(serializers.ModelSerializer):
     starter_code = serializers.CharField(source='lesson.starter_code', read_only=True)
     solution_code = serializers.CharField(source='lesson.solution_code', read_only=True)
@@ -78,9 +124,9 @@ class UserCodeSubmissionSerializer(serializers.ModelSerializer):
         read_only_fields = ['lesson', 'last_result']
 
 
-
-#  PEER REVIEW SERIALIZERS
-
+# ─────────────────────────────────────────────
+#  PEER REVIEW
+# ─────────────────────────────────────────────
 
 class ProjectPeerReviewSerializer(serializers.ModelSerializer):
     reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
@@ -96,8 +142,34 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSubmission
         fields = [
-            'id', 'project', 'repo_url', 'code_content', 
-            'status', 'submitted_at', 'peer_reviews', 
+            'id', 'project', 'repo_url', 'code_content',
+            'status', 'submitted_at', 'peer_reviews',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['status', 'submitted_at']
+
+
+# ─────────────────────────────────────────────
+#  CERTIFICATION
+# ─────────────────────────────────────────────
+
+class CertificationExamAttemptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CertificationExamAttempt
+        fields = ['id', 'exam', 'score', 'passed', 'started_at', 'completed_at']
+        read_only_fields = ['score', 'passed']
+
+
+class CertificateSerializer(serializers.ModelSerializer):
+    target_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Certificate
+        fields = ['id', 'certificate_id', 'cert_type', 'target_name', 'final_score', 'issued_at']
+
+    def get_target_name(self, obj):
+        if obj.learning_path:
+            return obj.learning_path.title
+        if obj.course:
+            return obj.course.title
+        return "—"
