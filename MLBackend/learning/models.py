@@ -133,6 +133,7 @@ class UserCodeSubmission(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="code_submissions")
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name="code_submissions")
     code = models.TextField(verbose_name="Code soumis")
+    last_result = models.JSONField(null=True, blank=True, verbose_name="Dernier résultat d'exécution")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

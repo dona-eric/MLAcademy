@@ -152,6 +152,8 @@ class Lesson(models.Model):
     is_free_preview = models.BooleanField(
         default=False, verbose_name="Aperçu gratuit"
     )
+    starter_code = models.TextField(blank=True, verbose_name="Code de démarrage")
+    solution_code = models.TextField(blank=True, verbose_name="Solution (instructeur)")
 
     created_at = models.DateTimeField(auto_now_add=True)
 

@@ -210,7 +210,14 @@ class LessonCodeSubmissionView(APIView):
         if submission:
             serializer = UserCodeSubmissionSerializer(submission)
             return Response(serializer.data)
-        return Response({})
+        
+        # Si aucune soumission, renvoyer les codes par défaut de la leçon
+        return Response({
+            "lesson": lesson.id,
+            "code": lesson.starter_code,
+            "starter_code": lesson.starter_code,
+            "solution_code": lesson.solution_code
+        })
 
     def post(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, pk=lesson_id)
@@ -224,26 +231,32 @@ class LessonCodeSubmissionView(APIView):
             defaults={'code': code}
         )
 
-        # Exécuter le code via MLSandbox
-        sandbox_url = os.getenv("SANDBOX_URL", "http://localhost:8001/execute")
-        execution_result = {}
-        
-        try:
-            with httpx.Client() as client:
-                response = client.post(
-                    sandbox_url,
-                    json={
-                        "source_code": code,
-                        "language_id": 71  # Python 3
-                    },
-                    timeout=25.0
-                )
-                if response.status_code == 200:
-                    execution_result = response.json()
-                else:
-                    execution_result = {"error": f"Sandbox error: {response.text}"}
-        except Exception as e:
-            execution_result = {"error": f"Connection to sandbox failed: {str(e)}"}
+        # Exécuter le code via MLSandbox (sauf si c'est juste une sauvegarde auto)
+        save_only = request.data.get('save_only', False)
+        execution_result = submission.last_result or {}
+
+        if not save_only:
+            sandbox_url = os.getenv("SANDBOX_URL", "http://localhost:8001/execute")
+            try:
+                with httpx.Client() as client:
+                    response = client.post(
+                        sandbox_url,
+                        json={
+                            "source_code": code,
+                            "language_id": 71  # Python 3
+                        },
+                        timeout=25.0
+                    )
+                    if response.status_code == 200:
+                        execution_result = response.json()
+                    else:
+                        execution_result = {"error": f"Sandbox error: {response.text}"}
+            except Exception as e:
+                execution_result = {"error": f"Connection to sandbox failed: {str(e)}"}
+
+            # Sauvegarder le résultat dans la soumission
+            submission.last_result = execution_result
+            submission.save(update_fields=['last_result', 'updated_at'])
 
         serializer = UserCodeSubmissionSerializer(submission)
         response_data = serializer.data

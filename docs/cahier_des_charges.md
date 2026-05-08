@@ -95,7 +95,7 @@ Devenir la référence francophone de formation en Data Science et Machine Learn
 ### 3.5 Gamification & Engagement
 **F-10 Système de Points & Badges**
 - Points XP gagnés à chaque leçon complétée, quiz réussi, projet soumis.
-- Badges thématiques : "Premier pas", "Ninja Pandas", "ML Master".
+- Badges thématiques : "Beginner", "Ninja Coding", "Master of Code".
 - Classement hebdomadaire/mensuel entre apprenants (opt-in).
 - Défis hebdomadaires : mini-projets chronométrés avec bonus XP.
 

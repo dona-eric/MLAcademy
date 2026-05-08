@@ -69,10 +69,13 @@ class UserQuizAttemptSerializer(serializers.ModelSerializer):
 
 
 class UserCodeSubmissionSerializer(serializers.ModelSerializer):
+    starter_code = serializers.CharField(source='lesson.starter_code', read_only=True)
+    solution_code = serializers.CharField(source='lesson.solution_code', read_only=True)
+
     class Meta:
         model = UserCodeSubmission
-        fields = ['id', 'lesson', 'code', 'updated_at']
-        read_only_fields = ['lesson']
+        fields = ['id', 'lesson', 'code', 'last_result', 'starter_code', 'solution_code', 'updated_at']
+        read_only_fields = ['lesson', 'last_result']
 
 
 
