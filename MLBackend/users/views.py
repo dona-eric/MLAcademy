@@ -34,6 +34,21 @@ User = get_user_model()
 
 #  INSCRIPTION
 
+class CheckEmailView(APIView):
+    """
+    POST /api/public/users/check-email/
+    Vérifie si un utilisateur existe avec l'e-mail fourni.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get("email")
+        if not email:
+            return Response({"error": "L'email est requis."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        exists = User.objects.filter(email=email).exists()
+        return Response({"exists": exists}, status=status.HTTP_200_OK)
+
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -51,13 +66,10 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
 
         # Envoi email de confirmation
-        verification_link = (
-            f"{request.scheme}://{request.get_host()}"
-            f"/api/users/verify-email/{user.verification_token}/"
-        )
+        frontend_url = "http://localhost:3000"
+        verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
         send_mail(
-            subject="""Bienvenue sur MLAcademy!
-            Confirmez votre email""",
+            subject="Bienvenue sur MLAcademy! Confirmez votre email",
             message=(
                 f"Bonjour {user.first_name or user.email},\n\n"
                 f"Cliquez sur ce lien pour confirmer votre email :\n{verification_link}\n\n"
@@ -119,36 +131,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     POST /api/users/token/
     Retourne les tokens JWT (access + refresh) après connexion.
     Vérifie que l'email est confirmé avant de permettre la connexion.
-    Définit également les tokens dans des cookies HttpOnly.
     """
 
     serializer_class = CustomTokenObtainPairSerializer
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            access_token = response.data.get("access")
-            refresh_token = response.data.get("refresh")
-
-            if access_token:
-                response.set_cookie(
-                    key=settings.SIMPLE_JWT["AUTH_COOKIE"],
-                    value=access_token,
-                    expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
-                    secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-                    httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-                    samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-                )
-            if refresh_token:
-                response.set_cookie(
-                    key=settings.SIMPLE_JWT["AUTH_COOKIE_REFRESH"],
-                    value=refresh_token,
-                    expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
-                    secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-                    httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-                    samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-                )
-        return response
 
 
 class CookieTokenRefreshView(TokenRefreshView):
@@ -190,11 +175,10 @@ class LogoutView(APIView):
         django_logout(request)
 
         response = Response({"message": "Déconnexion réussie."})
-        response.delete_cookie(settings.SIMPLE_JWT["AUTH_COOKIE"])
-        response.delete_cookie(settings.SIMPLE_JWT["AUTH_COOKIE_REFRESH"])
-        response.delete_cookie(settings.SESSION_COOKIE_NAME)
         return response
 
+
+from rest_framework.authentication import SessionAuthentication
 
 class SocialJWTCompleteView(APIView):
     """
@@ -203,6 +187,7 @@ class SocialJWTCompleteView(APIView):
     pour conserver le même flux d'auth que le login classique.
     """
 
+    authentication_classes = [SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -224,29 +209,12 @@ class SocialJWTCompleteView(APIView):
             {
                 "message": "Connexion sociale réussie.",
                 "next": "/parcours",
+                "access": access_token,
+                "refresh": refresh_token,
             },
             status=status.HTTP_200_OK,
         )
 
-        response.set_cookie(
-            key=settings.SIMPLE_JWT["AUTH_COOKIE"],
-            value=access_token,
-            expires=settings.SIMPLE_JWT["ACCESS_TOKEN_LIFETIME"],
-            secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-            httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-            path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-        )
-        response.set_cookie(
-            key=settings.SIMPLE_JWT["AUTH_COOKIE_REFRESH"],
-            value=refresh_token,
-            expires=settings.SIMPLE_JWT["REFRESH_TOKEN_LIFETIME"],
-            secure=settings.SIMPLE_JWT["AUTH_COOKIE_SECURE"],
-            httponly=settings.SIMPLE_JWT["AUTH_COOKIE_HTTP_ONLY"],
-            samesite=settings.SIMPLE_JWT["AUTH_COOKIE_SAMESITE"],
-            path=settings.SIMPLE_JWT["AUTH_COOKIE_PATH"],
-        )
-        response.delete_cookie(settings.SESSION_COOKIE_NAME)
         return response
 
 
