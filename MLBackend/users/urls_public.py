@@ -10,6 +10,9 @@ from .views import (
     RegisterView,
     VerifyEmailView,
     CheckEmailView,
+    ApplyInstructorView,
+    PublicInstructorStatusView,
+    InstructorAccountActivateView,
 )
 
 urlpatterns = [
@@ -29,4 +32,7 @@ urlpatterns = [
         name="password-reset-confirm",
     ),
     path("profile/<str:username>/", PublicProfileView.as_view(), name="profile-public"),
+    path("apply-instructor/", ApplyInstructorView.as_view(), name="apply-instructor"),
+    path("instructor-status/", PublicInstructorStatusView.as_view(), name="instructor-status-public"),
+    path("instructor-activate/", InstructorAccountActivateView.as_view(), name="instructor-activate"),
 ]
