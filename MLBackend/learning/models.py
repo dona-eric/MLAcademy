@@ -324,7 +324,7 @@ class CertificationExamAttempt(models.Model):
         ordering = ["-started_at"]
 
     def __str__(self):
-        status = "✅ Réussi" if self.passed else "❌ Échoué"
+        status = " Réussi" if self.passed else " Échoué"
         return f"{self.user.email} - {self.exam.title} ({self.score}%) {status}"
 
 
