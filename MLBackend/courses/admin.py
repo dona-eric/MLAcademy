@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    Category, LearningPath, LearningPathCourse, Course,
+    Category, LearningPath, LearningPathCourse, Course, CourseModule,
     CoursePrerequisite, Module, Lesson, Project,
     CertificationExam, CourseReview
 )
@@ -13,7 +13,42 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 # ─────────────────────────────────────────────
-#  LEARNING PATH (Parcours)
+#  MODULE LIBRARY
+# ─────────────────────────────────────────────
+
+class LessonInline(admin.TabularInline):
+    model = Lesson
+    extra = 1
+
+
+@admin.register(Module)
+class ModuleAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'author', 'estimated_hours', 'is_published', 'usage_count')
+    list_filter = ('is_published', 'category')
+    search_fields = ('title', 'description')
+    prepopulated_fields = {'slug': ('title',)}
+    inlines = [LessonInline]
+
+    def usage_count(self, obj):
+        return obj.course_modules.count()
+    usage_count.short_description = "Utilisé dans"
+
+
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ('title', 'module', 'lesson_type', 'order', 'duration_minutes', 'is_free_preview')
+    list_filter = ('lesson_type', 'is_free_preview')
+    search_fields = ('title', 'module__title')
+
+
+@admin.register(Project)
+class ProjectAdmin(admin.ModelAdmin):
+    list_display = ('title', 'module', 'is_final', 'is_capstone', 'passing_score')
+    list_filter = ('is_final', 'is_capstone')
+
+
+# ─────────────────────────────────────────────
+#  LEARNING PATH
 # ─────────────────────────────────────────────
 
 class LearningPathCourseInline(admin.TabularInline):
@@ -43,9 +78,11 @@ class LearningPathAdmin(admin.ModelAdmin):
 #  COURSE
 # ─────────────────────────────────────────────
 
-class ModuleInline(admin.TabularInline):
-    model = Module
+class CourseModuleInline(admin.TabularInline):
+    model = CourseModule
     extra = 1
+    autocomplete_fields = ['module']
+    ordering = ['order']
 
 
 class CoursePrerequisiteInline(admin.TabularInline):
@@ -61,36 +98,7 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ('is_published', 'is_free', 'is_standalone', 'level', 'category')
     search_fields = ('title', 'short_description')
     prepopulated_fields = {'slug': ('title',)}
-    inlines = [CoursePrerequisiteInline, ModuleInline]
-
-
-# ─────────────────────────────────────────────
-#  MODULE & LESSON
-# ─────────────────────────────────────────────
-
-class LessonInline(admin.TabularInline):
-    model = Lesson
-    extra = 1
-
-
-@admin.register(Module)
-class ModuleAdmin(admin.ModelAdmin):
-    list_display = ('title', 'course', 'order')
-    list_filter = ('course',)
-    inlines = [LessonInline]
-
-
-@admin.register(Lesson)
-class LessonAdmin(admin.ModelAdmin):
-    list_display = ('title', 'module', 'lesson_type', 'order', 'duration_minutes', 'is_free_preview')
-    list_filter = ('lesson_type', 'is_free_preview', 'module__course')
-    search_fields = ('title',)
-
-
-@admin.register(Project)
-class ProjectAdmin(admin.ModelAdmin):
-    list_display = ('title', 'module', 'is_final')
-    list_filter = ('is_final',)
+    inlines = [CourseModuleInline, CoursePrerequisiteInline]
 
 
 @admin.register(CourseReview)

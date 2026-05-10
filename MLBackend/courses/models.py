@@ -9,7 +9,7 @@ class Category(models.Model):
     Thématique de cours (ex: Machine Learning, Data Engineering, NLP).
     """
     name = models.CharField(max_length=100, unique=True, verbose_name="Nom")
-    slug = models.SlugField(max_length=120, unique=True, blank=True)
+    slug = models.SlugField(max_length=220, null=True, blank=True)
     icon = models.CharField(max_length=50, blank=True, verbose_name="Icône (emoji ou classe CSS)")
     description = models.TextField(blank=True, verbose_name="Description")
 
@@ -27,191 +27,44 @@ class Category(models.Model):
         return self.name
 
 
-#  LEARNING PATH (Parcours / Certification)
+# ═════════════════════════════════════════════
+#  MODULE LIBRARY (Bibliothèque de Modules réutilisables)
+# ═════════════════════════════════════════════
 
-class LearningPath(models.Model):
+class Module(models.Model):
     """
-    Parcours certifiant regroupant plusieurs cours ordonnés.
-    Ex: "Professional Machine Learning Engineer"
-    C'est le conteneur de haut niveau que l'étudiant suit pour obtenir une certification.
+    Unité thématique RÉUTILISABLE regroupant plusieurs leçons.
+    Un même module peut apparaître dans plusieurs cours.
+    Ex: "Introduction à Python" utilisé dans "Data Scientist" ET "Développeur Web".
+    
+    Avantage : Si on met à jour une vidéo du module, elle se met à jour 
+    dans TOUS les cours qui l'utilisent.
     """
-    DIFFICULTY_CHOICES = [
-        ("beginner", "Débutant"),
-        ("intermediate", "Intermédiaire"),
-        ("advanced", "Avancé"),
-        ("professional", "Professionnel"),
-    ]
-
-    title = models.CharField(max_length=250, verbose_name="Titre du Parcours")
-    slug = models.SlugField(max_length=270, unique=True, blank=True)
-    short_description = models.CharField(max_length=400, verbose_name="Résumé court")
-    description = models.TextField(verbose_name="Description complète")
-    category = models.ForeignKey(
-        Category, on_delete=models.SET_NULL, null=True,
-        related_name="learning_paths", verbose_name="Catégorie"
-    )
-    creator = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
-        related_name="paths_created", verbose_name="Créateur / Instructeur principal"
-    )
-    level = models.CharField(
-        max_length=20, choices=DIFFICULTY_CHOICES, default="beginner",
-        verbose_name="Niveau"
-    )
-    thumbnail = models.ImageField(
-        upload_to="paths/thumbnails/", blank=True, null=True,
-        verbose_name="Image de couverture"
-    )
-    estimated_weeks = models.PositiveIntegerField(
-        default=12, verbose_name="Durée estimée (semaines)"
-    )
-    is_published = models.BooleanField(default=False, verbose_name="Publié")
-    is_certifying = models.BooleanField(
-        default=True, verbose_name="Parcours certifiant"
-    )
-    is_free = models.BooleanField(default=False, verbose_name="Accès libre")
-    price = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.00,
-        verbose_name="Prix (FCFA)", help_text="0 = gratuit. L'instructeur décide."
-    )
-
-    # Champs dénormalisés pour les performances
-    enrolled_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'inscrits")
-    avg_rating = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.00,
-        verbose_name="Note moyenne"
-    )
-    courses_count = models.PositiveIntegerField(default=0, verbose_name="Nombre de cours")
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Parcours"
-        verbose_name_plural = "Parcours"
-        ordering = ["-created_at"]
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        cert = "🎓" if self.is_certifying else "📘"
-        return f"{cert} {self.title}"
-
-    def update_courses_count(self):
-        """Met à jour le nombre de cours dans le parcours."""
-        self.courses_count = self.path_courses.count()
-        self.save(update_fields=["courses_count"])
-
-
-class LearningPathCourse(models.Model):
-    """
-    Table de jonction ordonnée : associe un Cours à un Parcours.
-    Permet d'ordonner les cours dans le parcours et de les marquer comme obligatoires/optionnels.
-    """
-    learning_path = models.ForeignKey(
-        LearningPath, on_delete=models.CASCADE,
-        related_name="path_courses", verbose_name="Parcours"
-    )
-    course = models.ForeignKey(
-        'Course', on_delete=models.CASCADE,
-        related_name="in_paths", verbose_name="Cours"
-    )
-    order = models.PositiveIntegerField(default=0, verbose_name="Ordre dans le parcours")
-    is_required = models.BooleanField(
-        default=True, verbose_name="Obligatoire",
-        help_text="Si False, le cours est optionnel pour la certification."
-    )
-
-    class Meta:
-        verbose_name = "Cours du Parcours"
-        verbose_name_plural = "Cours du Parcours"
-        ordering = ["order"]
-        unique_together = [["learning_path", "course"], ["learning_path", "order"]]
-
-    def __str__(self):
-        req = "★" if self.is_required else "○"
-        return f"{req} #{self.order} {self.course.title} → {self.learning_path.title}"
-
-
-# ─────────────────────────────────────────────
-#  COURSE (Cours — unité que l'étudiant rejoint)
-# ─────────────────────────────────────────────
-
-class Course(models.Model):
-    """
-    Cours individuel. Peut être standalone (ex: "Prompt Engineering") 
-    ou partie d'un LearningPath (ex: "Python pour la Data Science" dans le parcours ML Engineer).
-    """
-    LEVEL_CHOICES = [
-        ("beginner", "Débutant"),
-        ("intermediate", "Intermédiaire"),
-        ("advanced", "Avancé"),
-    ]
-
     title = models.CharField(max_length=200, verbose_name="Titre")
-    slug = models.SlugField(max_length=220, unique=True, blank=True)
-    short_description = models.CharField(max_length=300, verbose_name="Résumé court")
-    description = models.TextField(verbose_name="Description complète")
+    slug = models.SlugField(max_length=220, null=True, blank=True)
+    description = models.TextField(blank=True, verbose_name="Description")
     category = models.ForeignKey(
-        Category, on_delete=models.SET_NULL, null=True, related_name="courses",
-        verbose_name="Catégorie"
+        Category, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="modules", verbose_name="Catégorie",
+        help_text="Catégorie thématique pour faciliter la recherche dans la bibliothèque."
     )
-    instructor = models.ForeignKey(
+    author = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
-        related_name="courses_taught", verbose_name="Instructeur"
+        related_name="modules_authored", verbose_name="Auteur"
     )
-    level = models.CharField(
-        max_length=20, choices=LEVEL_CHOICES, default="beginner",
-        verbose_name="Niveau"
-    )
-    duration_hours = models.PositiveIntegerField(
-        default=0, verbose_name="Durée estimée (heures)"
-    )
-    thumbnail = models.ImageField(
-        upload_to="courses/thumbnails/", blank=True, null=True,
-        verbose_name="Image de couverture"
-    )
-    preview_url = models.URLField(
-        blank=True, verbose_name="URL d'aperçu gratuit (vidéo)"
-    )
-    prerequisites_text = models.TextField(
-        blank=True, verbose_name="Prérequis (texte affiché)",
-        help_text="Description textuelle des prérequis pour l'affichage. La logique métier utilise CoursePrerequisite."
-    )
-    syllabus = models.TextField(
-        blank=True, verbose_name="Syllabus (plan du cours)"
+    estimated_hours = models.DecimalField(
+        max_digits=4, decimal_places=1, default=1.0,
+        verbose_name="Durée estimée (heures)"
     )
     is_published = models.BooleanField(default=False, verbose_name="Publié")
-    is_free = models.BooleanField(default=False, verbose_name="Cours gratuit")
-    is_standalone = models.BooleanField(
-        default=False, verbose_name="Cours autonome",
-        help_text="True = accessible en dehors d'un parcours."
-    )
-    price = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.00,
-        verbose_name="Prix standalone (FCFA)",
-        help_text="Prix si le cours est acheté individuellement."
-    )
-
-    # Champs dénormalisés pour les performances
-    avg_rating = models.DecimalField(
-        max_digits=3, decimal_places=2, default=0.00,
-        verbose_name="Note moyenne"
-    )
-    enrolled_count = models.PositiveIntegerField(
-        default=0, verbose_name="Nombre d'inscrits"
-    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Cours"
-        verbose_name_plural = "Cours"
-        ordering = ["-created_at"]
+        verbose_name = "Module"
+        verbose_name_plural = "Modules (Bibliothèque)"
+        ordering = ["title"]
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -221,75 +74,16 @@ class Course(models.Model):
     def __str__(self):
         return self.title
 
-    def check_prerequisites(self, user):
-        """
-        Vérifie si l'utilisateur a terminé tous les prérequis de ce cours.
-        Retourne (bool, list_of_missing_courses).
-        """
-        from learning.models import Enrollment
-        required = self.prerequisites_set.all()
-        missing = []
-        for prereq in required:
-            enrollment = Enrollment.objects.filter(
-                user=user, course=prereq.required_course, is_completed=True
-            ).first()
-            if not enrollment:
-                missing.append(prereq.required_course)
-        return (len(missing) == 0, missing)
-
-
-class CoursePrerequisite(models.Model):
-    """
-    Prérequis entre cours.
-    "Pour accéder au Cours B, l'utilisateur doit avoir terminé le Cours A."
-    """
-    course = models.ForeignKey(
-        Course, on_delete=models.CASCADE,
-        related_name="prerequisites_set", verbose_name="Cours"
-    )
-    required_course = models.ForeignKey(
-        Course, on_delete=models.CASCADE,
-        related_name="is_prerequisite_for", verbose_name="Prérequis"
-    )
-
-    class Meta:
-        verbose_name = "Prérequis de Cours"
-        verbose_name_plural = "Prérequis de Cours"
-        unique_together = [["course", "required_course"]]
-
-    def __str__(self):
-        return f"{self.required_course.title} → requis pour → {self.course.title}"
-
-
-#  MODULE & LESSON (Chapitres & Contenus atomiques)
-
-class Module(models.Model):
-    """
-    Chapitre / unité thématique regroupant plusieurs leçons.
-    """
-    course = models.ForeignKey(
-        Course, on_delete=models.CASCADE, related_name="modules",
-        verbose_name="Cours"
-    )
-    title = models.CharField(max_length=200, verbose_name="Titre")
-    description = models.TextField(blank=True, verbose_name="Description")
-    order = models.PositiveIntegerField(default=0, verbose_name="Ordre")
-
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Module"
-        verbose_name_plural = "Modules"
-        ordering = ["order"]
-        unique_together = [["course", "order"]]
-
-    def __str__(self):
-        return f"[{self.course.title}] Module {self.order} — {self.title}"
+    @property
+    def usage_count(self):
+        """Nombre de cours utilisant ce module."""
+        return self.course_modules.count()
 
 
 class Lesson(models.Model):
     """
     Unité atomique d'apprentissage (vidéo + texte + exercice + quiz).
+    Appartient à un Module (qui est réutilisable).
     """
     LESSON_TYPE_CHOICES = [
         ("video", "Vidéo"),
@@ -333,7 +127,8 @@ class Lesson(models.Model):
 
 class Project(models.Model):
     """
-    Application pratique clôturant chaque module.
+    Application pratique clôturant un module.
+    Peut être un Capstone (projet certifiant) pour un parcours.
     """
     module = models.OneToOneField(
         Module, on_delete=models.CASCADE, related_name="project",
@@ -344,7 +139,17 @@ class Project(models.Model):
     instructions = models.TextField(verbose_name="Instructions détaillées")
     starter_code = models.TextField(blank=True, verbose_name="Code de démarrage")
     solution_code = models.TextField(blank=True, verbose_name="Solution (instructeur)")
-    is_final = models.BooleanField(default=False, verbose_name="Projet de fin de cours (Certifiant)")
+    is_final = models.BooleanField(
+        default=False, verbose_name="Projet de fin de cours (Certifiant)"
+    )
+    is_capstone = models.BooleanField(
+        default=False, verbose_name="Capstone (Projet certifiant du parcours)",
+        help_text="Si True, la validation de ce projet peut déclencher la certification."
+    )
+    passing_score = models.PositiveIntegerField(
+        default=70, verbose_name="Score minimum pour validation (%)",
+        validators=[MinValueValidator(1), MaxValueValidator(100)]
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -353,16 +158,281 @@ class Project(models.Model):
         verbose_name_plural = "Projets"
 
     def __str__(self):
-        return f"Projet : {self.title}"
+        label = "🏆 Capstone" if self.is_capstone else "📝 Projet"
+        return f"{label} : {self.title}"
 
 
-#  CERTIFICATION EXAM (Examen final du parcours)
+# ═════════════════════════════════════════════
+#  LEARNING PATH (Parcours / Certification)
+# ═════════════════════════════════════════════
+
+class LearningPath(models.Model):
+    """
+    Parcours certifiant regroupant plusieurs cours ordonnés.
+    Ex: "Professional Machine Learning Engineer"
+    """
+    DIFFICULTY_CHOICES = [
+        ("beginner", "Débutant"),
+        ("intermediate", "Intermédiaire"),
+        ("advanced", "Avancé"),
+        ("professional", "Professionnel"),
+    ]
+
+    title = models.CharField(max_length=250, verbose_name="Titre du Parcours")
+    slug = models.SlugField(max_length=220, null=True, blank=True)
+    short_description = models.CharField(max_length=400, verbose_name="Résumé court")
+    description = models.TextField(verbose_name="Description complète")
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL, null=True,
+        related_name="learning_paths", verbose_name="Catégorie"
+    )
+    creator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="paths_created", verbose_name="Créateur / Instructeur principal"
+    )
+    level = models.CharField(
+        max_length=20, choices=DIFFICULTY_CHOICES, default="beginner",
+        verbose_name="Niveau"
+    )
+    thumbnail = models.ImageField(
+        upload_to="paths/thumbnails/", blank=True, null=True,
+        verbose_name="Image de couverture"
+    )
+    estimated_weeks = models.PositiveIntegerField(
+        default=12, verbose_name="Durée estimée (semaines)"
+    )
+    is_published = models.BooleanField(default=False, verbose_name="Publié")
+    is_certifying = models.BooleanField(
+        default=True, verbose_name="Parcours certifiant"
+    )
+    is_free = models.BooleanField(default=False, verbose_name="Accès libre")
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00,
+        verbose_name="Prix (FCFA)", help_text="0 = gratuit. L'instructeur décide."
+    )
+
+    # Champs dénormalisés
+    enrolled_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'inscrits")
+    avg_rating = models.DecimalField(
+        max_digits=3, decimal_places=2, default=0.00, verbose_name="Note moyenne"
+    )
+    courses_count = models.PositiveIntegerField(default=0, verbose_name="Nombre de cours")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Parcours"
+        verbose_name_plural = "Parcours"
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        cert = "🎓" if self.is_certifying else "📘"
+        return f"{cert} {self.title}"
+
+    def update_courses_count(self):
+        self.courses_count = self.path_courses.count()
+        self.save(update_fields=["courses_count"])
+
+
+class LearningPathCourse(models.Model):
+    """
+    Table de jonction : associe un Cours à un Parcours (ordonné).
+    """
+    learning_path = models.ForeignKey(
+        LearningPath, on_delete=models.CASCADE,
+        related_name="path_courses", verbose_name="Parcours"
+    )
+    course = models.ForeignKey(
+        'Course', on_delete=models.CASCADE,
+        related_name="in_paths", verbose_name="Cours"
+    )
+    order = models.PositiveIntegerField(default=0, verbose_name="Ordre dans le parcours")
+    is_required = models.BooleanField(
+        default=True, verbose_name="Obligatoire",
+        help_text="Si False, le cours est optionnel pour la certification."
+    )
+
+    class Meta:
+        verbose_name = "Cours du Parcours"
+        verbose_name_plural = "Cours du Parcours"
+        ordering = ["order"]
+        unique_together = [["learning_path", "course"], ["learning_path", "order"]]
+
+    def __str__(self):
+        req = "★" if self.is_required else "○"
+        return f"{req} #{self.order} {self.course.title} → {self.learning_path.title}"
+
+
+# ═════════════════════════════════════════════
+#  COURSE (Cours — l'unité que l'étudiant rejoint)
+# ═════════════════════════════════════════════
+
+class Course(models.Model):
+    """
+    Cours individuel. Utilise des Modules de la bibliothèque via CourseModule.
+    Peut être standalone ou partie d'un LearningPath.
+    """
+    LEVEL_CHOICES = [
+        ("beginner", "Débutant"),
+        ("intermediate", "Intermédiaire"),
+        ("advanced", "Avancé"),
+    ]
+
+    title = models.CharField(max_length=200, verbose_name="Titre")
+    slug = models.SlugField(max_length=220, null=True, blank=True)
+    short_description = models.CharField(max_length=300, verbose_name="Résumé court")
+    description = models.TextField(verbose_name="Description complète")
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL, null=True, related_name="courses",
+        verbose_name="Catégorie"
+    )
+    instructor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+        related_name="courses_taught", verbose_name="Instructeur"
+    )
+    level = models.CharField(
+        max_length=20, choices=LEVEL_CHOICES, default="beginner",
+        verbose_name="Niveau"
+    )
+    duration_hours = models.PositiveIntegerField(
+        default=0, verbose_name="Durée estimée (heures)"
+    )
+    thumbnail = models.ImageField(
+        upload_to="courses/thumbnails/", blank=True, null=True,
+        verbose_name="Image de couverture"
+    )
+    preview_url = models.URLField(
+        blank=True, verbose_name="URL d'aperçu gratuit (vidéo)"
+    )
+    prerequisites_text = models.TextField(
+        blank=True, verbose_name="Prérequis (texte affiché)",
+        help_text="Description textuelle. La logique métier utilise CoursePrerequisite."
+    )
+    syllabus = models.TextField(blank=True, verbose_name="Syllabus")
+    is_published = models.BooleanField(default=False, verbose_name="Publié")
+    is_free = models.BooleanField(default=False, verbose_name="Cours gratuit")
+    is_standalone = models.BooleanField(
+        default=False, verbose_name="Cours autonome",
+        help_text="True = accessible en dehors d'un parcours."
+    )
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00,
+        verbose_name="Prix standalone (FCFA)"
+    )
+
+    # Dénormalisés
+    avg_rating = models.DecimalField(
+        max_digits=3, decimal_places=2, default=0.00, verbose_name="Note moyenne"
+    )
+    enrolled_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'inscrits")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Cours"
+        verbose_name_plural = "Cours"
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+    def check_prerequisites(self, user):
+        """Vérifie si l'utilisateur a terminé les prérequis."""
+        from learning.models import Enrollment
+        required = self.prerequisites_set.all()
+        missing = []
+        for prereq in required:
+            enrollment = Enrollment.objects.filter(
+                user=user, course=prereq.required_course, is_completed=True
+            ).first()
+            if not enrollment:
+                missing.append(prereq.required_course)
+        return (len(missing) == 0, missing)
+
+    def get_ordered_modules(self):
+        """Retourne les modules de ce cours dans l'ordre défini par CourseModule."""
+        return Module.objects.filter(
+            course_modules__course=self
+        ).order_by('course_modules__order')
+
+
+class CourseModule(models.Model):
+    """
+    Table de jonction : associe un Module (de la bibliothèque) à un Cours.
+    Permet de RÉUTILISER un même module dans plusieurs cours.
+    
+    Ex: Le module "Introduction à Python" peut être dans :
+    - Cours "Data Scientist" (order=1)
+    - Cours "Développeur Web" (order=3)
+    
+    Si on met à jour une vidéo du module, elle se met à jour
+    dans TOUS les cours qui l'utilisent.
+    """
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE,
+        related_name="course_modules", verbose_name="Cours"
+    )
+    module = models.ForeignKey(
+        Module, on_delete=models.CASCADE,
+        related_name="course_modules", verbose_name="Module"
+    )
+    order = models.PositiveIntegerField(default=0, verbose_name="Ordre dans le cours")
+
+    class Meta:
+        verbose_name = "Module du Cours"
+        verbose_name_plural = "Modules du Cours"
+        ordering = ["order"]
+        unique_together = [["course", "module"], ["course", "order"]]
+
+    def __str__(self):
+        return f"#{self.order} {self.module.title} → {self.course.title}"
+
+
+class CoursePrerequisite(models.Model):
+    """
+    Prérequis entre cours.
+    """
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE,
+        related_name="prerequisites_set", verbose_name="Cours"
+    )
+    required_course = models.ForeignKey(
+        Course, on_delete=models.CASCADE,
+        related_name="is_prerequisite_for", verbose_name="Prérequis"
+    )
+
+    class Meta:
+        verbose_name = "Prérequis de Cours"
+        verbose_name_plural = "Prérequis de Cours"
+        unique_together = [["course", "required_course"]]
+
+    def __str__(self):
+        return f"{self.required_course.title} → requis pour → {self.course.title}"
+
+
+# ═════════════════════════════════════════════
+#  CERTIFICATION EXAM & CAPSTONE
+# ═════════════════════════════════════════════
 
 class CertificationExam(models.Model):
     """
     Examen final d'un parcours certifiant.
-    Conditions strictes : durée limitée, tentatives limitées.
-    L'étudiant doit avoir terminé tous les cours obligatoires du parcours pour y accéder.
+    La certification N'EST PAS un simple PDF. C'est un objet de validation :
+    - L'étudiant doit avoir terminé tous les cours obligatoires
+    - Il doit atteindre un score minimum à cet examen OU valider le Capstone
+    - Seulement alors le Certificate est créé.
     """
     learning_path = models.OneToOneField(
         LearningPath, on_delete=models.CASCADE,
@@ -379,6 +449,13 @@ class CertificationExam(models.Model):
     )
     max_attempts_per_week = models.PositiveIntegerField(
         default=1, verbose_name="Tentatives par semaine"
+    )
+    # Le Capstone comme alternative à l'examen QCM
+    capstone_project = models.ForeignKey(
+        Project, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="certification_exam",
+        verbose_name="Projet Capstone (alternatif à l'examen)",
+        help_text="Si défini, la validation de ce projet vaut aussi certification."
     )
     is_published = models.BooleanField(default=False, verbose_name="Publié")
 
@@ -414,7 +491,7 @@ class CourseReview(models.Model):
     class Meta:
         verbose_name = "Avis"
         verbose_name_plural = "Avis"
-        unique_together = [["course", "user"]]  # Un avis par utilisateur par cours
+        unique_together = [["course", "user"]]
         ordering = ["-created_at"]
 
     def __str__(self):
