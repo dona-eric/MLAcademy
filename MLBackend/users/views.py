@@ -9,6 +9,7 @@ from django.contrib.auth import logout as django_logout
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.http import JsonResponse
+from django.utils import timezone
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -17,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+from .models import InstructorApplication
 from .serializers import (
     CustomTokenObtainPairSerializer,
     PasswordResetConfirmSerializer,
@@ -27,6 +28,7 @@ from .serializers import (
     UserPublicProfileSerializer,
     UserRegisterSerializer,
     InstructorApplicationSerializer,
+    InstructorApplicationStatusSerializer,  
 )
 
 User = get_user_model()
@@ -293,7 +295,8 @@ class PasswordResetConfirmView(APIView):
             )
 
         user.set_password(new_password)
-        user.save(update_fields=["password"])
+        user.email_verified = True
+        user.save(update_fields=["password", "email_verified"])
         return Response({"message": "Mot de passe réinitialisé avec succès."})
 
 
@@ -466,18 +469,83 @@ class PublicProfileView(generics.RetrieveAPIView):
 
 class ApplyInstructorView(generics.CreateAPIView):
     """
-    POST /api/users/apply-instructor/
+    POST /api/public/users/apply-instructor/
     Soumet une candidature pour devenir instructeur.
+    Ouvert à tous (crée un compte inactif si besoin).
     """
-    from .models import InstructorApplication
     queryset = InstructorApplication.objects.all()
     serializer_class = InstructorApplicationSerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class InstructorApplicationStatusView(generics.RetrieveAPIView):
+    """
+    GET /api/private/users/instructor-application/status/
+    Permet à l'utilisateur CONNECTÉ de suivre sa candidature.
+    """
+    serializer_class = InstructorApplicationStatusSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        from .models import InstructorApplication
-        # Vérifier si l'utilisateur a déjà soumis
-        if InstructorApplication.objects.filter(user=self.request.user).exists():
-            from rest_framework.exceptions import ValidationError
-            raise ValidationError({"error": "Vous avez déjà soumis une candidature."})
-        serializer.save(user=self.request.user)
+    def get_object(self):
+        return get_object_or_404(InstructorApplication, user=self.request.user)
+
+class InstructorAccountActivateView(APIView):
+    """
+    POST /api/public/users/instructor-activate/
+    Permet à un instructeur approuvé de définir son mot de passe et d'activer son compte.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+        password = request.data.get("password")
+        password_confirm = request.data.get("password_confirm")
+
+        if not token or not password:
+            return Response({"error": "Token et mot de passe requis."}, status=400)
+        
+        if password != password_confirm:
+            return Response({"error": "Les mots de passe ne correspondent pas."}, status=400)
+
+        try:
+            app = InstructorApplication.objects.get(
+                activation_token=token,
+                activation_expires_at__gt=timezone.now()
+            )
+            user = app.user
+            user.set_password(password)
+            user.is_active = True
+            user.email_verified = True # On considère l'email vérifié s'il a reçu le token
+            user.save()
+
+            # Consommer le token
+            app.activation_token = None
+            app.save(update_fields=["activation_token"])
+
+            return Response({"message": "Compte activé avec succès ! Vous pouvez maintenant vous connecter."})
+        except InstructorApplication.DoesNotExist:
+            return Response({"error": "Lien invalide ou expiré."}, status=400)
+
+
+class PublicInstructorStatusView(APIView):
+    """
+    GET /api/public/users/instructor-status/?email=...
+    Permet à n'importe qui de suivre sa candidature via son email.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        email = request.query_params.get("email")
+        if not email:
+            return Response({"error": "Email requis."}, status=400)
+        
+        # On cherche l'utilisateur d'abord, puis sa candidature
+        try:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            user = User.objects.get(email=email.strip().lower())
+            application = InstructorApplication.objects.get(user=user)
+            serializer = InstructorApplicationStatusSerializer(application)
+            return Response(serializer.data)
+        except (User.DoesNotExist, InstructorApplication.DoesNotExist):
+            return Response({"error": "Candidature introuvable."}, status=404)
