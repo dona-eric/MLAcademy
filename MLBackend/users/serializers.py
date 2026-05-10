@@ -279,7 +279,194 @@ class UserPublicProfileSerializer(serializers.ModelSerializer):
 from .models import InstructorApplication
 
 class InstructorApplicationSerializer(serializers.ModelSerializer):
+    """
+    Utilisé par le formulaire public de candidature.
+    Pas besoin d'être connecté.
+    """
+    first_name = serializers.CharField(required=True, write_only=True)
+    last_name = serializers.CharField(required=True, write_only=True)
+    email = serializers.EmailField(required=True, write_only=True)
+
     class Meta:
         model = InstructorApplication
-        fields = ['id', 'cv_url', 'portfolio_url', 'motivation', 'expertise_areas', 'status', 'submitted_at']
-        read_only_fields = ['id', 'status', 'submitted_at']
+        fields = [
+            "first_name", "last_name", "email",
+            "cv_file", "cv_url", "linkedin_url", "portfolio_url", "website_url",
+            "expertise", "expertise_detail", "motivation", "teaching_experience",
+        ]
+ 
+    def validate_email(self, value):
+        email = value.strip().lower()
+ 
+        #  Vérifier si une candidature existe déjà 
+        existing = InstructorApplication.objects.filter(user__email=email).first()
+        if existing:
+            if existing.status == InstructorApplication.STATUS_APPROVED:
+                raise serializers.ValidationError(
+                    "Cet email est déjà associé à un compte instructeur."
+                )
+            if existing.status in [
+                InstructorApplication.STATUS_PENDING,
+                InstructorApplication.STATUS_REVIEWING,
+            ]:
+                raise serializers.ValidationError(
+                    "Une candidature est déjà en cours d'examen pour cet email."
+                )
+            # Statut rejected → on autorise une nouvelle candidature
+            # (on mettra à jour l'existante ou on en crée une nouvelle)
+ 
+        return email
+ 
+    def validate(self, attrs):
+        # Au moins CV fichier ou URL LinkedIn
+        if not attrs.get("cv_file") and not attrs.get("cv_url") and not attrs.get("linkedin_url"):
+            raise serializers.ValidationError(
+                "Fournis au moins un CV (fichier ou URL) ou ton profil LinkedIn."
+            )
+        return attrs
+ 
+    def create(self, validated_data):
+        email = validated_data["email"]
+ 
+        # Si une candidature rejetée existe, on la réutilise
+        try:
+            existing = InstructorApplication.objects.get(
+                user__email=email, status=InstructorApplication.STATUS_REJECTED
+            )
+            for attr, value in validated_data.items():
+                setattr(existing, attr, value)
+            existing.status = InstructorApplication.STATUS_PENDING
+            existing.rejection_reason = ""
+            existing.reviewed_by = None
+            existing.reviewed_at = None
+            existing.save()
+            return existing
+        except InstructorApplication.DoesNotExist:
+            pass
+ 
+        # Récupérer ou créer l'utilisateur
+        user = User.objects.filter(email=email).first()
+        if not user:
+            # Créer un compte inactif
+            import secrets
+            username = email.split('@')[0] + secrets.token_hex(2)
+            user = User.objects.create(
+                email=email,
+                username=username,
+                first_name=validated_data.get("first_name", ""),
+                last_name=validated_data.get("last_name", ""),
+                is_active=False,
+                email_verified=False
+            )
+        
+        # Supprimer les champs qui ne sont pas dans le modèle InstructorApplication
+        validated_data.pop("email", None)
+        validated_data.pop("first_name", None)
+        validated_data.pop("last_name", None)
+        
+        # Créer la candidature
+        application = InstructorApplication.objects.create(
+            user=user,
+            **validated_data
+        )
+        return application
+ 
+ 
+# Candidature
+ 
+class InstructorApplicationStatusSerializer(serializers.ModelSerializer):
+    """Retourné au candidat pour suivre l'état de sa candidature."""
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+ 
+    class Meta:
+        model  = InstructorApplication
+        fields = [
+            "id", "status", "status_display",
+            "submitted_at", "reviewed_at",
+            "rejection_reason",  # uniquement si rejected
+        ]
+ 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # Ne pas exposer le motif de refus si pas refusé
+        if instance.status != InstructorApplication.STATUS_REJECTED:
+            data.pop("rejection_reason", None)
+        return data
+ 
+ 
+# Candidature — admin 
+ 
+class InstructorApplicationAdminSerializer(serializers.ModelSerializer):
+    """Vue complète pour l'équipe MLAcademy."""
+    status_display   = serializers.CharField(source="get_status_display", read_only=True)
+    expertise_display = serializers.CharField(source="get_expertise_display", read_only=True)
+    reviewed_by_name = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = InstructorApplication
+        fields = "__all__"
+ 
+    def get_reviewed_by_name(self, obj):
+        if obj.reviewed_by:
+            return obj.reviewed_by.get_full_name() or obj.reviewed_by.email
+        return None
+ 
+ 
+#Actions admin : approuver / refuser
+ 
+class ApproveApplicationSerializer(serializers.Serializer):
+    application_id = serializers.IntegerField()
+ 
+    def validate_application_id(self, value):
+        try:
+            app = InstructorApplication.objects.get(pk=value)
+        except InstructorApplication.DoesNotExist:
+            raise serializers.ValidationError("Candidature introuvable.")
+        if app.status == InstructorApplication.STATUS_APPROVED:
+            raise serializers.ValidationError("Cette candidature est déjà approuvée.")
+        return value
+ 
+ 
+class RejectApplicationSerializer(serializers.Serializer):
+    application_id = serializers.IntegerField()
+    reason = serializers.CharField(min_length=20, max_length=1000)
+ 
+    def validate_application_id(self, value):
+        try:
+            InstructorApplication.objects.get(pk=value)
+        except InstructorApplication.DoesNotExist:
+            raise serializers.ValidationError("Candidature introuvable.")
+        return value
+ 
+ 
+# Activation du compte instructeur
+ 
+class InstructorActivationSerializer(serializers.Serializer):
+    token    = serializers.CharField()
+    password = serializers.CharField(min_length=8)
+    password_confirm = serializers.CharField(min_length=8)
+ 
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError(
+                {"password": "Les mots de passe ne correspondent pas."}
+            )
+        return attrs
+ 
+    def validate_token(self, value):
+        from django.utils import timezone
+        try:
+            app = InstructorApplication.objects.get(
+                activation_token=value,
+                status=InstructorApplication.STATUS_APPROVED,
+            )
+        except InstructorApplication.DoesNotExist:
+            raise serializers.ValidationError("Token d'activation invalide.")
+ 
+        if app.activation_expires_at and app.activation_expires_at < timezone.now():
+            raise serializers.ValidationError(
+                "Ce lien d'activation a expiré. Contacte support@mlacademy.io."
+            )
+ 
+        return value
+
