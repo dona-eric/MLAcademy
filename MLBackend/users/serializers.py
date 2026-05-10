@@ -185,6 +185,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     avatar_url = serializers.SerializerMethodField(read_only=True)
     is_instructor = serializers.SerializerMethodField(read_only=True)
+    instructor_application_status = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -208,6 +209,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "date_joined",
             "last_login",
             "is_instructor",
+            "instructor_application_status",
         ]
         read_only_fields = [
             "id",
@@ -230,6 +232,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_is_instructor(self, obj):
         from .models import InstructorApplication
         return InstructorApplication.objects.filter(user=obj, status='approved').exists()
+
+    def get_instructor_application_status(self, obj):
+        from .models import InstructorApplication
+        try:
+            app = InstructorApplication.objects.get(user=obj)
+            return app.status
+        except InstructorApplication.DoesNotExist:
+            return None
 
 
 class UserPublicProfileSerializer(serializers.ModelSerializer):
