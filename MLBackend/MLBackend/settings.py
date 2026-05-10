@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     # Third-party
     "rest_framework",
+    'rest_framework_simplejwt',
     "django_filters",
     "corsheaders",
     "allauth",
@@ -155,8 +156,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "users.authentication.CookieJWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
@@ -173,14 +173,14 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
-    "AUTH_COOKIE": "access_token",
-    "AUTH_COOKIE_REFRESH": "refresh_token",
-    "AUTH_COOKIE_SECURE": False,
-    "AUTH_COOKIE_HTTP_ONLY": True,
-    "AUTH_COOKIE_PATH": "/",
-    "AUTH_COOKIE_SAMESITE": "Lax",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+    "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
 }
 
 # CORS Configuration for development
@@ -202,7 +202,7 @@ CORS_ALLOW_HEADERS = list(
         "x-requested-with",
     )
 )
-CORS_EXPOSE_HEADERS = ["Set-Cookie"]
+# CORS_EXPOSE_HEADERS = ["Set-Cookie"]
 
 # Email Configuration (console pour le dev, SMTP en prod)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
@@ -219,6 +219,7 @@ ACCOUNT_EMAIL_VERIFICATION = "none"  # Géré manuellement via notre vue
 SOCIALACCOUNT_LOGIN_ON_GET = True
 LOGIN_REDIRECT_URL = "http://localhost:3000/auth/social/complete?next=/parcours"
 LOGOUT_REDIRECT_URL = "http://localhost:3000/login"
+FRONTEND_URL = "http://localhost:3000"
 
 # Configuration des providers OAuth (évite de stocker les clés dans la DB)
 SOCIALACCOUNT_PROVIDERS = {
@@ -240,6 +241,15 @@ SOCIALACCOUNT_PROVIDERS = {
         "SCOPE": ["user", "user:email"],
     },
 }
+
+# Durée de validité du token de réinitialisation (en secondes)
+PASSWORD_RESET_TIMEOUT = 3600  # 1 heure
+
+# Hashage des mots de passe (bcrypt en priorité)
+AUTH_PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',  # fallback
+]
 
 # Media files (avatars, etc.)
 MEDIA_URL = "/media/"
