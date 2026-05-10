@@ -9,6 +9,7 @@ from .views import (
     SocialJWTCompleteView,
     Verify2FAView,
     ApplyInstructorView,
+    InstructorApplicationStatusView,
 )
 
 urlpatterns = [
@@ -22,4 +23,5 @@ urlpatterns = [
     path("me/delete/", DeleteAccountView.as_view(), name="account-delete"),
     path("me/export/", ExportUserDataView.as_view(), name="account-export"),
     path("apply-instructor/", ApplyInstructorView.as_view(), name="apply-instructor"),
+    path("instructor-application/status/", InstructorApplicationStatusView.as_view(), name="instructor-status"),
 ]
