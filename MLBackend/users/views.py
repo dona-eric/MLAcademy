@@ -1,6 +1,6 @@
 import io
 import uuid
-
+import base64
 import qrcode
 import qrcode.image.svg
 from django.conf import settings
@@ -239,8 +239,8 @@ class PasswordResetRequestView(APIView):
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
             reset_link = (
-                f"{request.scheme}://{request.get_host()}"
-                f"/api/users/password-reset/confirm/?uid={uid}&token={token}"
+                f"{settings.FRONTEND_URL}"
+                f"/password-reset/confirm/?uid={uid}&token={token}"
             )
             send_mail(
                 subject="MLAcademy — Réinitialisation de votre mot de passe",
@@ -322,7 +322,6 @@ class Enable2FAView(APIView):
         qr = qrcode.make(otp_url)
         buffer = io.BytesIO()
         qr.save(buffer, format="PNG")
-        import base64
 
         qr_b64 = base64.b64encode(buffer.getvalue()).decode()
 
