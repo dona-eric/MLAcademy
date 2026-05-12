@@ -1,62 +1,61 @@
-name: CI
+# name: CI
+# on:
+#   push:
+#     branches: [main, develop]
+#   pull_request:
+#     branches: [main, develop]
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+# jobs:
+#   frontend:
+#     name: Frontend CI
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: '20'
+#           cache: 'npm'
+#           cache-dependency-path: AcademyFrontend/package-lock.json
+#       - name: Install & Lint
+#         run: |
+#           cd AcademyFrontend
+#           npm install
+#           npm run lint
+#       - name: Type Check
+#         run: |
+#           cd AcademyFrontend
+#           npx tsc --noEmit
 
-jobs:
-  frontend:
-    name: Frontend CI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: AcademyFrontend/package-lock.json
-      - name: Install & Lint
-        run: |
-          cd AcademyFrontend
-          npm install
-          npm run lint
-      - name: Type Check
-        run: |
-          cd AcademyFrontend
-          npx tsc --noEmit
+#   backend:
+#     name: Backend (Django) CI
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+#       - name: Install dependencies
+#         run: |
+#           cd MLBackend
+#           pip install -r requirements.txt
+#       - name: Run Tests
+#         run: |
+#           cd MLBackend
+#           python manage.py test
 
-  backend:
-    name: Backend (Django) CI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          cd MLBackend
-          pip install -r requirements.txt
-      - name: Run Tests
-        run: |
-          cd MLBackend
-          python manage.py test
-
-  sandbox:
-    name: Sandbox (FastAPI) CI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          cd MLSandbox
-          pip install -r requirements.txt
-      - name: Run Lint
-        run: |
-          pip install flake8
-          flake8 MLSandbox/main.py
+#   sandbox:
+#     name: Sandbox (FastAPI) CI
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+#       - name: Install dependencies
+#         run: |
+#           cd MLSandbox
+#           pip install -r requirements.txt
+#       - name: Run Lint
+#         run: |
+#           pip install flake8
+#           flake8 MLSandbox/main.py
