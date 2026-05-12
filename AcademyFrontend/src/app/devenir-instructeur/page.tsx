@@ -24,12 +24,11 @@ export default function BecomeInstructorPage() {
       router.push('/login?redirect=/devenir-instructeur');
       return;
     }
-
     setLoading(true);
     setError('');
 
     try {
-      await fetchApi('/api/users/apply-instructor/', {
+      await fetchApi("/api/private/users/apply-instructor/", {
         method: 'POST',
         body: JSON.stringify({
           cv_url: cvUrl,
@@ -40,7 +39,7 @@ export default function BecomeInstructorPage() {
       });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de l\'envoi de votre candidature.');
+      setError(err.message );
     } finally {
       setLoading(false);
     }
@@ -56,7 +55,7 @@ export default function BecomeInstructorPage() {
             Nous vous contacterons très prochainement.
           </p>
           <button onClick={() => router.push('/dashboard')} className="btn btn-secondary">
-            Retour au tableau de bord
+            Retour
           </button>
         </div>
       </div>
