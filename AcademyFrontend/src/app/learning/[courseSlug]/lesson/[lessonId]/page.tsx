@@ -47,7 +47,7 @@ export default function LessonPlayerPage() {
 
     async function loadData() {
       try {
-        const cData = await fetchApi(`/api/courses/${courseSlug}/`);
+        const cData = await fetchApi(`/api/public/courses/${courseSlug}/`);
         setCourse(cData);
         if (lessonId) {
           const lData = await fetchApi(`/api/lessons/${lessonId}/`);
