@@ -4,14 +4,9 @@ import { useState, type ChangeEvent, type FormEvent, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Mail, 
-  Lock, 
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-  ArrowLeft
-} from "lucide-react";
+import { Mail, Lock, ArrowRight,Zap,Loader2, Eye, EyeOff} from "lucide-react";
+import { FiGithub } from "react-icons/fi";
+import { FcGoogle } from "react-icons/fc";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -19,9 +14,10 @@ export default function LoginPage() {
   const router = useRouter();
   const { login, user: profile, loading: authLoading } = useAuth();
   
-  const [formData, setFormData] = useState({ username: "", password: "" });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const googleLoginUrl = `${API_BASE_URL}/api/auth/google/login/?process=login`;
   const githubLoginUrl = `${API_BASE_URL}/api/auth/github/login/?process=login`;
@@ -42,46 +38,43 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(formData.username, formData.password);
+      await login(formData.email, formData.password);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.message || "Identifiants invalides.");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-6 animate-in fade-in duration-1000 relative overflow-hidden">
+    <div className="min-h-screen bg-[#141B2D] flex items-center justify-center p-4 animate-in fade-in duration-1000 relative overflow-hidden">
       {/* Background Orbs */}
-      <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[#00D1FF]/5 blur-[120px] rounded-full -translate-y-1/2 -translate-x-1/4"></div>
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#FFB800]/5 blur-[120px] rounded-full translate-y-1/2 translate-x-1/4"></div>
+      <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-indigo-500/10 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/4"></div>
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-500/10 blur-[100px] rounded-full translate-y-1/2 -translate-x-1/4"></div>
 
-      <div className="w-full max-w-xl relative z-10">
-        <div className="mb-10 text-center space-y-4">
-          <Link href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-[#0A192F] transition-colors mb-4 group">
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Retour à l'accueil</span>
-          </Link>
-          <h1 className="text-5xl font-bold text-[#0A192F] font-georgia tracking-tight">Content de vous <span className="text-[#00D1FF]">revoir.</span></h1>
-          <p className="text-gray-500 font-medium">Poursuivez votre apprentissage là où vous l'avez laissé.</p>
+      <div className="w-full max-w-2xl relative z-8 my-8">
+        <div className="mb-8 text-center space-y-2">
+          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-tight">
+            Rejoignez<br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">MLAcademy</span>
+          </h1>
         </div>
 
-        <div className="bg-white rounded-[48px] border border-gray-100 shadow-2xl p-10 space-y-8">
+        <div className="glass-card rounded-[40px] p-8 md:p-12 space-y-8 shadow-2xl shadow-black/50">
           {error && (
-            <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-xs font-bold flex items-center gap-3">
-              <Zap className="w-4 h-4" /> {error}
+            <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-2xl text-xs font-bold flex items-center gap-3">
+              <Zap className="w-4 h-4 flex-shrink-0" /> {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Utilisateur / Email</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Adresse Email</label>
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-[#00D1FF] transition-colors" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
                 <input 
-                  id="username" type="text" required value={formData.username} onChange={handleChange}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF] focus:bg-white transition-all"
+                  id="email" type="email" required value={formData.email} onChange={handleChange}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all placeholder:text-slate-600"
                   placeholder="nom@exemple.com"
                 />
               </div>
@@ -89,47 +82,53 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mot de passe</label>
-                <Link href="/password-reset" className="text-[10px] font-black text-[#00D1FF] uppercase tracking-widest hover:underline">Oublié ?</Link>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mot de passe</label>
+                <Link href="/password-reset" className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:text-indigo-300 transition-colors">Oublié ?</Link>
               </div>
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-[#00D1FF] transition-colors" />
-                <input 
-                  id="password" type="password" required value={formData.password} onChange={handleChange}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#00D1FF] focus:bg-white transition-all"
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                <input id="password" type={showPassword ? "text": "password"} required value={formData.password} onChange={handleChange}
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all placeholder:text-slate-600"
                   placeholder="••••••••"
                 />
+
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
             <button 
               type="submit" disabled={loading}
-              className="btn btn-primary w-full py-5 text-base shadow-xl shadow-cyan-100 mt-4"
+              className="btn-primary w-full py-5 text-base shadow-xl shadow-indigo-500/20 mt-4 rounded-2xl flex items-center justify-center gap-2 group"
             >
-              {loading ? "Connexion..." : (
-                <span className="flex items-center justify-center gap-2">
-                  Se connecter <ArrowRight className="w-5 h-5" />
-                </span>
+              {loading ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Connexion...</>
+              ) : (
+                <>Se connecter <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" /></>
               )}
             </button>
           </form>
 
           <div className="relative py-2">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-            <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest"><span className="bg-white px-4 text-gray-300">ou continuer avec</span></div>
+            <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
+              <span className="bg-[#151b2c] px-4 text-slate-500">ou continuer avec</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <a href={googleLoginUrl} className="flex items-center justify-center gap-3 py-4 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-all font-bold text-sm text-[#0A192F]">
+            <a href={googleLoginUrl} className="flex items-center justify-center gap-3 py-4 border border-white/20 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm text-white">
+              <FcGoogle/>
               Google
             </a>
-            <a href={githubLoginUrl} className="flex items-center justify-center gap-3 py-4 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-all font-bold text-sm text-[#0A192F]">
+            <a href={githubLoginUrl} className="flex items-center justify-center gap-3 py-4 border border-white/20 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm text-white">
+              <FiGithub />
               GitHub
             </a>
           </div>
 
-          <p className="text-center text-sm font-medium text-gray-500">
-            Nouveau sur MLAcademy ? <Link href="/register" className="text-[#00D1FF] font-black uppercase tracking-widest text-[10px] hover:underline ml-1">Créer un compte</Link>
+          <p className="text-center text-sm font-medium text-slate-500 pt-4">
+            Nouveau sur MLAcademy ? <Link href="/register" className="text-indigo-400 font-black uppercase tracking-widest text-[10px] hover:text-indigo-300 transition-colors ml-2">Créer un compte</Link>
           </p>
         </div>
       </div>
