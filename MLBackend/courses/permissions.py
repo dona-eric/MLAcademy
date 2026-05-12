@@ -1,4 +1,5 @@
 from rest_framework import permissions
+from users.models import InstructorApplication
 
 class IsInstructor(permissions.BasePermission):
     """
@@ -17,7 +18,6 @@ class IsInstructor(permissions.BasePermission):
         # Mais le mieux est de se baser sur InstructorApplication (si approuvé) ou un champ 'is_instructor' sur User.
         
         # On va vérifier si une candidature approuvée existe pour cet utilisateur
-        from users.models import InstructorApplication
         return InstructorApplication.objects.filter(
             user=request.user, 
             status='approved'

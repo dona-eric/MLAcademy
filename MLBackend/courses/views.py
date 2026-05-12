@@ -9,9 +9,7 @@ from .serializers import (
 )
 
 
-# ─────────────────────────────────────────────
 #  CATEGORY
-# ─────────────────────────────────────────────
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.all()
@@ -19,9 +17,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
 
-# ─────────────────────────────────────────────
 #  LEARNING PATH (Parcours / Certification)
-# ─────────────────────────────────────────────
 
 class LearningPathFilter(filters.FilterSet):
     category_slug = filters.CharFilter(field_name="category__slug")
@@ -52,9 +48,7 @@ class LearningPathViewSet(viewsets.ReadOnlyModelViewSet):
         return LearningPathListSerializer
 
 
-# ─────────────────────────────────────────────
 #  COURSE
-# ─────────────────────────────────────────────
 
 class CourseFilter(filters.FilterSet):
     min_duration = filters.NumberFilter(field_name="duration_hours", lookup_expr='gte')

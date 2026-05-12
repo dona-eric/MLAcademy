@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from .models import (
     Category, Course, CourseReview, Lesson, Module, Project,
     LearningPath, LearningPathCourse, CoursePrerequisite, CertificationExam
@@ -17,9 +16,8 @@ class CategorySerializer(serializers.ModelSerializer):
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = [
-            "id", "module", "title", "lesson_type", "content",
-            "video_url", "duration_minutes", "order", "is_free_preview",
+        fields = ["id", "module", "title", "lesson_type", "content",
+        "video_url", "duration_minutes", "order", "is_free_preview"
         ]
 
 
@@ -27,7 +25,6 @@ class ProjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
         fields = ["id", "module", "title", "description", "instructions", "starter_code", "is_final"]
-
 
 class ModuleSerializer(serializers.ModelSerializer):
     lessons = LessonSerializer(many=True, read_only=True)
@@ -37,10 +34,7 @@ class ModuleSerializer(serializers.ModelSerializer):
         model = Module
         fields = ["id", "course", "title", "description", "order", "lessons", "project"]
 
-
-# ─────────────────────────────────────────────
 #  COURSE
-# ─────────────────────────────────────────────
 
 class CourseReviewSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source="user.get_full_name", read_only=True)
@@ -54,7 +48,6 @@ class CourseReviewSerializer(serializers.ModelSerializer):
         validated_data["user"] = self.context["request"].user
         return super().create(validated_data)
 
-
 class CoursePrerequisiteSerializer(serializers.ModelSerializer):
     required_course_title = serializers.CharField(source="required_course.title", read_only=True)
     required_course_slug = serializers.CharField(source="required_course.slug", read_only=True)
@@ -63,7 +56,6 @@ class CoursePrerequisiteSerializer(serializers.ModelSerializer):
         model = CoursePrerequisite
         fields = ["id", "required_course", "required_course_title", "required_course_slug"]
 
-
 class CourseListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
@@ -71,13 +63,9 @@ class CourseListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = [
-            "id", "title", "slug", "short_description",
-            "category", "category_name", "instructor_name",
-            "level", "duration_hours", "thumbnail",
-            "avg_rating", "enrolled_count",
-            "is_published", "is_free", "is_standalone", "price",
-        ]
+        fields = ["id", "title", "slug", "short_description", "category", "category_name", "instructor_name",
+            "level", "duration_hours", "thumbnail","avg_rating", "enrolled_count","is_published", "is_free", 
+            "is_standalone", "price",]
 
 
 class CourseDetailSerializer(serializers.ModelSerializer):
@@ -91,14 +79,10 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            "id", "title", "slug", "short_description", "description",
-            "category", "instructor_name", "level", "duration_hours",
-            "thumbnail", "preview_url", "prerequisites_text", "prerequisites",
-            "syllabus", "avg_rating", "enrolled_count",
-            "is_free", "is_standalone", "price",
-            "modules", "reviews", "in_paths",
-            "created_at", "updated_at",
-        ]
+            "id", "title", "slug", "short_description", "description","category", "instructor_name", "level", "duration_hours",
+            "thumbnail", "preview_url", "prerequisites_text", "prerequisites", "syllabus", "avg_rating", "enrolled_count",
+            "is_free", "is_standalone", "price","modules", "reviews", "in_paths", "created_at", "updated_at"
+            ]
 
     def get_in_paths(self, obj):
         """Retourne les parcours dans lesquels ce cours apparaît."""
@@ -114,9 +98,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
         ]
 
 
-# ─────────────────────────────────────────────
 #  LEARNING PATH (Parcours)
-# ─────────────────────────────────────────────
 
 class LearningPathCourseSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(source="course.title", read_only=True)
@@ -129,9 +111,7 @@ class LearningPathCourseSerializer(serializers.ModelSerializer):
         model = LearningPathCourse
         fields = [
             "id", "course", "course_title", "course_slug",
-            "course_level", "course_duration", "course_thumbnail",
-            "order", "is_required"
-        ]
+            "course_level", "course_duration", "course_thumbnail","order", "is_required"]
 
     def get_course_thumbnail(self, obj):
         request = self.context.get('request')
@@ -153,13 +133,9 @@ class LearningPathListSerializer(serializers.ModelSerializer):
     class Meta:
         model = LearningPath
         fields = [
-            "id", "title", "slug", "short_description",
-            "category", "creator_name", "level",
-            "thumbnail", "estimated_weeks",
-            "is_certifying", "is_free", "price",
-            "enrolled_count", "avg_rating", "courses_count",
-        ]
-
+            "id", "title", "slug", "short_description", "category", "creator_name", "level",
+            "thumbnail", "estimated_weeks", "is_certifying", "is_free", "price","enrolled_count",
+            "avg_rating", "courses_count",]
 
 class LearningPathDetailSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
@@ -170,19 +146,12 @@ class LearningPathDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = LearningPath
         fields = [
-            "id", "title", "slug", "short_description", "description",
-            "category", "creator_name", "level",
-            "thumbnail", "estimated_weeks",
-            "is_published", "is_certifying", "is_free", "price",
-            "enrolled_count", "avg_rating", "courses_count",
-            "courses", "certification_exam",
-            "created_at", "updated_at",
+            "id", "title", "slug", "short_description", "description", "category", "creator_name", "level",
+            "thumbnail", "estimated_weeks", "is_published", "is_certifying", "is_free", "price",
+            "enrolled_count", "avg_rating", "courses_count", "courses", "certification_exam","created_at", "updated_at",
         ]
 
-
-# ─────────────────────────────────────────────
 #  INSTRUCTOR (édition)
-# ─────────────────────────────────────────────
 
 class InstructorCourseEditSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(
@@ -195,15 +164,29 @@ class InstructorCourseEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
         fields = [
-            "id", "title", "slug", "short_description", "description",
-            "category", "category_name", "instructor_name",
-            "level", "duration_hours", "thumbnail", "preview_url",
-            "prerequisites_text", "syllabus",
-            "is_published", "is_free", "is_standalone", "price",
-            "avg_rating", "enrolled_count", "modules",
-            "created_at", "updated_at",
+            "id", "title", "slug", "short_description", "description", "category", "category_name", "instructor_name",
+            "level", "duration_hours", "thumbnail", "preview_url", "prerequisites_text","syllabus", "is_published",
+             "is_free", "is_standalone", "price", "avg_rating", "enrolled_count", "modules", "created_at", "updated_at",
         ]
         read_only_fields = [
-            "id", "instructor_name", "avg_rating", "enrolled_count",
-            "created_at", "updated_at",
+            "id", "instructor_name", "avg_rating", "enrolled_count","created_at", "updated_at"]
+
+
+class InstructorLearningPathEditSerializer(serializers.ModelSerializer):
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), allow_null=True, required=False
+    )
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    creator_name = serializers.CharField(source="creator.get_full_name", read_only=True)
+    courses = LearningPathCourseSerializer(source="path_courses", many=True, read_only=True)
+
+    class Meta:
+        model = LearningPath
+        fields = [
+            "id", "title", "slug", "short_description", "description", "category", "category_name", "creator_name",
+            "level", "thumbnail", "estimated_weeks", "is_published", "is_certifying", "is_free", "price",
+            "courses_count", "enrolled_count", "avg_rating", "courses", "created_at", "updated_at",
+        ]
+        read_only_fields = [
+            "id", "creator_name", "courses_count", "enrolled_count", "avg_rating", "created_at", "updated_at",
         ]

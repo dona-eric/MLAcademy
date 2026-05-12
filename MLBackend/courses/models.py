@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
+from learning.models import Enrollment
 
 
 class Category(models.Model):
@@ -43,13 +44,11 @@ class Module(models.Model):
     title = models.CharField(max_length=200, verbose_name="Titre")
     slug = models.SlugField(max_length=220, null=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Description")
-    category = models.ForeignKey(
-        Category, on_delete=models.SET_NULL, null=True, blank=True,
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="modules", verbose_name="Catégorie",
         help_text="Catégorie thématique pour faciliter la recherche dans la bibliothèque."
     )
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
         related_name="modules_authored", verbose_name="Auteur"
     )
     estimated_hours = models.DecimalField(
@@ -63,7 +62,7 @@ class Module(models.Model):
 
     class Meta:
         verbose_name = "Module"
-        verbose_name_plural = "Modules (Bibliothèque)"
+        verbose_name_plural = "Modules"
         ordering = ["title"]
 
     def save(self, *args, **kwargs):
@@ -147,24 +146,22 @@ class Project(models.Model):
         help_text="Si True, la validation de ce projet peut déclencher la certification."
     )
     passing_score = models.PositiveIntegerField(
-        default=70, verbose_name="Score minimum pour validation (%)",
-        validators=[MinValueValidator(1), MaxValueValidator(100)]
-    )
-
+        default=80, verbose_name="Score minimum pour validation (%)",
+        validators=[MinValueValidator(1), MaxValueValidator(100)])
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now =  True)
 
     class Meta:
         verbose_name = "Projet"
         verbose_name_plural = "Projets"
 
     def __str__(self):
-        label = "🏆 Capstone" if self.is_capstone else "📝 Projet"
+        label = "Capstone" if self.is_capstone else "Projet"
         return f"{label} : {self.title}"
 
 
-# ═════════════════════════════════════════════
+
 #  LEARNING PATH (Parcours / Certification)
-# ═════════════════════════════════════════════
 
 class LearningPath(models.Model):
     """
@@ -269,9 +266,7 @@ class LearningPathCourse(models.Model):
         return f"{req} #{self.order} {self.course.title} → {self.learning_path.title}"
 
 
-# ═════════════════════════════════════════════
 #  COURSE (Cours — l'unité que l'étudiant rejoint)
-# ═════════════════════════════════════════════
 
 class Course(models.Model):
     """
@@ -325,7 +320,6 @@ class Course(models.Model):
         max_digits=10, decimal_places=2, default=0.00,
         verbose_name="Prix standalone (FCFA)"
     )
-
     # Dénormalisés
     avg_rating = models.DecimalField(
         max_digits=3, decimal_places=2, default=0.00, verbose_name="Note moyenne"
@@ -350,7 +344,6 @@ class Course(models.Model):
 
     def check_prerequisites(self, user):
         """Vérifie si l'utilisateur a terminé les prérequis."""
-        from learning.models import Enrollment
         required = self.prerequisites_set.all()
         missing = []
         for prereq in required:
@@ -422,9 +415,7 @@ class CoursePrerequisite(models.Model):
         return f"{self.required_course.title} → requis pour → {self.course.title}"
 
 
-# ═════════════════════════════════════════════
 #  CERTIFICATION EXAM & CAPSTONE
-# ═════════════════════════════════════════════
 
 class CertificationExam(models.Model):
     """
@@ -458,7 +449,6 @@ class CertificationExam(models.Model):
         help_text="Si défini, la validation de ce projet vaut aussi certification."
     )
     is_published = models.BooleanField(default=False, verbose_name="Publié")
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -466,7 +456,7 @@ class CertificationExam(models.Model):
         verbose_name_plural = "Examens de Certification"
 
     def __str__(self):
-        return f"🏆 Examen : {self.title} ({self.learning_path.title})"
+        return f" Examen : {self.title} ({self.learning_path.title})"
 
 
 class CourseReview(models.Model):

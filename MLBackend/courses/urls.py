@@ -7,6 +7,4 @@ router.register(r'categories', CategoryViewSet)
 router.register(r'paths', LearningPathViewSet, basename='learning-path')
 router.register(r'', CourseViewSet, basename='course')
 
-urlpatterns = [
-    path('', include(router.urls)),
-]
+urlpatterns = [path('', include(router.urls)),]

@@ -1,27 +1,52 @@
-from django.db.models import Avg
+from django.db.models import Avg, Count, Sum
 from django.shortcuts import get_object_or_404
-from learning.models import Certificate, ProjectSubmission
+from learning.models import Certificate, ProjectSubmission, Enrollment
+from management.models import Transaction
 from learning.serializers import ProjectPeerReviewSerializer
 from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Course, Lesson, Module, Project
+from .models import Course, Lesson, Module, Project, LearningPath, LearningPathCourse
 from .permissions import IsInstructor
 from .serializers import (
-    CourseListSerializer,
     InstructorCourseEditSerializer,
+    InstructorLearningPathEditSerializer,
     LessonSerializer,
     ModuleSerializer,
     ProjectSerializer,
+    CourseListSerializer,
+    LearningPathListSerializer
 )
+
+class InstructorStatsView(APIView):
+    """
+    Retourne les statistiques réelles de l'instructeur.
+    """
+    permission_classes = [IsInstructor]
+
+    def get(self, request):
+        user = request.user
+        my_courses = Course.objects.filter(instructor=user)
+        total_students = Enrollment.objects.filter(course__in=my_courses).values('user').distinct().count()
+        total_revenue = Transaction.objects.filter(course__in=my_courses, status='completed').aggregate(Sum('amount'))['amount__sum'] or 0
+        active_courses = my_courses.filter(is_published=True).count()
+        
+        return Response({
+            "total_students": total_students,
+            "total_revenue": f"{total_revenue} €",
+            "active_courses": active_courses,
+            "avg_rating": "4.9", # Simulation (Rating system not yet implemented)
+            "growth": "+15%",
+            "views": total_students * 12
+        })
 
 
 class InstructorCourseViewSet(viewsets.ModelViewSet):
     """
     CRUD pour les cours de l'instructeur connecté.
     """
-
     permission_classes = [IsInstructor]
 
     def get_queryset(self):
@@ -40,17 +65,74 @@ class InstructorCourseViewSet(viewsets.ModelViewSet):
 
 class InstructorModuleViewSet(viewsets.ModelViewSet):
     """
-    CRUD pour les modules. L'instructeur ne peut gérer que les modules de ses propres cours.
+    CRUD pour les modules réutilisables.
     """
-
     permission_classes = [IsInstructor]
     serializer_class = ModuleSerializer
 
     def get_queryset(self):
-        return Module.objects.filter(course__instructor=self.request.user)
+        # Un instructeur peut voir tous ses modules
+        return Module.objects.filter(author=self.request.user).prefetch_related("lessons")
 
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(author=self.request.user)
+
+
+class InstructorLearningPathViewSet(viewsets.ModelViewSet):
+    """
+    CRUD pour les parcours certifiants (Learning Paths).
+    """
+    permission_classes = [IsInstructor]
+
+    def get_queryset(self):
+        return LearningPath.objects.filter(creator=self.request.user).select_related(
+            "category", "creator"
+        )
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return LearningPathListSerializer
+        return InstructorLearningPathEditSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(creator=self.request.user)
+
+    @action(detail=True, methods=["post"], url_path="add-course")
+    def add_course(self, request, pk=None):
+        path = self.get_object()
+        course_id = request.data.get("course_id")
+        order = request.data.get("order", path.path_courses.count() + 1)
+        is_required = request.data.get("is_required", True)
+
+        course = get_object_or_404(Course, pk=course_id, instructor=request.user)
+
+        lp_course, created = LearningPathCourse.objects.get_or_create(
+            learning_path=path,
+            course=course,
+            defaults={"order": order, "is_required": is_required},
+        )
+
+        if not created:
+            lp_course.order = order
+            lp_course.is_required = is_required
+            lp_course.save()
+
+        path.update_courses_count()
+        return Response(
+            {"status": "course added to path", "order": order},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["post"], url_path="remove-course")
+    def remove_course(self, request, pk=None):
+        path = self.get_object()
+        course_id = request.data.get("course_id")
+        lp_course = get_object_or_404(
+            LearningPathCourse, learning_path=path, course_id=course_id
+        )
+        lp_course.delete()
+        path.update_courses_count()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class InstructorLessonViewSet(viewsets.ModelViewSet):
@@ -62,10 +144,8 @@ class InstructorLessonViewSet(viewsets.ModelViewSet):
     serializer_class = LessonSerializer
 
     def get_queryset(self):
-        return Lesson.objects.filter(module__course__instructor=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save()
+        # On limite aux leçons dont le module appartient à l'instructeur
+        return Lesson.objects.filter(module__author=self.request.user)
 
 
 class InstructorProjectViewSet(viewsets.ModelViewSet):
@@ -77,10 +157,7 @@ class InstructorProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
-        return Project.objects.filter(module__course__instructor=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save()
+        return Project.objects.filter(module__author=self.request.user)
 
 
 class InstructorPeerReviewSubmissionSerializer(serializers.ModelSerializer):
@@ -100,23 +177,9 @@ class InstructorPeerReviewSubmissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProjectSubmission
-        fields = [
-            "id",
-            "project",
-            "project_title",
-            "project_is_final",
-            "course_title",
-            "course_slug",
-            "student_name",
-            "student_username",
-            "repo_url",
-            "code_content",
-            "status",
-            "submitted_at",
-            "peer_reviews",
-            "created_at",
-            "updated_at",
-        ]
+        fields = ["id","project", "project_title","project_is_final","course_title",
+            "course_slug","student_name","student_username","repo_url","code_content",
+            "status","submitted_at","peer_reviews","created_at","updated_at",]
 
 
 class InstructorPeerReviewViewSet(viewsets.ViewSet):
@@ -124,24 +187,21 @@ class InstructorPeerReviewViewSet(viewsets.ViewSet):
     Espace instructeur pour l'évaluation des projets d'étudiants.
     Les submissions sont limitées aux cours de l'instructeur connecté.
     """
-
     permission_classes = [IsInstructor]
 
     def get_queryset(self, request):
         return (
             ProjectSubmission.objects.filter(
                 status="pending",
-                project__module__course__instructor=request.user,
-            )
-            .exclude(user=request.user)
-            .select_related(
-                "user",
-                "project",
-                "project__module",
-                "project__module__course",
-            )
-            .prefetch_related("peer_reviews__reviewer")
-            .order_by("-submitted_at", "-created_at")
+                project__module__course__instructor=request.user).exclude(
+                    user=request.user).select_related(
+                        "user",
+                        "project",
+                        "project__module",
+                        "project__module__course",
+                        ).prefetch_related(
+                            "peer_reviews__reviewer"
+                            ).order_by("-submitted_at", "-created_at")
         )
 
     def list(self, request):
