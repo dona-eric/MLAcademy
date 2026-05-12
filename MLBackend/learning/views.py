@@ -1,28 +1,135 @@
 from django.shortcuts import get_object_or_404
+from django.db.models import Avg, Count
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+from django.db.models.functions import TruncDate
+from datetime import timedelta
 import httpx
 import os
-from .models import (
-    ProjectSubmission, ProjectPeerReview, UserLessonProgress,
-    UserNote, QuizQuestion, QuizChoice, UserCodeSubmission, UserQuizAttempt,
+from .models import ( ProjectSubmission, ProjectPeerReview, UserLessonProgress, UserNote,
+    QuizQuestion, QuizChoice, UserCodeSubmission, UserQuizAttempt,
     Enrollment, PathEnrollment, CertificationExamAttempt, Certificate
-)
+    )
 from courses.models import Lesson, Course, LearningPath, LearningPathCourse
 from .serializers import (
     UserLessonProgressSerializer, UserNoteSerializer, QuizQuestionSerializer,
     QuizSubmissionSerializer, UserQuizAttemptSerializer, UserCodeSubmissionSerializer,
     EnrollmentSerializer, ProjectSubmissionSerializer, ProjectPeerReviewSerializer,
-    PathEnrollmentSerializer, CertificateSerializer
+    PathEnrollmentSerializer, CertificateSerializer, NotificationSerializer
 )
+from users.models import Notification, Message
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet pour gérer les notifications de l'utilisateur.
+    """
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'status': 'notification marquée comme lue'})
+
+    @action(detail=False, methods=['post'])
+    def mark_all_as_read(self, request):
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'status': 'toutes les notifications marquées comme lues'})
 
 
-# ─────────────────────────────────────────────
+#  DASHBOARD SUMMARY 
+
+class DashboardSummaryView(APIView):
+    """
+    GET /api/learning/dashboard-summary/
+    Vue unifiée pour le dashboard
+    Regroupe enrollments, stats, échéances et notifications.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # 1. Inscriptions actives
+        course_enrollments = Enrollment.objects.filter(user=user, is_completed=False).select_related('course')
+        path_enrollments = PathEnrollment.objects.filter(user=user, is_completed=False).select_related('learning_path')
+        
+        # 2. Certificats
+        certificates = Certificate.objects.filter(user=user).order_by('-issued_at')
+        
+        # 3. Calcul des échéances dynamiques
+        deadlines = []
+        for enr in course_enrollments:
+            # On simule une échéance par module (1 semaine par module)
+            # Dans une logique réelle, on regarderait le module actuel
+            days_since_start = (timezone.now() - enr.enrolled_at).days
+            expected_module = (days_since_start // 7) + 1
+            
+            deadlines.append({
+                "id": f"course-{enr.id}",
+                "title": f"Quiz Hebdo : {enr.course.title}",
+                "course": enr.course.title,
+                "date": enr.enrolled_at + timedelta(days=expected_module * 7),
+                "type": "quiz",
+                "priority": "high" if enr.progress_percentage < (expected_module * 10) else "medium"
+            })
+
+        # 4. Statistiques réelles
+        avg_score = UserQuizAttempt.objects.filter(user=user).aggregate(Avg('score'))['score__avg'] or 0
+        
+        # Calcul de la série (Streak) réelle basée sur la progression des leçons
+        active_days = UserLessonProgress.objects.filter(user=user) \
+            .annotate(date=TruncDate('updated_at')) \
+            .values_list('date', flat=True) \
+            .distinct().order_by('-date')
+        
+        streak = 0
+        if active_days:
+            current_date = timezone.now().date()
+            if active_days[0] == current_date or active_days[0] == (current_date - timedelta(days=1)):
+                streak = 1
+                for i in range(len(active_days) - 1):
+                    if active_days[i] - active_days[i+1] == timedelta(days=1):
+                        streak += 1
+                    else:
+                        break
+        
+        # 5. Notifications & Messages
+        recent_notifications = Notification.objects.filter(user=user, is_read=False)[:5]
+        unread_messages_count = Message.objects.filter(recipient=user, is_read=False).count()
+
+        return Response({
+            "user": {
+                "first_name": user.first_name,
+                "username": user.username,
+            },
+            "active_courses": EnrollmentSerializer(course_enrollments, many=True, context={'request': request}).data,
+            "active_paths": PathEnrollmentSerializer(path_enrollments, many=True, context={'request': request}).data,
+            "certificates_count": certificates.count(),
+            "latest_certificates": CertificateSerializer(certificates[:3], many=True).data,
+            "deadlines": deadlines[:4],
+            "stats": {
+                "avg_quiz_score": int(avg_score),
+                "streak_days": streak,
+                "unread_messages": unread_messages_count,
+                "total_points": (certificates.count() * 500) + (UserLessonProgress.objects.filter(user=user).count() * 10)
+            },
+            "notifications": [
+                {"id": n.id, "title": n.title, "type": n.type, "created_at": n.created_at} 
+                for n in recent_notifications
+            ]
+        })
+
+
 #  ENROLLMENT (Cours individuel)
-# ─────────────────────────────────────────────
 
 class EnrollView(APIView):
     """
@@ -70,9 +177,7 @@ class EnrollView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# ─────────────────────────────────────────────
 #  PATH ENROLLMENT (Parcours complet)
-# ─────────────────────────────────────────────
 
 class PathEnrollView(APIView):
     """
@@ -156,9 +261,7 @@ class MyCertificatesView(APIView):
         return Response(serializer.data)
 
 
-# ─────────────────────────────────────────────
 #  LESSON PROGRESS (F-05)
-# ─────────────────────────────────────────────
 
 class LessonProgressView(APIView):
     """
@@ -193,9 +296,7 @@ class LessonProgressView(APIView):
         return Response(serializer.data)
 
 
-# ─────────────────────────────────────────────
 #  NOTES (F-05)
-# ─────────────────────────────────────────────
 
 class LessonNoteViewSet(viewsets.ModelViewSet):
     serializer_class = UserNoteSerializer
@@ -210,10 +311,7 @@ class LessonNoteViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user, lesson=lesson)
 
 
-# ─────────────────────────────────────────────
 #  QUIZ (F-07)
-# ─────────────────────────────────────────────
-
 class LessonQuizView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -292,9 +390,7 @@ class LessonQuizView(APIView):
         })
 
 
-# ─────────────────────────────────────────────
 #  CODE SUBMISSION (F-06)
-# ─────────────────────────────────────────────
 
 class LessonCodeSubmissionView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -353,9 +449,7 @@ class LessonCodeSubmissionView(APIView):
         return Response(response_data)
 
 
-# ─────────────────────────────────────────────
 #  PEER REVIEW
-# ─────────────────────────────────────────────
 
 class ProjectSubmissionViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSubmissionSerializer
@@ -415,7 +509,6 @@ class PeerReviewViewSet(viewsets.ViewSet):
 
             # Si projet final → certificat de cours
             if submission.project.is_final:
-                from django.db.models import Avg
                 avg_score = submission.peer_reviews.filter(
                     is_approved=True
                 ).aggregate(Avg('score'))['score__avg'] or score

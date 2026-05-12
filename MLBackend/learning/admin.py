@@ -5,11 +5,7 @@ from .models import (
     ProjectSubmission, ProjectPeerReview, CertificationExamAttempt, Certificate
 )
 
-
-# ─────────────────────────────────────────────
 #  ENROLLMENT
-# ─────────────────────────────────────────────
-
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
     list_display = ('user', 'course', 'progress_percentage', 'is_completed', 'enrolled_at')
@@ -24,9 +20,7 @@ class PathEnrollmentAdmin(admin.ModelAdmin):
     search_fields = ('user__email', 'learning_path__title')
 
 
-# ─────────────────────────────────────────────
 #  PROGRESSION & NOTES
-# ─────────────────────────────────────────────
 
 @admin.register(UserLessonProgress)
 class UserLessonProgressAdmin(admin.ModelAdmin):
@@ -41,14 +35,11 @@ class UserNoteAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'lesson__title', 'content')
 
 
-# ─────────────────────────────────────────────
 #  QUIZ
-# ─────────────────────────────────────────────
 
 class QuizChoiceInline(admin.TabularInline):
     model = QuizChoice
-    extra = 2
-
+    extra = 3
 
 @admin.register(QuizQuestion)
 class QuizQuestionAdmin(admin.ModelAdmin):
@@ -64,10 +55,7 @@ class UserQuizAttemptAdmin(admin.ModelAdmin):
     list_filter = ('passed', 'created_at')
     search_fields = ('user__username', 'lesson__title')
 
-
-# ─────────────────────────────────────────────
 #  CODE SUBMISSION
-# ─────────────────────────────────────────────
 
 @admin.register(UserCodeSubmission)
 class UserCodeSubmissionAdmin(admin.ModelAdmin):
@@ -75,9 +63,7 @@ class UserCodeSubmissionAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'lesson__title')
 
 
-# ─────────────────────────────────────────────
 #  PEER REVIEW
-# ─────────────────────────────────────────────
 
 class ProjectPeerReviewInline(admin.TabularInline):
     model = ProjectPeerReview
@@ -96,9 +82,7 @@ class ProjectPeerReviewAdmin(admin.ModelAdmin):
     list_filter = ('is_approved',)
 
 
-# ─────────────────────────────────────────────
 #  CERTIFICATION
-# ─────────────────────────────────────────────
 
 @admin.register(CertificationExamAttempt)
 class CertificationExamAttemptAdmin(admin.ModelAdmin):

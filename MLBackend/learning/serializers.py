@@ -4,12 +4,11 @@ from .models import (
     QuizQuestion, QuizChoice, UserQuizAttempt, UserCodeSubmission,
     ProjectSubmission, ProjectPeerReview, CertificationExamAttempt, Certificate
 )
+from users.models import Notification
 from courses.models import LearningPath, LearningPathCourse, Course
 
 
-# ─────────────────────────────────────────────
 #  ENROLLMENT
-# ─────────────────────────────────────────────
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(source='course.title', read_only=True)
@@ -19,11 +18,8 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Enrollment
-        fields = [
-            'id', 'course', 'course_title', 'course_slug', 'course_level',
-            'course_thumbnail', 'enrolled_at', 'progress_percentage',
-            'is_completed', 'completed_at'
-        ]
+        fields = ['id', 'course', 'course_title', 'course_slug', 'course_level', 'course_thumbnail', 
+        'enrolled_at', 'progress_percentage', 'is_completed', 'completed_at']
         read_only_fields = ['enrolled_at', 'progress_percentage', 'is_completed', 'completed_at']
 
     def get_course_thumbnail(self, obj):
@@ -59,9 +55,7 @@ class PathEnrollmentSerializer(serializers.ModelSerializer):
         return obj.can_take_certification_exam()
 
 
-# ─────────────────────────────────────────────
 #  PROGRESSION & NOTES
-# ─────────────────────────────────────────────
 
 class UserLessonProgressSerializer(serializers.ModelSerializer):
     class Meta:
@@ -77,15 +71,12 @@ class UserNoteSerializer(serializers.ModelSerializer):
         read_only_fields = ['lesson']
 
 
-# ─────────────────────────────────────────────
 #  QUIZ
-# ─────────────────────────────────────────────
 
 class QuizChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizChoice
         fields = ['id', 'text']  # Ne pas exposer is_correct ici pour la sécurité
-
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
     choices = QuizChoiceSerializer(many=True, read_only=True)
@@ -94,7 +85,6 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
         model = QuizQuestion
         fields = ['id', 'text', 'choices', 'order']
 
-
 class QuizSubmissionSerializer(serializers.Serializer):
     # Dictionnaire de forme {question_id: choice_id}
     answers = serializers.DictField(
@@ -102,17 +92,13 @@ class QuizSubmissionSerializer(serializers.Serializer):
         help_text="Format: {'question_id': choice_id}"
     )
 
-
 class UserQuizAttemptSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserQuizAttempt
         fields = ['id', 'lesson', 'score', 'passed', 'created_at']
         read_only_fields = ['lesson', 'score', 'passed']
 
-
-# ─────────────────────────────────────────────
 #  CODE SUBMISSION
-# ─────────────────────────────────────────────
 
 class UserCodeSubmissionSerializer(serializers.ModelSerializer):
     starter_code = serializers.CharField(source='lesson.starter_code', read_only=True)
@@ -124,9 +110,7 @@ class UserCodeSubmissionSerializer(serializers.ModelSerializer):
         read_only_fields = ['lesson', 'last_result']
 
 
-# ─────────────────────────────────────────────
 #  PEER REVIEW
-# ─────────────────────────────────────────────
 
 class ProjectPeerReviewSerializer(serializers.ModelSerializer):
     reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
@@ -142,16 +126,12 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectSubmission
         fields = [
-            'id', 'project', 'repo_url', 'code_content',
-            'status', 'submitted_at', 'peer_reviews',
-            'created_at', 'updated_at'
-        ]
+            'id', 'project', 'repo_url', 'code_content', 'status', 
+            'submitted_at', 'peer_reviews','created_at', 'updated_at']
         read_only_fields = ['status', 'submitted_at']
 
 
-# ─────────────────────────────────────────────
 #  CERTIFICATION
-# ─────────────────────────────────────────────
 
 class CertificationExamAttemptSerializer(serializers.ModelSerializer):
     class Meta:
@@ -173,3 +153,10 @@ class CertificateSerializer(serializers.ModelSerializer):
         if obj.course:
             return obj.course.title
         return "—"
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'type', 'title', 'content', 'link', 'is_read', 'created_at']
+        read_only_fields = ['id', 'type', 'title', 'content', 'link', 'created_at']

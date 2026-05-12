@@ -2,9 +2,10 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     LessonProgressView, LessonNoteViewSet, LessonQuizView, LessonCodeSubmissionView,
-    ProjectSubmissionViewSet, PeerReviewViewSet,
+    ProjectSubmissionViewSet, PeerReviewViewSet, NotificationViewSet,
     EnrollView, MyCoursesView,
-    PathEnrollView, MyPathsView, MyCertificatesView
+    PathEnrollView, MyPathsView, MyCertificatesView,
+    DashboardSummaryView
 )
 
 router = DefaultRouter()
@@ -13,6 +14,7 @@ router.register(r'lessons/(?P<lesson_id>\d+)/notes', LessonNoteViewSet, basename
 # Peer Review
 router.register(r'submissions', ProjectSubmissionViewSet, basename='submission')
 router.register(r'peer-reviews', PeerReviewViewSet, basename='peer-review')
+router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
     # --- Enrollment Cours ---
@@ -37,4 +39,7 @@ urlpatterns = [
 
     # --- F-06: Code Submission ---
     path('lessons/<int:lesson_id>/code/', LessonCodeSubmissionView.as_view(), name='lesson-code'),
+
+    # --- Dashboard Summary ---
+    path('dashboard-summary/', DashboardSummaryView.as_view(), name='dashboard-summary'),
 ]
