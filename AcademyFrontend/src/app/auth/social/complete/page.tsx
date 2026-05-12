@@ -39,13 +39,16 @@ export default function SocialAuthCompletePage() {
     async function completeSocialLogin() {
       try {
         const response = (await fetchApi(
-          "/api/users/social/complete/",
+          "/api/private/users/social/complete/",
           {
             method: "GET",
           },
-        )) as CompleteResponse;
+        )) as CompleteResponse & { access?: string; refresh?: string };
 
         if (!isMounted) return;
+
+        if (response.access) localStorage.setItem("access_token", response.access);
+        if (response.refresh) localStorage.setItem("refresh_token", response.refresh);
 
         setStatus("success");
         setMessage(response?.message || "Connexion sociale réussie.");
@@ -150,10 +153,10 @@ export default function SocialAuthCompletePage() {
             }}
           >
             <Link href="/login" className="btn btn-primary">
-              Retour à la connexion
+              Connexion
             </Link>
             <Link href="/parcours" className="btn btn-secondary">
-              Aller aux cours
+              Découvrez nos formations
             </Link>
           </div>
         )}
