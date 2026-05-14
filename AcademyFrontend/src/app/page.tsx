@@ -34,16 +34,12 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative animate-in fade-in slide-in-from-right-8 duration-1000 delay-300 hidden lg:block">
-            <div className="absolute -inset-4 bg-gradient-to-tr from-indigo-500/20 to-cyan-500/20 rounded-[3rem] blur-2xl opacity-50"></div>
-            <div className="relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
-              <Image
-                src="/images/hero_student.png"
-                alt="Étudiant MLAcademy"
-                width={400} height={200}
-                loading="eager"
-                className="w-[600px] h-[500px] object-cover"
-              />
+          <div className="relative animate-in fade-up slide-in-from-right-8 duration-1000 delay-300 hidden lg:block">
+            <div className="absolute-inset-4 bg-gradient-to-tr from-indigo-500/20 to-cyan-500/20 rounded-[3rem] blur-2xl opacity-50"></div>
+            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl">
+              <Image src="/images/hero_student.png"
+                alt="Étudiant MLAcademy" width={400} height={200} loading="eager"
+                className="w-[600px] h-[600px] object-cover rounded-full" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#090C14]/80 via-transparent to-transparent"></div>
             </div>
           </div>
