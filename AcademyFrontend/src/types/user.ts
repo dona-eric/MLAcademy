@@ -1,3 +1,8 @@
+export interface StudentProfile {
+  onboarding_completed?: boolean;
+  [key: string]: any;
+}
+
 export interface UserProfile {
   id: number;
   email: string;
@@ -16,4 +21,8 @@ export interface UserProfile {
   date_joined: string;
   last_login: string | null;
   is_instructor: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
+  instructor_status: "pending" | "approved" | "rejected";
+  student_profile?: StudentProfile;
 }
