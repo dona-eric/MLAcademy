@@ -4,216 +4,205 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
-import {
-  CheckCircle2,
-  GithubIcon,
-  LinkedinIcon,
-  Rocket,
-  ShieldCheck,
-  Target,
-  User,
-} from "lucide-react";
+import { OnboardingData } from "@/types/info";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, ChevronRight, ChevronLeft, Rocket } from "lucide-react";
+import Step1 from "./components/Step1";
+import Step2 from "./components/Step2";
+import Step3 from "./components/Step3";
+import Step4 from "./components/Step4";
+import Step5 from "./components/Step5";
+import Step6 from "./components/Step6";
+import Step7 from "./components/Step7";
+import Step8 from "./components/Step8";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { user: profile, loading: authLoading, checkAuth } = useAuth();
 
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
-
-  const [formData, setFormData] = useState({
-    bio: "",
-    level: "beginner",
-    github_url: "",
-    linkedin_url: "",
-    personal_goals: "",
+  const [currentStep, setCurrentStep] = useState(1);
+  const [data, setData] = useState<OnboardingData>({
+    domains: [],
+    phone: "",
+    gender: "",
+    address: { street: "", zip: "", city: "", country: "Bénin" },
+    diplomes: [],
+    languages: { french: "B2 - Avancé", english: "B1 - Intermédiaire" },
+    professional: { situation: "", experience: [], workPermit: [], specificStatus: [] },
+    availability: { hoursPerWeek: "20", startDate: "" },
+    honorDeclaration: false,
+    selectedCourse: null,
+    funding: null,
   });
+
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
     if (!profile) {
-      router.push("/login");
-      return;
+      router.push("/login?callbackUrl=/onboarding");
     }
-    if (profile.bio && profile.bio.length > 10) router.push("/dashboard");
-    else setLoading(false);
   }, [profile, authLoading, router]);
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const toggleDomain = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      domains: prev.domains.includes(id) 
+        ? prev.domains.filter(d => d !== id)
+        : [...prev.domains, id]
+    }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFinish = async () => {
     setSubmitting(true);
-    setError("");
     try {
-      await fetchApi("/api/users/me/", {
+      await fetchApi("/api/private/users/me/", {
         method: "PATCH",
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          student_profile: {
+             phone: data.phone,
+             gender: data.gender,
+             address_street: data.address.street,
+             address_zip: data.address.zip,
+             address_city: data.address.city,
+             address_country: data.address.country,
+             french_level: data.languages.french,
+             english_level: data.languages.english,
+             current_situation: data.professional.situation,
+             professional_experiences: data.professional.experience,
+             work_permits: data.professional.workPermit,
+             specific_statuses: data.professional.specificStatus,
+             diplomas: data.diplomes,
+             hours_per_week: parseInt(data.availability.hoursPerWeek) || 20,
+             desired_start_date: data.availability.startDate || null,
+             onboarding_completed: true,
+             honor_declaration_accepted: data.honorDeclaration,
+             selected_training_slug: data.selectedCourse || "",
+             funding_method: data.funding || ""
+          }
+        })
       });
       await checkAuth();
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Une erreur est survenue.");
+    } catch (error) {
+      console.error("Onboarding failed", error);
+    } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return null;
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 8));
+  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0A0F1C]"><Loader2 className="w-12 h-12 text-indigo-500 animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen px-6 py-12 lg:px-8">
-      <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:py-10">
-        <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-indigo-700 shadow-sm">
-            <Rocket className="h-4 w-4" />
-            Configuration de votre espace
-          </div>
-          <h1 className="max-w-xl text-4xl font-bold tracking-tight text-slate-950 md:text-6xl">
-            Bienvenue sur <span className="text-gradient">MLAcademy</span>.
-          </h1>
-          <p className="max-w-xl text-base leading-7 text-slate-600 md:text-lg">
-            Complète ton profil pour personnaliser ton parcours d’apprentissage
-            et mieux suivre ta progression.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {[
-              ["Parcours ciblés", "Adapte les recommandations à ton niveau."],
-              [
-                "Expérience fluide",
-                "Une interface claire sur mobile et desktop.",
-              ],
-            ].map(([title, desc]) => (
-              <div
-                key={title}
-                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <h3 className="font-semibold text-slate-950">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl md:p-10">
-          {error && (
-            <div className="mb-6 flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-medium text-red-600">
-              <ShieldCheck className="h-4 w-4" /> {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                  Biographie courte
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-4 h-5 w-5 text-slate-400" />
-                  <textarea
-                    name="bio"
-                    required
-                    value={formData.bio}
-                    onChange={handleChange}
-                    rows={3}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                    placeholder="Je suis passionné par le Deep Learning..."
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                    Niveau en IA
-                  </label>
-                  <select
-                    name="level"
-                    value={formData.level}
-                    onChange={handleChange}
-                    required
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                  >
-                    <option value="beginner">Débutant</option>
-                    <option value="intermediate">Intermédiaire</option>
-                    <option value="advanced">Avancé</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                    Objectif principal
-                  </label>
-                  <div className="relative">
-                    <Target className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      name="personal_goals"
-                      type="text"
-                      value={formData.personal_goals}
-                      onChange={handleChange}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                      placeholder="Devenir Data Scientist"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                    GitHub (optionnel)
-                  </label>
-                  <div className="relative">
-                    <GithubIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      name="github_url"
-                      type="url"
-                      value={formData.github_url}
-                      onChange={handleChange}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                      placeholder="https://github.com/votre-pseudo"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="ml-1 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                    LinkedIn (optionnel)
-                  </label>
-                  <div className="relative">
-                    <LinkedinIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      name="linkedin_url"
-                      type="url"
-                      value={formData.linkedin_url}
-                      onChange={handleChange}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-4 pl-12 pr-4 text-sm outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100"
-                      placeholder="https://linkedin.com/in/votre-profil"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn btn-primary w-full py-4 text-sm"
-            >
-              {submitting ? "Finalisation..." : "Accéder à mon espace"}
-            </button>
-
-            <div className="flex items-center justify-center gap-3 text-xs font-medium text-slate-500">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              Vos données sont sécurisées et modifiables à tout moment.
-            </div>
-          </form>
-        </div>
+    <div className="min-h-screen bg-[#0A0F1C] text-white selection:bg-indigo-500/30 overflow-x-hidden">
+      {/* Background Decorative Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full" />
       </div>
+
+      <main className="relative max-w-6xl mx-auto px-6 py-12 pt-20">
+        {/* Progress Header */}
+        <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
+           <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Étape {currentStep} sur 8</span>
+                </div>
+                <div className="h-px w-8 bg-white/10" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                  {currentStep === 1 ? 'Objectifs' : currentStep === 8 ? 'Finalisation' : 'Configuration'}
+                </span>
+              </div>
+              <h1 className="text-xl font-black tracking-tighter">Onboarding <span className="text-indigo-400">MLAcademy</span></h1>
+           </div>
+
+           <div className="flex items-center gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(step => (
+                <div 
+                  key={step}
+                  className={`h-1.5 transition-all duration-500 rounded-full ${
+                    step === currentStep ? 'w-12 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 
+                    step < currentStep ? 'w-4 bg-indigo-500/40' : 'w-4 bg-white/5'
+                  }`}
+                />
+              ))}
+           </div>
+        </header>
+
+        {/* Content Area */}
+        <div className="min-h-[500px]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+            >
+              {currentStep === 1 && <Step1 data={data} toggleDomain={toggleDomain} />}
+              {currentStep === 2 && <Step2 data={data} setData={setData} />}
+              {currentStep === 3 && <Step3 data={data} setData={setData} />}
+              {currentStep === 4 && <Step4 data={data} setData={setData} />}
+              {currentStep === 5 && <Step5 data={data} setData={setData} />}
+              {currentStep === 6 && <Step6 data={data} setData={setData} />}
+              {currentStep === 7 && <Step7 data={data} setData={setData} />}
+              {currentStep === 8 && <Step8 data={data} setData={setData} />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Navigation Footer */}
+        <footer className="mt-16 flex items-center justify-between border-t border-white/5 pt-8">
+          <button
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
+              currentStep === 1 ? 'opacity-0 cursor-default' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span>Précédent</span>
+          </button>
+
+          <div className="flex items-center gap-4">
+             {currentStep < 8 ? (
+                <button
+                  onClick={nextStep}
+                  disabled={currentStep === 1 && data.domains.length === 0}
+                  className="group relative flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-black transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  <span>Continuer</span>
+                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+             ) : (
+                <button
+                  onClick={handleFinish}
+                  disabled={submitting || !data.honorDeclaration || !data.selectedCourse || !data.funding}
+                  className="group relative flex items-center gap-3 bg-indigo-500 text-white px-10 py-4 rounded-2xl font-black transition-all hover:scale-105 active:scale-95 hover:shadow-[0_0_25px_rgba(99,102,241,0.4)] disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5 group-hover:rotate-12 transition-transform" />}
+                  <span>Terminer l'inscription</span>
+                </button>
+             )}
+          </div>
+        </footer>
+      </main>
+
+      <style jsx global>{`
+        .glass-card {
+          background: rgba(255, 255, 255, 0.03);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        input::-webkit-calendar-picker-indicator {
+          filter: invert(1);
+          opacity: 0.5;
+        }
+      `}</style>
     </div>
   );
 }
