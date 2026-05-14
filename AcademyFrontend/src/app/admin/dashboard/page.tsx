@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { 
   Users, Award, TrendingUp, Bell, ChevronRight, FileText, LogOut, Layout, Mail, 
   Loader2, XCircle, UserCheck, ShieldAlert, Palette, Eye, Save, Send, MessageSquare, 
-  History, CreditCard, ShieldCheck, ExternalLink, Search, Settings, MoreVertical,} from "lucide-react";
+  History, CreditCard, ShieldCheck, ExternalLink, Search, Settings, MoreVertical, MapPin} from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -21,16 +21,13 @@ export default function AdminDashboardPage() {
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [paths, setPaths] = useState<any[]>([]);
   const [adminNotifications, setAdminNotifications] = useState<any[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   
-  const [platformSettings, setPlatformSettings] = useState<any>({
-     site_name: "MLAcademy",
-     primary_color: "#3B82F6",
-     secondary_color: "#10B981",
-     maintenance_mode: false
-  });
+
   
   // Communication State
   const [commData, setCommData] = useState({
@@ -62,22 +59,24 @@ export default function AdminDashboardPage() {
   async function loadData() {
     setLoading(true);
     try {
-      const [statsData, appsData, enrollData, settingsData, auditData, transData, notifData] = await Promise.all([
+      const [statsData, appsData, enrollData, auditData, transData, notifData, coursesData, pathsData] = await Promise.all([
         fetchApi("/api/admin/management/stats/"),
         fetchApi("/api/admin/management/instructor-applications/"),
         fetchApi("/api/admin/management/enrollments/"),
-        fetchApi("/api/admin/management/settings/"),
         fetchApi("/api/admin/management/audit/"),
         fetchApi("/api/admin/management/transactions/"),
-        fetchApi("/api/private/learning/notifications/") // Admin receives system notifications too
+        fetchApi("/api/private/learning/notifications/"),
+        fetchApi("/api/public/courses/"),
+        fetchApi("/api/public/courses/paths/")
       ]);
       setStats(statsData);
       setApps(Array.isArray(appsData) ? appsData : (appsData?.results || []));
       setEnrollments(Array.isArray(enrollData) ? enrollData : (enrollData?.results || []));
-      setPlatformSettings(settingsData);
       setAuditLogs(Array.isArray(auditData) ? auditData : (auditData?.results || []));
       setTransactions(Array.isArray(transData) ? transData : (transData?.results || []));
       setAdminNotifications(Array.isArray(notifData) ? notifData : (notifData?.results || []));
+      setCourses(Array.isArray(coursesData) ? coursesData : (coursesData?.results || []));
+      setPaths(Array.isArray(pathsData) ? pathsData : (pathsData?.results || []));
     } catch (err) {
       console.error("Failed to load admin data", err);
     } finally {
@@ -106,15 +105,7 @@ export default function AdminDashboardPage() {
      } catch (err) { alert("Erreur de refus"); }
   }
 
-  const handleSaveSettings = async () => {
-     try {
-        await fetchApi("/api/admin/management/settings/", {
-           method: 'PATCH',
-           body: JSON.stringify(platformSettings)
-        });
-        alert("Paramètres enregistrés !");
-     } catch (err) { alert("Erreur"); }
-  }
+
 
   const handleSendComm = async (e: React.FormEvent) => {
      e.preventDefault();
@@ -152,84 +143,84 @@ export default function AdminDashboardPage() {
   const { summary, active_admins } = stats;
 
   return (
-    <div className="flex min-h-screen bg-[#F4F7FE]">
-      {/* Sidebar - CROWN */}
-      <aside className="w-72 bg-white shadow-2xl flex flex-col fixed h-full z-40">
-        <div className="p-8 flex items-center gap-4 border-b border-slate-50">
-          <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-200">
+    <div className="flex h-screen bg-[#f8fafc] overflow-hidden font-sans">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white flex flex-col shrink-0 border-r border-slate-200 z-40">
+        <div className="h-[72px] px-6 flex items-center gap-3 border-b border-slate-200">
+          <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
             <ShieldCheck className="h-5 w-5" />
           </div>
-          <span className="text-2xl font-black text-slate-800 tracking-tighter uppercase">MLAcademy</span>
+          <span className="text-xl font-bold text-slate-800 tracking-tight">MLAcademy</span>
         </div>
 
-        <div className="p-8 flex flex-col items-center text-center border-b border-slate-50 bg-slate-50/30">
-          <div className="h-20 w-20 rounded-[28px] overflow-hidden border-4 border-white shadow-xl mb-4 group relative">
-             <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.first_name || user?.username}&background=3B82F6&color=fff`} alt="Admin" className="w-full h-full object-cover" />
-             <div onClick={() => router.push("/profile/edit")} className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-all">
-                <Settings className="h-6 w-6 text-white" />
-             </div>
-          </div>
-          <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight">{user?.first_name} {user?.last_name}</h3>
-          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mt-1 opacity-80">{user?.is_superuser ? 'Super Admin' : 'Admin Staff'}</p>
-          <div className="mt-4 flex gap-2">
-             <button onClick={() => router.push("/profile/edit")} className="text-[9px] font-black uppercase text-slate-400 hover:text-blue-600 transition-colors">Modifier Profil</button>
-          </div>
-        </div>
-
-        <nav className="flex-1 p-6 space-y-1 overflow-y-auto">
-          <p className="px-4 py-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2">Dashboards</p>
+        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto custom-scrollbar">
+          <p className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Dashboard</p>
           <NavItem icon={<Layout className="h-4 w-4" />} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-          <NavItem icon={<CreditCard className="h-4 w-4" />} label="Finances" active={activeTab === 'finance'} onClick={() => setActiveTab('finance')} />
-          <NavItem icon={<History className="h-4 w-4" />} label="Audit Log" active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} />
+          <NavItem icon={<TrendingUp className="h-4 w-4" />} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
           
-          <p className="px-4 py-2 mt-6 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2">Management</p>
-          <NavItem icon={<UserCheck className="h-4 w-4" />} label="Instructeurs" active={activeTab === 'instructors'} onClick={() => setActiveTab('instructors')} />
-          <NavItem icon={<Users className="h-4 w-4" />} label="Etudiants" active={activeTab === 'enrollments'} onClick={() => setActiveTab('enrollments')} />
+          <p className="px-3 py-2 mt-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">User</p>
+          <NavItem icon={<UserCheck className="h-4 w-4" />} label="Instructor" active={activeTab === 'instructors'} onClick={() => setActiveTab('instructors')} />
+          <NavItem icon={<Users className="h-4 w-4" />} label="Students" active={activeTab === 'enrollments'} onClick={() => setActiveTab('enrollments')} />
+          
+          <p className="px-3 py-2 mt-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Management</p>
           <NavItem icon={<Mail className="h-4 w-4" />} label="Communications" active={activeTab === 'messages'} onClick={() => setActiveTab('messages')} />
-          
-          <p className="px-4 py-2 mt-6 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-2">Branding</p>
-          <NavItem icon={<Palette className="h-4 w-4" />} label="Layouts" active={activeTab === 'layouts'} onClick={() => setActiveTab('layouts')} />
+          <NavItem icon={<History className="h-4 w-4" />} label="Audit Logs" active={activeTab === 'audit'} onClick={() => setActiveTab('audit')} />
+          <NavItem icon={<CreditCard className="h-4 w-4" />} label="Finances" active={activeTab === 'finance'} onClick={() => setActiveTab('finance')} />
         </nav>
 
-        <div className="p-8 border-t border-slate-50">
-           <button onClick={() => router.push("/admin/login")} className="flex items-center gap-3 text-slate-400 hover:text-rose-600 transition-all font-black uppercase text-[11px] tracking-widest w-full">
+        <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+           <div className="flex items-center gap-3 mb-4 px-3">
+             <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.first_name || user?.username}&background=3B82F6&color=fff`} alt="Admin" className="w-10 h-10 rounded-full border border-slate-200" />
+             <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-semibold text-slate-800 truncate">{user?.first_name} {user?.last_name}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider">{user?.is_superuser ? 'Super Admin' : 'Admin Staff'}</p>
+             </div>
+           </div>
+           <button onClick={() => router.push("/admin/login")} className="flex items-center gap-3 text-slate-500 hover:text-slate-900 px-3 py-2 rounded-lg hover:bg-slate-100 transition-all text-sm w-full font-medium">
               <LogOut className="h-4 w-4" />
-              <span>Deconneion</span>
+              <span>Sign Out</span>
            </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-72 overflow-y-auto">
-        <header className="h-24 bg-white/80 backdrop-blur-md flex items-center justify-between px-10 border-b border-slate-100 sticky top-0 z-30">
-          <div className="flex items-center gap-8">
+      <main className="flex-1 overflow-y-auto">
+        <header className="h-[72px] bg-white flex items-center justify-between px-6 border-b border-slate-200 sticky top-0 z-30">
+          <div className="flex-1 max-w-md">
+             <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input type="text" placeholder="Search" className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-10 pr-4 text-sm font-medium placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none" />
+             </div>
+          </div>
+
+          <div className="flex items-center gap-4">
              <div className="relative" ref={notifRef}>
                 <button 
                    onClick={() => setShowNotifs(!showNotifs)}
-                   className="p-3 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all relative group"
+                   className="p-2 hover:bg-slate-100 rounded-full transition-all relative group"
                 >
-                   <Bell className="h-5 w-5 text-slate-500 group-hover:text-blue-600" />
-                   {adminNotifications.length > 0 && <span className="absolute top-2 right-2 h-2 w-2 bg-rose-500 rounded-full border-2 border-white" />}
+                   <Bell className="h-5 w-5 text-slate-500" />
+                   {adminNotifications.length > 0 && <span className="absolute top-1 right-1 h-2 w-2 bg-rose-500 rounded-full" />}
                 </button>
                 
                 <AnimatePresence>
                    {showNotifs && (
                       <motion.div 
                          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                         className="absolute left-0 mt-4 w-80 bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden"
+                         className="absolute right-0 mt-4 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden"
                       >
-                         <div className="p-5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Inbox Administrative</span>
-                            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{adminNotifications.length}</span>
+                         <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-700">Notifications</span>
+                            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{adminNotifications.length}</span>
                          </div>
-                         <div className="max-h-96 overflow-y-auto p-4 space-y-3">
+                         <div className="max-h-96 overflow-y-auto p-2 space-y-1">
                             {adminNotifications.length === 0 ? (
-                               <p className="text-[10px] font-black text-slate-400 uppercase text-center py-10">Aucune alerte</p>
+                               <p className="text-xs font-medium text-slate-500 text-center py-8">Aucune alerte</p>
                             ) : (
                                adminNotifications.map(n => (
-                                  <div key={n.id} className="p-3 hover:bg-slate-50 rounded-2xl transition-colors cursor-pointer border border-transparent hover:border-slate-100">
-                                     <p className="text-[11px] font-black text-slate-800">{n.title}</p>
-                                     <p className="text-[10px] text-slate-500 line-clamp-2 mt-1">{n.content}</p>
+                                  <div key={n.id} className="p-3 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer">
+                                     <p className="text-sm font-semibold text-slate-800">{n.title}</p>
+                                     <p className="text-xs text-slate-500 line-clamp-2 mt-1">{n.content}</p>
                                   </div>
                                ))
                             )}
@@ -239,86 +230,122 @@ export default function AdminDashboardPage() {
                 </AnimatePresence>
              </div>
              
-             <button onClick={() => setActiveTab('messages')} className="p-3 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-all group">
-                <Mail className="h-5 w-5 text-slate-500 group-hover:text-blue-600" />
-             </button>
-          </div>
-
-          <div className="flex-1 max-w-2xl px-10">
-             <div className="relative w-full">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                <input type="text" placeholder="Intelligence Search..." className="w-full bg-slate-50 border-none rounded-2xl py-3.5 pl-12 pr-6 text-sm font-medium placeholder:text-slate-300 focus:ring-2 focus:ring-blue-500/20 transition-all" />
-             </div>
-          </div>
-
-          <div className="flex items-center gap-5">
-             <div className="flex flex-col items-end">
-                <span className="text-sm font-black text-slate-800">{user?.first_name} {user?.last_name}</span>
-                <span className="text-[9px] font-black uppercase text-emerald-500 tracking-widest flex items-center gap-1">
-                   <div className="h-1 w-1 bg-emerald-500 rounded-full animate-pulse" /> Système Actif
-                </span>
-             </div>
-             <div onClick={() => router.push("/profile/edit")} className="h-12 w-12 rounded-2xl border-2 border-slate-100 overflow-hidden cursor-pointer hover:border-blue-500 transition-all">
+             <div className="h-8 w-8 rounded-full border border-slate-200 overflow-hidden cursor-pointer" onClick={() => router.push("/profile/edit")}>
                 <img src={user?.avatar_url || `https://ui-avatars.com/api/?name=${user?.first_name}&background=f4f7fe&color=3B82F6`} alt="Avatar" className="w-full h-full object-cover" />
              </div>
           </div>
         </header>
 
-        <div className="p-10 space-y-10">
-           <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                 <h1 className="text-3xl font-black text-slate-800 tracking-tight uppercase">{platformSettings.site_name} Management</h1>
-                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                    <ShieldAlert className="h-3 w-3" /> Console de Gouvernance • {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                 </p>
-              </div>
-              <div className="flex items-center gap-2 text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">
-                 <span>SYSTEM</span><ChevronRight className="h-3 w-3" /><span className="text-blue-600">{activeTab}</span>
-              </div>
-           </div>
-
+        <div className="p-8 space-y-8">
            <AnimatePresence mode="wait">
               {activeTab === 'overview' && (
-                 <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                       <StatCard label="ÉTUDIANTS ACTIFS" value={summary.total_students} trend="+5%" color="text-emerald-500" barColor="bg-emerald-500" icon={<Users className="h-4 w-4" />} />
-                       <StatCard label="REVENU TOTAL" value={`$${summary.total_revenue}`} trend="Real-time" color="text-blue-500" barColor="bg-blue-500" icon={<CreditCard className="h-4 w-4" />} />
-                       <StatCard label="INSTRUCTEURS" value={summary.total_instructors} trend="+2 New" color="text-indigo-500" barColor="bg-indigo-500" icon={<Award className="h-4 w-4" />} />
-                       <StatCard label="ALERTES SYSTÈME" value={summary.pending_projects + summary.pending_applications} trend="Action Req." color="text-rose-500" barColor="bg-rose-500" icon={<ShieldAlert className="h-4 w-4" />} />
+                 <motion.div key="overview" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-6">
+                    <div className="flex items-center justify-between mb-8">
+                       <h3 className="font-bold text-slate-800 text-2xl">Overview</h3>
+                       <button className="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-sm text-sm font-medium hover:bg-indigo-700 transition-all">Export Report</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                       <StatCard label="Sales" value={`$${summary.total_revenue}`} trend="+20.9$" trendLabel="Revenue" icon={<CreditCard className="h-5 w-5 text-indigo-600" />} />
+                       <StatCard label="Courses" value={summary.total_courses} trend="+120" trendLabel="Number of courses" icon={<FileText className="h-5 w-5 text-indigo-600" />} />
+                       <StatCard label="Students" value={summary.total_students} trend="+1200" trendLabel="Students" icon={<Users className="h-5 w-5 text-indigo-600" />} />
+                       <StatCard label="Instructor" value={summary.total_instructors} trend="+200" trendLabel="Instructor" icon={<UserCheck className="h-5 w-5 text-indigo-600" />} />
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                       <div className="lg:col-span-2 bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 relative overflow-hidden">
-                          <div className="flex items-center justify-between mb-10">
-                             <h3 className="font-black text-slate-800 uppercase tracking-widest text-sm">Courbe d'Activité</h3>
-                             <div className="flex gap-2">
-                                <span className="h-2 w-2 rounded-full bg-blue-500" />
-                                <span className="h-2 w-2 rounded-full bg-slate-200" />
-                             </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                       <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <div className="flex items-center justify-between mb-8">
+                             <h3 className="font-bold text-slate-800 text-lg">Earnings</h3>
+                             <MoreVertical className="h-5 w-5 text-slate-400" />
                           </div>
-                          <div className="h-72 w-full flex items-end gap-3 px-2">
-                             {[40, 70, 45, 90, 65, 80, 50, 85, 60, 75, 40, 60, 95, 55].map((h, i) => (
-                                <motion.div 
-                                  key={i}
-                                  initial={{ height: 0 }} animate={{ height: `${h}%` }}
-                                  className="flex-1 rounded-t-xl bg-gradient-to-t from-blue-600 to-blue-400 opacity-20 hover:opacity-100 transition-all cursor-pointer group relative"
-                                >
-                                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{h}% Engagement</div>
-                                </motion.div>
-                             ))}
+                          <div className="h-64 w-full flex items-end gap-1 px-2 relative">
+                             {/* SVG Curvy Line Placeholder matching Geeks */}
+                             <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                <path d="M 0 80 Q 15 50 30 70 T 60 50 T 85 60 T 100 30" fill="none" stroke="#6366f1" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                             </svg>
+                             <div className="absolute bottom-0 w-full flex justify-between text-xs text-slate-400 font-medium">
+                                <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+                             </div>
                           </div>
                        </div>
 
-                       <div className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
-                          <h3 className="font-black text-slate-800 uppercase tracking-widest text-sm mb-8 flex items-center gap-2"><History className="h-4 w-4" /> Activité Récente</h3>
-                          <div className="space-y-6">
-                             {auditLogs.slice(0, 5).map((log) => (
-                                <div key={log.id} className="flex gap-4 group">
-                                   <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
+                       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <div className="flex items-center justify-between mb-8">
+                             <h3 className="font-bold text-slate-800 text-lg">Traffic</h3>
+                             <MoreVertical className="h-5 w-5 text-slate-400" />
+                          </div>
+                          <div className="flex flex-col items-center justify-center h-48">
+                             <div className="relative w-40 h-40 rounded-full border-[16px] border-indigo-600 border-r-indigo-200 border-b-indigo-100 flex items-center justify-center">
+                             </div>
+                          </div>
+                          <div className="flex justify-center gap-4 mt-6 text-xs text-slate-500 font-medium">
+                             <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-600"></span> Direct</div>
+                             <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-200"></span> Referral</div>
+                             <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-indigo-100"></span> Organic</div>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                             <h3 className="font-bold text-slate-800">Popular Instructor</h3>
+                             <button className="text-xs font-semibold px-3 py-1 border border-slate-200 rounded hover:bg-slate-50">View all</button>
+                          </div>
+                          <div className="p-0">
+                             {/* Mock list for popular instructors based on the screenshot */}
+                             <div className="flex items-center gap-4 p-4 border-b border-slate-100 hover:bg-slate-50">
+                                <img src={`https://ui-avatars.com/api/?name=Jenny+Wilson&background=E0E7FF&color=4338CA`} alt="Avatar" className="w-10 h-10 rounded-full" />
+                                <div className="flex-1">
+                                   <p className="text-sm font-semibold text-slate-800">Jenny Wilson</p>
+                                   <div className="flex gap-3 text-xs text-slate-500 mt-1"><span>6 Courses</span><span>50,274 Students</span></div>
+                                </div>
+                                <MoreVertical className="h-4 w-4 text-slate-400" />
+                             </div>
+                             <div className="flex items-center gap-4 p-4 hover:bg-slate-50">
+                                <img src={`https://ui-avatars.com/api/?name=Dianna+Smiley&background=FDE68A&color=D97706`} alt="Avatar" className="w-10 h-10 rounded-full" />
+                                <div className="flex-1">
+                                   <p className="text-sm font-semibold text-slate-800">Dianna Smiley</p>
+                                   <div className="flex gap-3 text-xs text-slate-500 mt-1"><span>3 Courses</span><span>26,060 Students</span></div>
+                                </div>
+                                <MoreVertical className="h-4 w-4 text-slate-400" />
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                             <h3 className="font-bold text-slate-800">Applications</h3>
+                             <button onClick={() => setActiveTab('instructors')} className="text-xs font-semibold px-3 py-1 border border-slate-200 rounded hover:bg-slate-50">View all</button>
+                          </div>
+                          <div className="p-0">
+                             {apps.slice(0, 3).map(app => (
+                                <div key={app.id} className="flex items-center gap-4 p-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer" onClick={() => setSelectedApp(app)}>
+                                   <div className="h-10 w-10 rounded-lg bg-indigo-100 flex shrink-0 items-center justify-center text-indigo-600 font-bold">{app.user_full_name?.[0]}</div>
+                                   <div className="flex-1">
+                                      <p className="text-sm font-semibold text-slate-800 truncate">{app.user_full_name}</p>
+                                      <p className="text-xs text-slate-500 truncate">{app.expertise}</p>
+                                   </div>
+                                   <MoreVertical className="h-4 w-4 text-slate-400 shrink-0" />
+                                </div>
+                             ))}
+                             {apps.length === 0 && <p className="text-sm text-slate-500 text-center py-8">Aucune candidature</p>}
+                          </div>
+                       </div>
+
+                       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                             <h3 className="font-bold text-slate-800">Activity</h3>
+                          </div>
+                          <div className="p-0">
+                             {auditLogs.slice(0, 4).map(log => (
+                                <div key={log.id} className="flex gap-4 p-4 border-b border-slate-100 hover:bg-slate-50">
+                                   <div className="h-10 w-10 rounded-full bg-slate-50 border border-slate-100 flex shrink-0 items-center justify-center">
+                                      <History className="h-4 w-4 text-slate-400" />
+                                   </div>
                                    <div>
-                                      <p className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{log.action}</p>
-                                      <p className="text-[10px] text-slate-400 mt-0.5">{log.details}</p>
-                                      <p className="text-[9px] font-bold text-slate-300 mt-2">{new Date(log.created_at).toLocaleTimeString()}</p>
+                                      <p className="text-sm font-semibold text-slate-800">{log.action}</p>
+                                      <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{log.details}</p>
+                                      <p className="text-[10px] text-slate-400 mt-1">{new Date(log.created_at).toLocaleTimeString()}</p>
                                    </div>
                                 </div>
                              ))}
@@ -329,56 +356,202 @@ export default function AdminDashboardPage() {
               )}
 
               {activeTab === 'instructors' && (
-                 <motion.div key="instructors" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
-                    <div className="flex items-center justify-between mb-10">
-                       <h3 className="font-black text-slate-800 uppercase tracking-widest text-sm">Gestion des Candidatures</h3>
-                       <span className="bg-blue-50 text-blue-600 text-[10px] font-black px-4 py-1 rounded-full uppercase">{apps.length} Dossiers</span>
+                 <motion.div key="instructors" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                    <div className="flex items-center justify-between mb-8">
+                       <h3 className="font-bold text-slate-800 text-2xl">Instructor <span className="text-slate-400 font-medium text-lg">({apps.length})</span></h3>
+                       <div className="text-xs text-slate-500 hidden sm:block">Dashboard <ChevronRight className="inline h-3 w-3" /> User <ChevronRight className="inline h-3 w-3" /> <span className="text-indigo-600">Instructor</span></div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                       <table className="w-full text-left">
-                          <thead>
-                             <tr className="border-b border-slate-100">
-                                <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Candidat</th>
-                                <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Expertise</th>
-                                <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="pb-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                             </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                             {apps.map((app) => (
-                                <tr key={app.id} className="group hover:bg-slate-50/50 transition-colors">
-                                   <td className="py-4">
-                                      <div className="flex items-center gap-3">
-                                         <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs uppercase">{app.user_full_name?.[0]}</div>
-                                         <div>
-                                            <p className="text-xs font-black text-slate-800">{app.user_full_name || 'Sans Nom'}</p>
-                                            <p className="text-[9px] font-medium text-slate-400">{app.user_email}</p>
-                                         </div>
-                                      </div>
-                                   </td>
-                                   <td className="py-4">
-                                      <span className="text-[10px] font-black text-blue-600 uppercase bg-blue-50 px-3 py-1 rounded-lg">{app.expertise}</span>
-                                   </td>
-                                   <td className="py-4">
-                                      <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full ${app.status === 'pending' ? 'bg-amber-100 text-amber-600' : app.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                                         {app.status}
-                                      </span>
-                                   </td>
-                                   <td className="py-4 text-right">
-                                      <div className="flex items-center justify-end gap-2">
-                                         <button onClick={() => setSelectedApp(app)} className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 rounded-lg transition-all"><Eye className="h-4 w-4" /></button>
-                                         <button onClick={() => quickMessage(app.user, app.user_email)} className="p-2 hover:bg-blue-50 text-blue-500 rounded-lg transition-all"><MessageSquare className="h-4 w-4" /></button>
-                                      </div>
-                                   </td>
-                                </tr>
-                             ))}
-                          </tbody>
-                       </table>
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+                       <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <input type="text" placeholder="Search Instructors" className="w-full bg-transparent border-none focus:outline-none text-sm pl-10 pr-4" />
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                       {apps.map((app) => (
+                          <div key={app.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-all group">
+                             <div className="p-6 flex flex-col items-center border-b border-slate-100 relative cursor-pointer" onClick={() => setSelectedApp(app)}>
+                                <div className="absolute top-4 right-4"><MoreVertical className="h-5 w-5 text-slate-300 group-hover:text-slate-500" /></div>
+                                <div className="h-20 w-20 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-2xl mb-4 border-2 border-white shadow-sm">
+                                   {app.user_full_name?.[0] || 'I'}
+                                </div>
+                                <h4 className="font-bold text-slate-800 text-lg mb-1 truncate w-full text-center hover:text-indigo-600 transition-colors">{app.user_full_name || 'Sans Nom'}</h4>
+                                <p className="text-xs text-slate-500">{app.expertise}</p>
+                                <span className={`mt-3 text-[10px] font-bold uppercase px-3 py-1 rounded-full ${app.status === 'pending' ? 'bg-amber-100 text-amber-600' : app.status === 'approved' || app.status === 'accepted' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                   {app.status}
+                                </span>
+                             </div>
+                             <div className="flex bg-slate-50 p-4 text-center divide-x divide-slate-200 text-xs">
+                                <div className="flex-1 px-1 flex flex-col justify-between">
+                                   <span className="text-slate-500 mb-1">Students</span>
+                                   <span className="font-bold text-slate-800">-</span>
+                                </div>
+                                <div className="flex-1 px-1 flex flex-col justify-between">
+                                   <span className="text-slate-500 mb-1">Rating</span>
+                                   <span className="font-bold text-amber-500 flex items-center justify-center gap-1">New</span>
+                                </div>
+                                <div className="flex-1 px-1 flex flex-col justify-between">
+                                   <span className="text-slate-500 mb-1">Courses</span>
+                                   <span className="font-bold text-slate-800">-</span>
+                                </div>
+                             </div>
+                          </div>
+                       ))}
+                       {apps.length === 0 && <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-slate-200 border-dashed">Aucun instructeur ou candidature</div>}
                     </div>
                  </motion.div>
               )}
 
+              {activeTab === 'enrollments' && (
+                 <motion.div key="enrollments" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                    <div className="flex items-center justify-between mb-8">
+                       <h3 className="font-bold text-slate-800 text-2xl">Students <span className="text-slate-400 font-medium text-lg">({enrollments.length})</span></h3>
+                       <div className="text-xs text-slate-500 hidden sm:block">Dashboard <ChevronRight className="inline h-3 w-3" /> User <ChevronRight className="inline h-3 w-3" /> <span className="text-indigo-600">Students</span></div>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+                       <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <input type="text" placeholder="Search Students" className="w-full bg-transparent border-none focus:outline-none text-sm pl-10 pr-4" />
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                       {enrollments.map((enrollment) => (
+                          <div key={enrollment.id} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-all group">
+                             <div className="p-6 flex flex-col items-center border-b border-slate-100 relative">
+                                <div className="absolute top-4 right-4"><MoreVertical className="h-5 w-5 text-slate-300 group-hover:text-slate-500 cursor-pointer" /></div>
+                                <div className="h-20 w-20 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-2xl mb-4 border-2 border-white shadow-sm">
+                                   {enrollment.student_name?.[0] || 'S'}
+                                </div>
+                                <h4 className="font-bold text-slate-800 text-lg mb-1 truncate w-full text-center hover:text-indigo-600 transition-colors cursor-pointer">{enrollment.student_name}</h4>
+                                <p className="text-xs text-slate-400 flex items-center gap-1 justify-center truncate w-full px-4"><MapPin className="h-3 w-3 shrink-0" /> {enrollment.student_email}</p>
+                             </div>
+                             <div className="flex bg-slate-50 p-4 text-center divide-x divide-slate-200 text-xs">
+                                <div className="flex-1 px-1 flex flex-col justify-between">
+                                   <span className="text-slate-500 mb-1">Payments</span>
+                                   <span className="font-bold text-slate-800">-</span>
+                                </div>
+                                <div className="flex-1 px-1 flex flex-col justify-between">
+                                   <span className="text-slate-500 mb-1">Joined</span>
+                                   <span className="font-bold text-slate-800">{new Date(enrollment.enrolled_at).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex-1 px-1 flex flex-col justify-between">
+                                   <span className="text-slate-500 mb-1">Course</span>
+                                   <span className="font-bold text-slate-800 truncate px-1" title={enrollment.course_title}>{enrollment.course_title}</span>
+                                </div>
+                             </div>
+                          </div>
+                       ))}
+                       {enrollments.length === 0 && <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-slate-200 border-dashed">Aucun étudiant inscrit</div>}
+                    </div>
+                 </motion.div>
+              )}
+              {activeTab === 'analytics' && (
+                 <motion.div key="analytics" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                    <div className="flex items-center justify-between mb-8">
+                       <h3 className="font-bold text-slate-800 text-2xl">Analytics</h3>
+                       <div className="text-xs text-slate-500 hidden sm:block">Dashboard <ChevronRight className="inline h-3 w-3" /> <span className="text-indigo-600">Analytics</span></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <p className="text-sm font-semibold text-slate-600 mb-2">User</p>
+                          <h4 className="text-2xl font-bold text-slate-800 mb-2">30.6k</h4>
+                          <div className="flex items-center justify-between mt-4">
+                             <div className="h-8 w-24 bg-indigo-50 rounded overflow-hidden relative">
+                                <svg className="absolute inset-0 h-full w-full opacity-50" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                   <path d="M 0 50 Q 25 30 50 60 T 100 20 L 100 100 L 0 100 Z" fill="#6366f1" />
+                                </svg>
+                             </div>
+                             <span className="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-1 rounded">
+                                +20%
+                             </span>
+                          </div>
+                       </div>
+                       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <p className="text-sm font-semibold text-slate-600 mb-2">Unique Visitors</p>
+                          <h4 className="text-2xl font-bold text-slate-800 mb-2">12.2k</h4>
+                          <div className="flex items-center justify-between mt-4">
+                             <div className="h-8 w-24 bg-amber-50 rounded overflow-hidden relative">
+                                <svg className="absolute inset-0 h-full w-full opacity-50" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                   <path d="M 0 80 Q 25 40 50 50 T 100 30 L 100 100 L 0 100 Z" fill="#f59e0b" />
+                                </svg>
+                             </div>
+                             <span className="text-xs font-semibold text-rose-500 bg-rose-50 px-2 py-1 rounded">
+                                -10%
+                             </span>
+                          </div>
+                       </div>
+                       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <p className="text-sm font-semibold text-slate-600 mb-2">Bounce Rate</p>
+                          <h4 className="text-2xl font-bold text-slate-800 mb-2">42.2%</h4>
+                          <div className="flex items-center justify-between mt-4">
+                             <div className="h-8 w-24 bg-emerald-50 rounded overflow-hidden relative">
+                                <svg className="absolute inset-0 h-full w-full opacity-50" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                   <path d="M 0 50 Q 25 30 50 60 T 100 20 L 100 100 L 0 100 Z" fill="#10b981" />
+                                </svg>
+                             </div>
+                             <span className="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-1 rounded">
+                                +12%
+                             </span>
+                          </div>
+                       </div>
+                       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <p className="text-sm font-semibold text-slate-600 mb-2">Average Visit Time</p>
+                          <h4 className="text-2xl font-bold text-slate-800 mb-2">12m 42s</h4>
+                          <div className="flex items-center justify-between mt-4">
+                             <div className="h-8 w-24 bg-blue-50 rounded overflow-hidden relative">
+                                <svg className="absolute inset-0 h-full w-full opacity-50" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                   <path d="M 0 20 Q 25 60 50 40 T 100 80 L 100 100 L 0 100 Z" fill="#3b82f6" />
+                                </svg>
+                             </div>
+                             <span className="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2 py-1 rounded">
+                                +8%
+                             </span>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                       <div className="lg:col-span-2 bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <div className="flex items-center justify-between mb-8">
+                             <h3 className="font-bold text-slate-800 text-lg">Sessions</h3>
+                             <div className="flex gap-2">
+                                <button className="text-xs text-white bg-indigo-600 px-3 py-1 rounded-full">2024</button>
+                                <button className="text-xs text-slate-500 hover:bg-slate-50 px-3 py-1 rounded-full border border-transparent hover:border-slate-200">2025</button>
+                             </div>
+                          </div>
+                          <div className="h-64 w-full flex items-end gap-1 px-2 relative border-l border-b border-slate-100 ml-6 mb-6">
+                             {/* SVG Curvy Line Placeholder matching Geeks Sessions */}
+                             <svg className="absolute inset-0 h-full w-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+                                <path d="M 0 80 Q 20 60 40 70 T 70 30 T 100 20" fill="none" stroke="#6366f1" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+                                <path d="M 0 90 Q 20 80 40 85 T 70 50 T 100 60" fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                             </svg>
+                             <div className="absolute -left-8 top-0 bottom-0 flex flex-col justify-between text-[10px] text-slate-400">
+                                <span>30k</span><span>20k</span><span>10k</span><span>0</span>
+                             </div>
+                             <div className="absolute -bottom-6 w-full flex justify-between text-[10px] text-slate-400">
+                                <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+                             </div>
+                          </div>
+                       </div>
+
+                       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                          <div className="flex items-center justify-between mb-8">
+                             <h3 className="font-bold text-slate-800 text-lg">Active User</h3>
+                          </div>
+                          <div className="h-64 flex items-end justify-between px-2">
+                             {[30, 45, 20, 60, 40, 75, 50, 90, 65].map((h, i) => (
+                                <div key={i} className="w-6 bg-slate-100 rounded-t-sm hover:bg-indigo-500 transition-colors" style={{ height: `${h}%` }}></div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 </motion.div>
+              )}
               {activeTab === 'finance' && (
                  <motion.div key="finance" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100">
                     <h3 className="font-black text-slate-800 uppercase tracking-widest text-sm mb-10 flex items-center gap-2"><CreditCard className="h-5 w-5 text-emerald-500" /> Grand Livre des Transactions</h3>
@@ -489,21 +662,7 @@ export default function AdminDashboardPage() {
                  </motion.div>
               )}
 
-              {activeTab === 'layouts' && (
-                 <motion.div key="layouts" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div className="bg-white rounded-[40px] p-10 shadow-sm border border-slate-100 space-y-8">
-                       <h3 className="font-black text-slate-800 uppercase tracking-widest text-sm flex items-center gap-2"><Palette className="h-4 w-4 text-blue-600" /> Branding Gouvernemental</h3>
-                       <div className="space-y-6">
-                          <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nom de la Plateforme</label><input type="text" value={platformSettings.site_name} onChange={(e) => setPlatformSettings({...platformSettings, site_name: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20" /></div>
-                          <div className="grid grid-cols-2 gap-8">
-                             <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Couleur Primaire</label><input type="color" value={platformSettings.primary_color} onChange={(e) => setPlatformSettings({...platformSettings, primary_color: e.target.value})} className="h-12 w-full rounded-2xl border-none cursor-pointer bg-transparent" /></div>
-                             <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">État Maintenance</label><button onClick={() => setPlatformSettings({...platformSettings, maintenance_mode: !platformSettings.maintenance_mode})} className={`w-full py-3 rounded-2xl font-black uppercase transition-all ${platformSettings.maintenance_mode ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/20' : 'bg-slate-100 text-slate-400'}`}>{platformSettings.maintenance_mode ? 'ACTIF (Verrouillé)' : 'DÉSACTIVÉ'}</button></div>
-                          </div>
-                          <button onClick={handleSaveSettings} className="w-full bg-blue-600 text-white font-black py-4 rounded-[32px] shadow-2xl shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-3"><Save className="h-5 w-5" /> ENREGISTRER LES MODIFICATIONS</button>
-                       </div>
-                    </div>
-                 </motion.div>
-              )}
+
            </AnimatePresence>
         </div>
       </main>
@@ -597,34 +756,37 @@ export default function AdminDashboardPage() {
   );
 }
 
-function NavItem({ icon, label, active = false, onClick }: any) {
+function NavItem({ icon, label, active, onClick }: { icon: any, label: string, active?: boolean, onClick: () => void }) {
   return (
-    <div onClick={onClick} className={`flex items-center justify-between px-6 py-4 rounded-[20px] cursor-pointer transition-all group ${active ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
-      <div className="flex items-center gap-4">
-        <div className={`transition-all ${active ? 'text-blue-600 scale-110' : 'text-slate-400 group-hover:text-blue-500'}`}>{icon}</div>
-        <span className={`text-[13px] font-black uppercase tracking-tight ${active ? 'text-blue-700' : 'text-slate-600'}`}>{label}</span>
-      </div>
-      <ChevronRight className={`h-3 w-3 transition-all ${active ? 'opacity-100 translate-x-1 text-blue-600' : 'opacity-0 -translate-x-2'}`} />
-    </div>
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+        active 
+          ? "bg-indigo-50 text-indigo-600 shadow-sm" 
+          : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
   );
 }
 
-function StatCard({ label, value, trend, color, barColor, icon }: any) {
+function StatCard({ label, value, trend, trendLabel, icon }: any) {
   return (
-    <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 hover:shadow-2xl hover:shadow-blue-500/5 transition-all group relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">{icon}</div>
-      <div className="flex justify-between items-start mb-6">
-        <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">{label}</p>
-        <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all">{icon}</div>
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex flex-col justify-between">
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
+        <div className="text-indigo-500 bg-indigo-50 p-2 rounded-lg">
+          {icon}
+        </div>
       </div>
-      <div className="space-y-4">
-         <div className="flex items-end justify-between">
-            <h2 className="text-3xl font-black text-slate-800 tracking-tight">{value}</h2>
-            <div className={`flex items-center gap-1 text-[10px] font-black uppercase ${color}`}><TrendingUp className="h-3 w-3" /><span>{trend}</span></div>
-         </div>
-         <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-            <motion.div initial={{ width: 0 }} animate={{ width: "70%" }} className={`h-full ${barColor} rounded-full`} />
-         </div>
+      <div>
+        <h2 className="text-3xl font-bold text-slate-800 mb-1">{value}</h2>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-emerald-500 font-semibold flex items-center"><TrendingUp className="h-4 w-4 mr-1" />{trend}</span>
+          <span className="text-slate-500">{trendLabel}</span>
+        </div>
       </div>
     </div>
   );
