@@ -2,10 +2,11 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApiError, fetchApi } from "@/lib/api";
-import {  User, Globe,  Camera, ArrowLeft, Sparkles, Check,  Loader2, Target} from "lucide-react";
+import { User, Globe, Camera, ArrowLeft, Sparkles, Check, Loader2, Target } from "lucide-react";
 import { FaLinkedin, FaGithub } from "react-icons/fa";
 
 type ProfileEditFormState = {
@@ -28,7 +29,7 @@ export default function ProfileEditPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState<ProfileEditFormState>({
     first_name: "", last_name: "", bio: "", level: "beginner",
     linkedin_url: "", github_url: "", portfolio_url: "",
@@ -111,9 +112,9 @@ export default function ProfileEditPage() {
     <div className="min-h-screen bg-[#090C14] text-white p-4 md:p-8 relative overflow-hidden">
       {/* Background Gradients */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-      
+
       <div className="max-w-3xl mx-auto relative z-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/profile" className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors font-bold text-sm">
@@ -130,13 +131,13 @@ export default function ProfileEditPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          
+
           {/* Avatar Section */}
           <div className="glass-card p-8 rounded-[32px] border border-white/5 flex flex-col md:flex-row items-center gap-8">
             <div className="relative group">
               <div className="w-24 h-24 rounded-3xl bg-slate-800 overflow-hidden border-2 border-white/10 relative">
                 {previewUrl ? (
-                  <Image src={previewUrl} alt="Avatar" fill className="object-cover" />
+                  <Image src={previewUrl} alt="Avatar" fill sizes="96px" unoptimized={true} className="object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center"><User className="w-8 h-8 text-slate-600" /></div>
                 )}
@@ -157,7 +158,7 @@ export default function ProfileEditPage() {
 
           {/* Form Content */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
+
             <div className="glass-card p-6 rounded-[32px] border border-white/5 space-y-6 md:col-span-2">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-4">Informations de base</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -176,61 +177,67 @@ export default function ProfileEditPage() {
               </div>
             </div>
 
-            <div className="glass-card p-6 rounded-[32px] border border-white/5 space-y-6">
-              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-4">Niveau & Objectifs</h3>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Niveau IA</label>
-                  <select name="level" value={formData.level} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all appearance-none">
-                    <option value="beginner">Débutant</option>
-                    <option value="intermediate">Intermédiaire</option>
-                    <option value="advanced">Avancé</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Objectif principal</label>
-                  <div className="relative">
-                    <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                    <input name="personal_goals" value={formData.personal_goals} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="Ex: Devenir ML Engineer" />
+            {/* Niveau & Objectifs - Seulement pour les étudiants */}
+            {profile && !profile.is_superuser && !profile.is_staff && !profile.is_instructor && (
+              <div className="glass-card p-6 rounded-[32px] border border-white/5 space-y-6">
+                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-4">Niveau & Objectifs</h3>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Niveau IA</label>
+                    <select name="level" value={formData.level} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all appearance-none">
+                      <option value="beginner">Débutant</option>
+                      <option value="intermediate">Intermédiaire</option>
+                      <option value="advanced">Avancé</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Objectif principal</label>
+                    <div className="relative">
+                      <Target className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <input name="personal_goals" value={formData.personal_goals} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="Ex: Devenir ML Engineer" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="glass-card p-6 rounded-[32px] border border-white/5 space-y-6">
-              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-4">Réseaux Sociaux</h3>
-              <div className="space-y-4">
-                <div className="relative">
-                  <FaLinkedin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input name="linkedin_url" value={formData.linkedin_url} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="LinkedIn URL" />
-                </div>
-                <div className="relative">
-                  <FaGithub className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input name="github_url" value={formData.github_url} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="GitHub URL" />
-                </div>
-                <div className="relative">
-                  <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-                  <input name="portfolio_url" value={formData.portfolio_url} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="Portfolio / Blog" />
+            {/* Réseaux Sociaux - Étudiants et Instructeurs */}
+            {profile && !profile.is_superuser && !profile.is_staff && (
+              <div className="glass-card p-6 rounded-[32px] border border-white/5 space-y-6">
+                <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-white/5 pb-4">Réseaux Sociaux</h3>
+                <div className="space-y-4">
+                  <div className="relative">
+                    <FaLinkedin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input name="linkedin_url" value={formData.linkedin_url} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="LinkedIn URL" />
+                  </div>
+                  <div className="relative">
+                    <FaGithub className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input name="github_url" value={formData.github_url} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="GitHub URL" />
+                  </div>
+                  <div className="relative">
+                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input name="portfolio_url" value={formData.portfolio_url} onChange={handleTextChange} className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all" placeholder="Portfolio / Blog" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
           </div>
 
           {/* Footer Actions */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-4">
             <div className="flex items-center gap-3 bg-white/5 px-6 py-4 rounded-2xl border border-white/5">
-              <input 
-                type="checkbox" name="is_public_profile" id="is_public_profile" 
+              <input
+                type="checkbox" name="is_public_profile" id="is_public_profile"
                 checked={formData.is_public_profile} onChange={(e) => setFormData(prev => ({ ...prev, is_public_profile: e.target.checked }))}
-                className="w-5 h-5 rounded-lg border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500" 
+                className="w-5 h-5 rounded-lg border-white/10 bg-white/5 text-indigo-500 focus:ring-indigo-500"
               />
               <label htmlFor="is_public_profile" className="text-sm font-bold text-slate-300 cursor-pointer">Rendre mon profil public</label>
             </div>
 
             <div className="flex items-center gap-4 w-full md:w-auto">
               {error && <p className="text-rose-400 text-xs font-bold animate-shake">{error}</p>}
-              <button 
+              <button
                 type="submit" disabled={submitting}
                 className="btn-primary flex-1 md:flex-none px-12 py-4 rounded-2xl shadow-xl shadow-indigo-500/20 flex items-center justify-center gap-2"
               >
