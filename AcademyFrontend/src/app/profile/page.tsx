@@ -4,13 +4,28 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+// CORRECTION : Remplacement de CherkCicle2 par CheckCircle
 import {
-  User, Mail, MapPin, Briefcase, Zap, Globe, Edit3, Award, BookOpen, Clock, ShieldCheck, ChevronRight, Sparkles, Star, Play, Target as TargetIcon, Loader2
+  User, 
+  Zap, 
+  Globe, 
+  Edit3, 
+  Award, 
+  BookOpen, 
+  CheckCircle, // Correction ici
+  ShieldCheck, 
+  ChevronRight, 
+  Sparkles, 
+  Star, 
+  Play, 
+  Target as TargetIcon, 
+  Loader2
 } from "lucide-react";
 import { FaLinkedin, FaGithub } from "react-icons/fa6";
 
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth() as any; // Cast any si ton contexte n'est pas typé
+
   const stats = user?.stats || {
     coursesCompleted: 0,
     certificates: 0,
@@ -89,7 +104,6 @@ export default function ProfilePage() {
           {/* Left Side: Stats & About */}
           <div className="lg:col-span-4 space-y-12">
             
-            {/* Quick Stats Grid */}
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-[#112240] p-8 rounded-[2.5rem] border border-white/5 text-center transition-transform hover:scale-105">
                 <p className="text-3xl font-black text-white mb-1">{stats.coursesCompleted}</p>
@@ -101,7 +115,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* About Section */}
             <div className="bg-[#112240] rounded-[2.5rem] border border-white/5 p-10 space-y-6">
               <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] flex items-center gap-3">
                 <Sparkles className="w-3.5 h-3.5 text-[#00D1FF]" /> Biométrie Digitale
@@ -111,7 +124,6 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            {/* Social Links */}
             <div className="bg-[#112240] rounded-[2.5rem] border border-white/5 p-10 space-y-6">
               <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em]">Réseaux</h3>
               <div className="space-y-3">
@@ -135,7 +147,6 @@ export default function ProfilePage() {
           {/* Right Side: Achievements & Activity */}
           <div className="lg:col-span-8 space-y-12">
             
-            {/* Achievements Section */}
             <div className="bg-[#112240] rounded-[3rem] border border-white/5 p-12 space-y-10">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-4">
@@ -162,7 +173,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Recent Activity */}
             <div className="bg-[#112240] rounded-[3rem] border border-white/5 p-12 space-y-10">
               <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-4">
                 <BookOpen className="w-6 h-6 text-[#00D1FF]" /> Flux d'Activité
@@ -170,7 +180,7 @@ export default function ProfilePage() {
               
               <div className="space-y-4">
                 {[
-                  { title: "Introduction à la Computer Vision", type: "Cours Terminé", time: "2h ago", icon: <CheckCircle2 className="w-4 h-4 text-[#00D1FF]" /> },
+                  { title: "Introduction à la Computer Vision", type: "Cours Terminé", time: "2h ago", icon: <CheckCircle className="w-4 h-4 text-[#00D1FF]" /> },
                   { title: "Architecture des Transformers", type: "Lab En Cours", time: "Hier", icon: <Play className="w-4 h-4 text-amber-500" /> },
                   { title: "Deep Learning Fondamentaux", type: "Certification Obtenue", time: "3 jours ago", icon: <Award className="w-4 h-4 text-emerald-500" /> }
                 ].map((act, i) => (
@@ -198,7 +208,6 @@ export default function ProfilePage() {
               </button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
