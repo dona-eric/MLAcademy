@@ -3,11 +3,13 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import Link from "next/link";
-import { 
-  Settings as SettingsIcon, Shield, Bell, 
-  Lock, CreditCard, HelpCircle, LogOut, 
-  ChevronRight, Sparkles, User, Mail, 
-  Eye, EyeOff, ShieldCheck, Zap
+import {
+  Settings as SettingsIcon, Shield, Bell,
+  Lock, CreditCard, HelpCircle, LogOut,
+  ChevronRight, Sparkles, User, Mail,
+  Eye, EyeOff, ShieldCheck, Zap,
+  Smartphone,
+  ShieldAlert
 } from "lucide-react";
 
 export default function SettingsPage() {
@@ -15,54 +17,55 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("account");
 
   const TABS = [
-    { id: "account", label: "Compte", icon: User },
+    { id: "account", label: "Identité", icon: User },
     { id: "security", label: "Sécurité", icon: Shield },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "billing", label: "Paiements", icon: CreditCard },
+    { id: "notifications", label: "Alertes", icon: Bell },
+    { id: "billing", label: "Facturation", icon: CreditCard },
   ];
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-[#090C14] text-white p-6 lg:p-12 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0A192F] text-white font-inter selection:bg-[#00D1FF]/30 pb-20 overflow-hidden relative">
       {/* Background Gradients */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-      
-      <div className="max-w-6xl mx-auto space-y-12 relative z-10 animate-in fade-in duration-700">
-        
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/5 pb-8">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest text-indigo-400">
-              <SettingsIcon className="w-3 h-3" /> Paramètres Système
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#00D1FF]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
+
+      <div className="max-w-6xl mx-auto px-6 pt-32 space-y-16 relative z-10 animate-in fade-in duration-1000">
+
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D1FF]/10 rounded-full border border-[#00D1FF]/20 text-[10px] font-black uppercase tracking-[0.2em] text-[#00D1FF]">
+              <SettingsIcon className="w-3.5 h-3.5" /> Configuration Système
             </div>
-            <h1 className="text-4xl font-black tracking-tight">Configuration</h1>
-            <p className="text-slate-500 font-medium text-lg">Gérez vos préférences et la sécurité de votre compte.</p>
+            <h1 className="text-5xl font-black tracking-tight uppercase">Settings</h1>
+            <p className="text-gray-500 font-medium text-lg">Gérez vos accès, préférences et la sécurité de vos données.</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-          
-          {/* Sidebar Nav */}
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+
+          {/* Side Navigation */}
+          <div className="lg:col-span-3 space-y-3">
             {TABS.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all font-bold text-sm ${activeTab === tab.id ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'text-slate-500 hover:bg-white/5 hover:text-white border border-transparent'}`}
+                className={`w-full flex items-center justify-between px-8 py-5 rounded-2xl transition-all font-black text-[10px] uppercase tracking-widest ${activeTab === tab.id ? 'bg-[#00D1FF] text-[#0A192F] shadow-xl shadow-[#00D1FF]/20' : 'text-gray-500 hover:bg-white/5 hover:text-white border border-transparent'}`}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
                 </div>
-                {activeTab === tab.id && <ChevronRight className="w-4 h-4" />}
+                {activeTab === tab.id && <div className="w-1.5 h-1.5 rounded-full bg-[#0A192F]"></div>}
               </button>
             ))}
-            
-            <div className="pt-8">
-              <button 
+
+            <div className="pt-8 mt-8 border-t border-white/5">
+              <button
                 onClick={logout}
-                className="w-full flex items-center gap-3 px-6 py-4 rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all font-bold text-sm border border-transparent"
+                className="w-full flex items-center gap-4 px-8 py-5 rounded-2xl text-rose-500 hover:bg-rose-500/10 transition-all font-black text-[10px] uppercase tracking-widest border border-transparent"
               >
                 <LogOut className="w-4 h-4" />
                 Déconnexion
@@ -70,49 +73,49 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Main Content Area */}
-          <div className="lg:col-span-3 space-y-8 animate-in slide-in-from-right-4 duration-500">
-            
+          {/* Content Pane */}
+          <div className="lg:col-span-9 space-y-12 animate-in slide-in-from-right-10 duration-700">
+
             {activeTab === "account" && (
-              <div className="space-y-8">
-                <section className="glass-card p-8 rounded-[32px] border border-white/5 space-y-6">
-                  <h3 className="text-xl font-black tracking-tight">Informations de connexion</h3>
-                  <div className="grid gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Adresse Email</label>
+              <div className="space-y-10">
+                <section className="bg-[#112240] p-10 rounded-[3rem] border border-white/5 space-y-10 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#00D1FF]/5 blur-3xl rounded-full"></div>
+                  <h3 className="text-xl font-black uppercase tracking-tight">Accès & Identité</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Vecteur de Communication (Email)</label>
                       <div className="flex items-center gap-4">
-                        <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-slate-400 flex items-center gap-3">
-                          <Mail className="w-4 h-4 text-slate-600" />
+                        <div className="flex-1 bg-[#0A192F] border border-white/5 rounded-2xl py-4 px-6 text-sm font-bold text-gray-400 flex items-center gap-4">
+                          <Mail className="w-4 h-4 text-gray-700" />
                           {user.email}
                         </div>
-                        <button className="text-xs font-black text-indigo-400 uppercase tracking-widest hover:text-white transition-colors">Modifier</button>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nom d'utilisateur</label>
-                      <div className="bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm text-slate-400">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Identifiant Unique</label>
+                      <div className="bg-[#0A192F] border border-white/5 rounded-2xl py-4 px-6 text-sm font-black text-[#00D1FF]">
                         @{user.username}
                       </div>
                     </div>
                   </div>
                 </section>
 
-                <section className="glass-card p-8 rounded-[32px] border border-white/5 space-y-6">
+                <section className="bg-[#112240] p-10 rounded-[3rem] border border-white/5 space-y-10">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-black tracking-tight">Espace Instructeur</h3>
-                    <Zap className="w-6 h-6 text-amber-400" />
+                    <h3 className="text-xl font-black uppercase tracking-tight">Privilèges Système</h3>
+                    <Zap className="w-6 h-6 text-[#00D1FF]" />
                   </div>
-                  <div className="p-6 bg-indigo-500/5 rounded-3xl border border-indigo-500/10 flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-bold text-white">Status Instructeur</p>
-                      <p className="text-xs text-slate-500">Votre compte est actuellement configuré comme {user.is_instructor ? "Instructeur" : "Étudiant"}.</p>
+                  <div className="p-8 bg-[#0A192F] rounded-[2.5rem] border border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="space-y-2 text-center md:text-left">
+                      <p className="text-[10px] font-black text-[#00D1FF] uppercase tracking-[0.3em]">Status de Licence</p>
+                      <p className="text-sm font-bold text-gray-400">Votre profil est actuellement taggé comme <span className="text-white uppercase">{user.is_instructor ? "Mentor / Instructeur" : "Apprenant Standard"}</span>.</p>
                     </div>
                     {user.is_instructor ? (
-                      <Link href="/instructor" className="btn bg-indigo-500 text-white px-6 py-2 rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20">
-                        Accéder au Studio
+                      <Link href="/instructor" className="bg-[#00D1FF] text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#00D1FF]/10 transition-transform hover:scale-105">
+                        Studio Mentor
                       </Link>
                     ) : (
-                      <Link href="/instructor/apply" className="btn bg-white text-black px-6 py-2 rounded-xl text-xs font-bold">
+                      <Link href="/instructor/apply" className="bg-white text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-transform hover:scale-105">
                         Devenir Instructeur
                       </Link>
                     )}
@@ -122,39 +125,65 @@ export default function SettingsPage() {
             )}
 
             {activeTab === "security" && (
-              <div className="space-y-8">
-                <section className="glass-card p-8 rounded-[32px] border border-white/5 space-y-6">
-                  <h3 className="text-xl font-black tracking-tight">Changement de mot de passe</h3>
+              <div className="space-y-10">
+                <section className="bg-[#112240] p-10 rounded-[3rem] border border-white/5 space-y-10">
+                  <h3 className="text-xl font-black uppercase tracking-tight">Sécurité des Accès</h3>
                   <div className="grid gap-6">
-                    <button className="btn bg-white/5 border border-white/10 text-white w-full py-4 rounded-2xl flex items-center justify-between px-6 hover:bg-white/10 transition-all font-bold">
-                      <div className="flex items-center gap-4">
-                        <Lock className="w-5 h-5 text-indigo-400" />
-                        Réinitialiser mon mot de passe
+                    <button className="bg-[#0A192F] border border-white/5 text-white w-full py-6 rounded-[2rem] flex items-center justify-between px-8 hover:border-[#00D1FF]/30 transition-all font-black text-[10px] uppercase tracking-widest group">
+                      <div className="flex items-center gap-5">
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                          <Lock className="w-5 h-5 text-[#00D1FF]" />
+                        </div>
+                        Changer la Clé d'Accès (Password)
                       </div>
-                      <ChevronRight className="w-4 h-4" />
+                      <ChevronRight className="w-5 h-5 text-gray-700 group-hover:text-white transition-all" />
                     </button>
-                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
-                      <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                      <p className="text-xs font-medium text-slate-400">Authentification à deux facteurs active.</p>
+                    
+                    <div className="flex flex-col md:flex-row items-center gap-6 p-8 rounded-[2rem] bg-emerald-500/5 border border-emerald-500/10">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                        <ShieldCheck className="w-6 h-6 text-emerald-500" />
+                      </div>
+                      <div className="space-y-1 text-center md:text-left">
+                        <p className="text-sm font-black text-white uppercase tracking-tight">Protection 2FA Active</p>
+                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Votre compte est blindé contre les accès non autorisés.</p>
+                      </div>
                     </div>
                   </div>
                 </section>
 
-                <section className="glass-card p-8 rounded-[32px] border border-white/5 space-y-4">
-                   <h3 className="text-xl font-black tracking-tight text-rose-500">Zone de danger</h3>
-                   <p className="text-sm text-slate-500 font-medium">La suppression de votre compte est irréversible. Toutes vos données seront effacées de nos serveurs.</p>
-                   <button className="text-sm font-black text-rose-500/50 hover:text-rose-500 transition-colors uppercase tracking-widest pt-4">Supprimer mon compte</button>
+                <section className="bg-[#112240]/50 p-10 rounded-[3rem] border border-rose-500/10 space-y-6">
+                  <div className="flex items-center gap-4 text-rose-500">
+                    <ShieldAlert className="w-6 h-6" />
+                    <h3 className="text-xl font-black uppercase tracking-tight">Zone Critique</h3>
+                  </div>
+                  <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                    La désactivation de ce profil entraînera la suppression immédiate et définitive de tout votre historique d'apprentissage, vos certifications et vos données.
+                  </p>
+                  <button className="text-[10px] font-black text-rose-500/40 hover:text-rose-500 transition-all uppercase tracking-[0.3em] pt-6 flex items-center gap-3">
+                    Désintégrer le compte <div className="w-1 h-1 rounded-full bg-rose-500/40"></div>
+                  </button>
                 </section>
               </div>
             )}
 
-            {/* Fallback for other tabs */}
+            {/* In Progress Tab Content */}
             {activeTab !== "account" && activeTab !== "security" && (
-               <div className="glass-card p-16 rounded-[40px] border border-white/5 flex flex-col items-center justify-center text-center space-y-4">
-                  <HelpCircle className="w-12 h-12 text-slate-700" />
-                  <h3 className="text-xl font-black">Bientôt disponible</h3>
-                  <p className="text-slate-500 max-w-xs mx-auto text-sm">Nous travaillons sur ces fonctionnalités pour vous offrir un contrôle total.</p>
-               </div>
+              <div className="bg-[#112240] p-24 rounded-[3rem] border border-white/5 flex flex-col items-center justify-center text-center space-y-8 animate-in zoom-in duration-500">
+                <div className="w-24 h-24 bg-[#0A192F] rounded-[2rem] border border-white/5 flex items-center justify-center shadow-2xl">
+                  <Smartphone className="w-10 h-10 text-gray-700" />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-black uppercase tracking-tight">Module en Phase Beta</h3>
+                  <p className="text-gray-500 max-w-sm mx-auto text-sm font-medium leading-relaxed">
+                    Cette fonctionnalité de configuration sera activée lors de la prochaine mise à jour système.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#00D1FF] animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#00D1FF] animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 rounded-full bg-[#00D1FF] animate-bounce delay-200"></div>
+                </div>
+              </div>
             )}
 
           </div>
