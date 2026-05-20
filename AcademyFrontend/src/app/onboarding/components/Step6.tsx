@@ -1,28 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { FileCheck, ShieldCheck } from "lucide-react";
 import { OnboardingData } from "@/types/info";
 
-export default function Step6({ data, setData }: { data: OnboardingData, setData: any }) {
-  const [checked, setChecked] = useState({ read: false, accepted: false });
+interface Step6Props {
+  data: OnboardingData;
+  setData: React.Dispatch<React.SetStateAction<OnboardingData>> | ((data: OnboardingData) => void);
+}
 
-  const toggle = (field: 'read' | 'accepted') => {
+type ToggleField = 'read' | 'accepted';
+
+export default function Step6({ data, setData }: Step6Props) {
+  const [checked, setChecked] = useState<Record<ToggleField, boolean>>({ read: false, accepted: false });
+
+  const toggle = (field: ToggleField) => {
     const newState = { ...checked, [field]: !checked[field] };
     setChecked(newState);
     setData({ ...data, honorDeclaration: newState.read && newState.accepted });
   };
 
+  const options = [
+    { key: "read" as ToggleField, text: "J'ai lu et approuvé le règlement intérieur." },
+    { key: "accepted" as ToggleField, text: "J'accepte les conditions de la formation certifiante." }
+  ];
+
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
+      {/* En-tête */}
       <div className="space-y-2 text-center">
-        <h2 className="text-3xl font-black tracking-tighter">Règlements de la <span className="text-indigo-400">formation</span></h2>
+        <h2 className="text-3xl font-black tracking-tighter">
+          Règlements de la <span className="text-indigo-400">formation</span>
+        </h2>
         <p className="text-slate-400 text-sm">Engagement officiel pour votre parcours certifiant.</p>
       </div>
 
       <div className="glass-card p-8 rounded-[2.5rem] space-y-6">
+        {/* Charte de l'apprenant */}
         <div className="p-6 rounded-2xl bg-white/5 border border-white/10 space-y-4">
-           <h4 className="font-bold flex items-center gap-2 text-sm">
+           <h4 className="font-bold flex items-center gap-2 text-sm text-white">
              <ShieldCheck className="w-4 h-4 text-indigo-400" />
              Charte de l'apprenant MLAcademy
            </h4>
@@ -34,26 +50,28 @@ export default function Step6({ data, setData }: { data: OnboardingData, setData
            </div>
         </div>
 
+        {/* Boutons d'engagements (Boucle pour éviter de dupliquer le HTML) */}
         <div className="space-y-3">
-          <button 
-            onClick={() => toggle('read')}
-            className={`w-full flex items-center gap-4 p-5 rounded-2xl border transition-all text-left ${checked.read ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/5 bg-white/5'}`}
-          >
-            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${checked.read ? 'bg-indigo-500 border-indigo-500' : 'border-white/20'}`}>
-              {checked.read && <FileCheck className="w-3 h-3 text-white" />}
-            </div>
-            <span className="text-xs font-bold text-slate-300">J'ai lu et approuvé le règlement intérieur.</span>
-          </button>
-
-          <button 
-            onClick={() => toggle('accepted')}
-            className={`w-full flex items-center gap-4 p-5 rounded-2xl border transition-all text-left ${checked.accepted ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/5 bg-white/5'}`}
-          >
-            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${checked.accepted ? 'bg-indigo-500 border-indigo-500' : 'border-white/20'}`}>
-              {checked.accepted && <FileCheck className="w-3 h-3 text-white" />}
-            </div>
-            <span className="text-xs font-bold text-slate-300">J'accepte les conditions de la formation certifiante.</span>
-          </button>
+          {options.map(({ key, text }) => {
+            const isActive = checked[key];
+            return (
+              <button 
+                key={key}
+                type="button" // Empêche de soumettre par erreur le formulaire
+                onClick={() => toggle(key)}
+                className={`w-full flex items-center gap-4 p-5 rounded-2xl border transition-all text-left outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                  isActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/5 bg-white/5'
+                }`}
+              >
+                <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                  isActive ? 'bg-indigo-500 border-indigo-500' : 'border-white/20'
+                }`}>
+                  {isActive && <FileCheck className="w-3 h-3 text-white" />}
+                </div>
+                <span className="text-xs font-bold text-slate-300">{text}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
