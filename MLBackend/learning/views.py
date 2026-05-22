@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg, Count
-from rest_framework import permissions, status, viewsets
+from rest_framework import permissions, status, viewsets, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -9,16 +9,19 @@ from django.db.models.functions import TruncDate
 from datetime import timedelta
 import httpx
 import os
-from .models import ( ProjectSubmission, ProjectPeerReview, UserLessonProgress, UserNote,
+from .models import ( ProjectSubmission, Review, UserLessonProgress, UserNote,
     QuizQuestion, QuizChoice, UserCodeSubmission, UserQuizAttempt,
-    Enrollment, PathEnrollment, CertificationExamAttempt, Certificate
+    Enrollment, PathEnrollment, CertificationExamAttempt, Certificate,
+    SkillBadge, UserBadge
     )
+from .permissions import IsAuthorizedReviewer
 from courses.models import Lesson, Course, LearningPath, LearningPathCourse
 from .serializers import (
     UserLessonProgressSerializer, UserNoteSerializer, QuizQuestionSerializer,
     QuizSubmissionSerializer, UserQuizAttemptSerializer, UserCodeSubmissionSerializer,
-    EnrollmentSerializer, ProjectSubmissionSerializer, ProjectPeerReviewSerializer,
-    PathEnrollmentSerializer, CertificateSerializer, NotificationSerializer
+    EnrollmentSerializer, ProjectSubmissionSerializer, ReviewSerializer,
+    PathEnrollmentSerializer, CertificateSerializer, NotificationSerializer,
+    SkillBadgeSerializer, UserBadgeSerializer
 )
 from users.models import Notification, Message
 
@@ -115,12 +118,14 @@ class DashboardSummaryView(APIView):
             "active_paths": PathEnrollmentSerializer(path_enrollments, many=True, context={'request': request}).data,
             "certificates_count": certificates.count(),
             "latest_certificates": CertificateSerializer(certificates[:3], many=True).data,
+            "user_badges": UserBadgeSerializer(UserBadge.objects.filter(user=user).select_related('badge').order_by('-granted_at')[:3], many=True).data,
             "deadlines": deadlines[:4],
             "stats": {
                 "avg_quiz_score": int(avg_score),
                 "streak_days": streak,
                 "unread_messages": unread_messages_count,
-                "total_points": (certificates.count() * 500) + (UserLessonProgress.objects.filter(user=user).count() * 10)
+                "total_points": user.xp_points,
+                "level_number": (user.xp_points // 1000) + 1
             },
             "notifications": [
                 {"id": n.id, "title": n.title, "type": n.type, "created_at": n.created_at} 
@@ -476,49 +481,119 @@ class PeerReviewViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['get'])
     def to_review(self, request):
         submissions = ProjectSubmission.objects.filter(
-            status='pending'
-        ).exclude(user=request.user).exclude(
-            peer_reviews__reviewer=request.user
+            status='in_review', # ou pending selon le flux
+            reviews__reviewer=request.user,
+            reviews__status='assigned'
         )
+        # Mais le ReviewService se déclenche sur pending. Donc il se peut que ça soit encore pending ou in_review.
+        submissions = ProjectSubmission.objects.filter(
+            status__in=['pending', 'in_review'],
+            reviews__reviewer=request.user,
+            reviews__status='assigned'
+        ).distinct()
+        
         serializer = ProjectSubmissionSerializer(submissions, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'], url_path='review')
-    def submit_review(self, request, pk=None):
-        submission = get_object_or_404(ProjectSubmission, pk=pk)
+class SubmitReviewView(generics.CreateAPIView):
+    """
+    Vue sécurisée pour soumettre une évaluation.
+    """
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAuthorizedReviewer]
 
-        if submission.user == request.user:
+    def perform_create(self, serializer):
+        submission = serializer.validated_data['submission']
+        
+        # 1. Anti-auto-évaluation (sécurité supplémentaire)
+        if submission.user == self.request.user:
+            raise serializers.ValidationError("Vous ne pouvez pas évaluer votre propre projet.")
+        
+        # 2. Empêcher les doublons (Une review par utilisateur par submission)
+        if Review.objects.filter(submission=submission, reviewer=self.request.user, status='completed').exists():
+            raise serializers.ValidationError("Vous avez déjà soumis une évaluation terminée pour ce projet.")
+            
+        # 3. Supprimer la review 'assignée' si elle existe pour éviter un doublon
+        Review.objects.filter(submission=submission, reviewer=self.request.user, status='assigned').delete()
+            
+        # 4. Sauvegarder en forçant l'évaluateur comme étant le user connecté
+        # Le signal handle_review_completion se chargera d'appeler check_and_finalize()
+        serializer.save(reviewer=self.request.user, status='completed')
+
+
+# ═════════════════════════════════════════════
+#  TUTEUR IA (RAG)
+# ═════════════════════════════════════════════
+
+class AiTutorChatView(APIView):
+    """
+    POST /api/learning/tutor/chat/
+    Body: { "lesson_id": int, "messages": [{"role": "user"|"assistant", "content": "..."}] }
+    
+    Envoie la conversation à OpenAI avec le contexte complet de la leçon (RAG).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        lesson_id = request.data.get('lesson_id')
+        conversation = request.data.get('messages', [])
+
+        if not lesson_id:
             return Response(
-                {"error": "Vous ne pouvez pas corriger votre propre projet."},
+                {"error": "lesson_id est requis."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        data = request.data.copy()
-        score = int(data.get('score', 0))
-        required_score = 90 if submission.project.is_final else 70
-        data['is_approved'] = score >= required_score
+        lesson = get_object_or_404(Lesson, pk=lesson_id)
 
-        serializer = ProjectPeerReviewSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(reviewer=request.user, submission=submission)
+        # Valider le format des messages
+        valid_messages = []
+        for msg in conversation:
+            if isinstance(msg, dict) and msg.get('role') in ('user', 'assistant') and msg.get('content'):
+                valid_messages.append({
+                    'role': msg['role'],
+                    'content': msg['content'][:2000]  # Limiter la taille par message
+                })
 
-        approved_count = submission.peer_reviews.filter(is_approved=True).count()
-        if approved_count >= 2:
-            submission.status = 'approved'
-            submission.save()
+        if not valid_messages or valid_messages[-1]['role'] != 'user':
+            return Response(
+                {"error": "Au moins un message utilisateur est requis."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            # Si projet final → certificat de cours
-            if submission.project.is_final:
-                avg_score = submission.peer_reviews.filter(
-                    is_approved=True
-                ).aggregate(Avg('score'))['score__avg'] or score
-                Certificate.objects.get_or_create(
-                    user=submission.user,
-                    course=submission.project.module.course,
-                    defaults={
-                        'final_score': int(avg_score),
-                        'cert_type': 'course_completion'
-                    }
-                )
+        try:
+            from .services.ai_tutor import chat_with_tutor
+            reply = chat_with_tutor(lesson, valid_messages)
+            return Response({"reply": reply})
+        except Exception as e:
+            return Response(
+                {"error": f"Erreur du Tuteur IA : {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class UserBadgesView(APIView):
+    """
+    F-10 : Retourne tous les badges de l'utilisateur connecté (obtenus et à débloquer).
+    GET /api/private/learning/badges/
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        # Badges déjà obtenus par l'utilisateur
+        user_badges = UserBadge.objects.filter(user=request.user).select_related('badge')
+        obtained_data = UserBadgeSerializer(user_badges, many=True).data
+
+        # Tous les badges disponibles (pour afficher ceux encore à débloquer)
+        obtained_badge_ids = user_badges.values_list('badge_id', flat=True)
+        locked_badges = SkillBadge.objects.exclude(id__in=obtained_badge_ids)
+        locked_data = SkillBadgeSerializer(locked_badges, many=True).data
+
+        return Response({
+            "obtained": obtained_data,
+            "locked": locked_data,
+            "total_obtained": len(obtained_data),
+            "total_available": SkillBadge.objects.count(),
+        })
+
+
