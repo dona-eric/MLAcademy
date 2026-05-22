@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import (
     Enrollment, PathEnrollment, UserLessonProgress, UserNote,
     QuizQuestion, QuizChoice, UserQuizAttempt, UserCodeSubmission,
-    ProjectSubmission, ProjectPeerReview, CertificationExamAttempt, Certificate
+    ProjectSubmission, Review, CertificationExamAttempt, Certificate,
+    SkillBadge, UserBadge
 )
 from users.models import Notification
 from courses.models import LearningPath, LearningPathCourse, Course
@@ -110,25 +111,65 @@ class UserCodeSubmissionSerializer(serializers.ModelSerializer):
         read_only_fields = ['lesson', 'last_result']
 
 
-#  PEER REVIEW
+#  REVIEW
 
-class ProjectPeerReviewSerializer(serializers.ModelSerializer):
+class ReviewSerializer(serializers.ModelSerializer):
     reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
+    total_score = serializers.IntegerField(source='get_total_score', read_only=True)
 
     class Meta:
-        model = ProjectPeerReview
-        fields = ['id', 'reviewer_name', 'score', 'feedback', 'is_approved', 'created_at']
+        model = Review
+        fields = ['id', 'submission', 'reviewer_name', 'scores', 'total_score', 'feedback', 'review_type', 'created_at']
+        read_only_fields = ['reviewer_name', 'total_score']
+
+    def validate(self, data):
+        submission = data.get('submission')
+        # Si on fait un update partiel sans submission, on le recupere de l'instance
+        if not submission and self.instance:
+            submission = self.instance.submission
+            
+        if not submission:
+            raise serializers.ValidationError("La soumission est requise.")
+            
+        project = submission.project
+        submitted_scores = data.get('scores', {})
+        
+        # 1. Vérifier si la grille existe
+        if not project.rubric:
+            raise serializers.ValidationError("Ce projet ne possède pas de grille d'évaluation (rubric).")
+            
+        rubric_criteria = project.rubric.criteria_definition
+        
+        # 2. Validation des clés (Anti-triche sur les critères)
+        for criterion, score in submitted_scores.items():
+            if criterion not in rubric_criteria:
+                raise serializers.ValidationError(f"Le critère '{criterion}' n'existe pas dans la grille.")
+            
+            # 3. Validation des bornes
+            max_p = rubric_criteria[criterion].get('max_points', 0)
+            if not (0 <= score <= max_p):
+                raise serializers.ValidationError(f"Score invalide pour '{criterion}'. Max: {max_p}")
+                
+        return data
 
 
 class ProjectSubmissionSerializer(serializers.ModelSerializer):
-    peer_reviews = ProjectPeerReviewSerializer(many=True, read_only=True)
+    reviews = ReviewSerializer(many=True, read_only=True)
+    certificate_id = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectSubmission
         fields = [
             'id', 'project', 'repo_url', 'code_content', 'status', 
-            'submitted_at', 'peer_reviews','created_at', 'updated_at']
+            'submitted_at', 'reviews', 'final_grade', 'certificate_id', 'created_at', 'updated_at']
         read_only_fields = ['status', 'submitted_at']
+
+    def get_certificate_id(self, obj):
+        if obj.status == 'approved' and obj.project.is_final:
+            cert = Certificate.objects.filter(user=obj.user, course=obj.project.module.course).first()
+            if cert:
+                return cert.certificate_id
+        return None
 
 
 #  CERTIFICATION
@@ -160,3 +201,15 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'type', 'title', 'content', 'link', 'is_read', 'created_at']
         read_only_fields = ['id', 'type', 'title', 'content', 'link', 'created_at']
+
+class SkillBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SkillBadge
+        fields = ['id', 'name', 'icon', 'badge_type', 'description']
+
+class UserBadgeSerializer(serializers.ModelSerializer):
+    badge = SkillBadgeSerializer(read_only=True)
+    
+    class Meta:
+        model = UserBadge
+        fields = ['id', 'badge', 'granted_at']
