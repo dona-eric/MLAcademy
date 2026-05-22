@@ -3,13 +3,11 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import StudentProfile, InstructorApplication
 
 User = get_user_model()
 
-
 #  INSCRIPTION
-
-
 class UserRegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         required=True,
@@ -47,14 +45,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            "email",
-            "username",
-            "first_name",
-            "last_name",
-            "password",
-            "password_confirm",
-        ]
+        fields = ["email","username","first_name","last_name","password", "password_confirm"]
         extra_kwargs = {
             "first_name": {"required": False, "allow_blank": True},
             "last_name": {"required": False, "allow_blank": True},
@@ -95,8 +86,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 
 #  CONNEXION JWT
-
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Ajoute des champs supplémentaires
     dans le token JWT et vérifie l'email.
@@ -112,7 +101,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                     "detail": "Veuillez confirmer votre adresse email avant de vous connecter."
                 }
             )
-
         # Données retournées avec les tokens
         data["email"] = user.email
         data["username"] = user.username
@@ -149,34 +137,27 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 
 #  EXPORT RGPD
-
-
 class UserExportSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
+        fields = ["id","email","username","first_name","last_name","bio","linkedin_url","github_url","portfolio_url","level","personal_goals","is_public_profile","email_verified","otp_enabled","date_joined", "last_login",]
+
+
+# StudentProfile Serializer
+
+class StudentProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour gérer les données détaillées de l'onboarding.
+    """
+    class Meta:
+        model = StudentProfile
         fields = [
-            "id",
-            "email",
-            "username",
-            "first_name",
-            "last_name",
-            "bio",
-            "linkedin_url",
-            "github_url",
-            "portfolio_url",
-            "level",
-            "personal_goals",
-            "is_public_profile",
-            "email_verified",
-            "otp_enabled",
-            "date_joined",
-            "last_login",
+            "phone", "gender", "address_street", "address_zip","address_city", "address_country", "french_level","english_level", "current_situation", 
+            "professional_experiences","work_permits", "specific_statuses", "diplomas", "hours_per_week","desired_start_date", "onboarding_completed","honor_declaration_accepted", "selected_training_slug","funding_method"
         ]
 
 
 #  F-02 : PROFIL APPRENANT
-
-
 class UserProfileSerializer(serializers.ModelSerializer):
     """
     Serializer pour lire et mettre à jour le profil de l'utilisateur connecté.
@@ -186,39 +167,60 @@ class UserProfileSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField(read_only=True)
     is_instructor = serializers.SerializerMethodField(read_only=True)
     instructor_application_status = serializers.SerializerMethodField(read_only=True)
+    stats = serializers.SerializerMethodField(read_only=True)
+    student_profile = StudentProfileSerializer(required=False)
 
     class Meta:
         model = User
         fields = [
-            "id",
-            "email",
-            "username",
-            "first_name",
-            "last_name",
-            "avatar",
-            "avatar_url",
-            "bio",
-            "linkedin_url",
-            "github_url",
-            "portfolio_url",
-            "level",
-            "personal_goals",
-            "is_public_profile",
-            "email_verified",
-            "otp_enabled",
-            "date_joined",
-            "last_login",
-            "is_instructor",
-            "instructor_application_status",
+            "id", "email", "username", "first_name", "last_name",
+            "avatar", "avatar_url", "bio", "linkedin_url",
+            "github_url", "portfolio_url", "level",
+            "personal_goals", "is_public_profile", "email_verified",
+            "otp_enabled", "is_staff", "is_superuser", "date_joined","last_login", "is_instructor", "instructor_application_status","stats", "student_profile", "xp_points"
         ]
         read_only_fields = [
-            "id",
-            "email",
-            "email_verified",
-            "otp_enabled",
-            "date_joined",
-            "last_login",
-        ]
+            "id", "email", "email_verified", "otp_enabled", "date_joined", "last_login", "stats", "xp_points"
+            ]
+
+    def update(self, instance, validated_data):
+        student_profile_data = validated_data.pop('student_profile', None)
+        
+        # Update User
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Update or Create StudentProfile
+        if student_profile_data:
+            from .models import StudentProfile
+            profile, created = StudentProfile.objects.get_or_create(user=instance)
+            for attr, value in student_profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+
+        return instance
+
+    def get_stats(self, obj):
+        from learning.models import Enrollment, Certificate, UserLessonProgress
+        courses_completed = Enrollment.objects.filter(user=obj, is_completed=True).count()
+        certificates = Certificate.objects.filter(user=obj).count()
+        lessons_completed = UserLessonProgress.objects.filter(user=obj).count()
+        
+        # Simulation d'heures (30 mins par leçon en moyenne)
+        learning_hours = round(lessons_completed * 0.5, 1)
+        
+        # Système de points (XP)
+        points = obj.xp_points
+        level_number = (points // 1000) + 1
+        
+        return {
+            "coursesCompleted": courses_completed,
+            "certificates": certificates,
+            "learningHours": learning_hours,
+            "points": points,
+            "levelNumber": level_number
+        }
         extra_kwargs = {
             "avatar": {"write_only": True, "required": False},
         }
@@ -253,18 +255,7 @@ class UserPublicProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = [
-            "id",
-            "username",
-            "full_name",
-            "avatar_url",
-            "bio",
-            "linkedin_url",
-            "github_url",
-            "portfolio_url",
-            "level",
-            "date_joined",
-        ]
+        fields = ["id","username","full_name","avatar_url","bio","linkedin_url","github_url","portfolio_url", "level","date_joined"]
 
     def get_avatar_url(self, obj):
         request = self.context.get("request")
@@ -276,7 +267,6 @@ class UserPublicProfileSerializer(serializers.ModelSerializer):
         return obj.get_full_name()
 
 
-from .models import InstructorApplication
 
 class InstructorApplicationSerializer(serializers.ModelSerializer):
     """
@@ -442,7 +432,7 @@ class RejectApplicationSerializer(serializers.Serializer):
 # Activation du compte instructeur
  
 class InstructorActivationSerializer(serializers.Serializer):
-    token    = serializers.CharField()
+    token = serializers.CharField()
     password = serializers.CharField(min_length=8)
     password_confirm = serializers.CharField(min_length=8)
  
