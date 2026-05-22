@@ -1,8 +1,11 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views_instructor import (InstructorCourseViewSet,InstructorLearningPathViewSet, InstructorLessonViewSet, 
-InstructorModuleViewSet, InstructorPeerReviewViewSet, InstructorProjectViewSet, InstructorStatsView)
+from .views_instructor import (
+    InstructorCourseViewSet, InstructorLearningPathViewSet, InstructorLessonViewSet, 
+    InstructorModuleViewSet, InstructorPeerReviewViewSet, InstructorProjectViewSet, 
+    InstructorStatsView
+)
 
 router = DefaultRouter()
 router.register(r"courses", InstructorCourseViewSet, basename="instructor-course")
@@ -13,6 +16,7 @@ router.register(r"projects", InstructorProjectViewSet, basename="instructor-proj
 router.register(r"peer-reviews", InstructorPeerReviewViewSet, basename="instructor-peer-review")
 
 urlpatterns = [
-    path("", include(router.urls)),
+    # 💡 SÉCURITÉ : La route fixe est placée en premier pour garantir son exécution prioritaire
     path("stats/", InstructorStatsView.as_view(), name="instructor-stats"),
+    path("", include(router.urls)),
 ]
