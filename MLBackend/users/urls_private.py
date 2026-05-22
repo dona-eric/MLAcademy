@@ -14,8 +14,7 @@ from .views import (
 
 urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
-    path(
-        "social/complete/", SocialJWTCompleteView.as_view(), name="social-jwt-complete"
+    path("social/complete/", SocialJWTCompleteView.as_view(), name="social-jwt-complete"
     ),
     path("2fa/enable/", Enable2FAView.as_view(), name="2fa-enable"),
     path("2fa/verify/", Verify2FAView.as_view(), name="2fa-verify"),
