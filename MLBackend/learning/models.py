@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from courses.models import Lesson, Course, LearningPath, LearningPathCourse, CertificationExam
+from courses.models import Lesson, LearningPathCourse, LearningPath
 
 
 #  ENROLLMENT (Inscription à un Cours)
@@ -11,7 +11,7 @@ class Enrollment(models.Model):
     related_name="enrollments", verbose_name="Étudiant")
 
     course = models.ForeignKey(
-        Course, on_delete=models.CASCADE,
+        "courses.Course", on_delete=models.CASCADE,
         related_name="enrollments", verbose_name="Cours"
     )
     enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription")
@@ -85,7 +85,7 @@ class PathEnrollment(models.Model):
     Inscription d'un étudiant à un parcours complet (certification).
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="path_enrollments")
-    learning_path = models.ForeignKey(LearningPath, on_delete=models.CASCADE, related_name="enrollments")
+    learning_path = models.ForeignKey("courses.LearningPath", on_delete=models.CASCADE, related_name="enrollments")
     enrolled_at = models.DateTimeField(auto_now_add=True)
     progress_percentage = models.PositiveIntegerField(default=0)
     is_completed = models.BooleanField(default=False)
@@ -271,6 +271,8 @@ class ProjectSubmission(models.Model):
     STATUS_CHOICES = [
         ('draft', 'Brouillon'),
         ('pending', 'En attente de correction'),
+        ('in_review', 'En cours d\'évaluation'),
+        ('graded', 'Noté'),
         ('approved', 'Validé'),
         ('rejected', 'Rejeté'),
     ]
@@ -302,57 +304,186 @@ class ProjectSubmission(models.Model):
         
         # Trigger progression update when a project is approved
         if self.status == 'approved' and old_status != 'approved':
-            # Update Enrollment for all courses containing the module of this project
-            enrollments = Enrollment.objects.filter(
-                user=self.user, 
-                course__course_modules__module=self.project.module
-            )
-            for enr in enrollments:
-                enr.update_progress()
+            self._update_enrollment_progress()
+            self.trigger_certification_success()
+
+    def _update_enrollment_progress(self):
+        """Met à jour la progression de l'enrollment."""
+        enrollments = Enrollment.objects.filter(
+            user=self.user, 
+            course__course_modules__module=self.project.module
+        )
+        for enr in enrollments:
+            enr.update_progress()
+
+    def check_and_finalize(self):
+        """
+        Vérifie si le projet doit passer en statut 'graded'.
+        Appelé automatiquement par le signal post_save sur Review.
+        """
+        if self.status not in ['pending', 'in_review']:
+            return False
+
+        required = self.project.required_review_count
+        completed_count = self.reviews.filter(status='completed').count()
+
+        if completed_count < required:
+            # Pas encore assez de reviews, mais au moins 1 → in_review
+            if completed_count > 0 and self.status == 'pending':
+                self.status = 'in_review'
+                self.save(update_fields=['status'])
+            return False
+
+        # Quota atteint → évaluation finale
+        grade = self.final_grade
+        self.status = 'graded'
+
+        if grade >= self.project.passing_score:
+            self.status = 'approved'
+        else:
+            self.status = 'rejected'
             
-            # If it's a Capstone, trigger certification
-            if self.project.is_capstone:
-                # Find all paths where this project is the capstone
-                from courses.models import CertificationExam
-                exams = CertificationExam.objects.filter(capstone_project=self.project)
-                for exam in exams:
-                    path_enr = PathEnrollment.objects.filter(
-                        user=self.user, 
-                        learning_path=exam.learning_path
-                    ).first()
-                    if path_enr:
-                        path_enr.is_certified = True
-                        path_enr.save(update_fields=['is_certified'])
-                        
-                        Certificate.objects.get_or_create(
-                            user=self.user,
-                            learning_path=exam.learning_path,
-                            defaults={
-                                'cert_type': 'path_certification',
-                                'final_score': 100 
-                            }
-                        )
+        self.save(update_fields=['status'])
+        
+        if self.status == 'rejected':
+            self.trigger_certification_failure()
+            
+        return True
+
+    def trigger_certification_success(self):
+        """Déclenche la certification lors de la réussite."""
+        # Certificat de cours (projet final)
+        if self.project.is_final:
+            Certificate.objects.get_or_create(
+                user=self.user,
+                course=self.project.module.course,
+                defaults={
+                    'cert_type': 'course_completion',
+                    'final_score': int(self.final_grade)
+                }
+            )
+
+        # Certificat de parcours (capstone)
+        if self.project.is_capstone:
+            from courses.models import CertificationExam
+            exams = CertificationExam.objects.filter(capstone_project=self.project)
+            for exam in exams:
+                path_enr = PathEnrollment.objects.filter(
+                    user=self.user, 
+                    learning_path=exam.learning_path
+                ).first()
+                if path_enr:
+                    path_enr.is_certified = True
+                    path_enr.save(update_fields=['is_certified'])
+                    
+                    Certificate.objects.get_or_create(
+                        user=self.user,
+                        learning_path=exam.learning_path,
+                        defaults={
+                            'cert_type': 'path_certification',
+                            'final_score': int(self.final_grade)
+                        }
+                    )
+                    
+        # Envoi de l'e-mail de succès (Asynchrone)
+        from .tasks import send_certification_success_email
+        send_certification_success_email.delay(
+            user_email=self.user.email,
+            student_name=self.user.get_full_name() or self.user.username,
+            project_title=self.project.title,
+            final_score=int(self.final_grade),
+            linkedin_url="https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME",
+            certificate_url="http://localhost:3000/dashboard/certifications"
+        )
+
+    def trigger_certification_failure(self):
+        """Actions lors de l'échec (notification d'encouragement)."""
+        from users.models import Notification
+        Notification.objects.create(
+            user=self.user,
+            type='grade',
+            title=f"Projet à améliorer : {self.project.title}",
+            content=(
+                f"Votre projet nécessite des ajustements pour atteindre le niveau requis "
+                f"({self.project.passing_score}%). Score actuel : {self.final_grade:.0f}%. "
+                f"Consultez les retours de vos évaluateurs et soumettez une nouvelle version."
+            ),
+            link="/dashboard/grades"
+        )
+        
+        # Envoi de l'e-mail d'encouragement (Growth Mindset)
+        from .tasks import send_growth_mindset_email
+        send_growth_mindset_email.delay(
+            user_email=self.user.email,
+            student_name=self.user.get_full_name() or self.user.username,
+            project_title=self.project.title,
+            review_url="http://localhost:3000/dashboard/grades"
+        )
+
+    @property
+    def final_grade(self):
+        reviews = self.reviews.filter(status='completed')
+        if not reviews.exists():
+            return 0.0
+        total = sum(r.get_total_score() for r in reviews)
+        return total / reviews.count()
 
     def __str__(self):
         return f"Soumission de {self.user} pour {self.project.title} ({self.get_status_display()})"
 
 
-class ProjectPeerReview(models.Model):
-    """Évaluation d'une soumission par un pair."""
+from django.core.exceptions import ValidationError
+
+class Review(models.Model):
+    """Évaluation d'une soumission par un pair ou un instructeur."""
+    REVIEW_TYPES = (
+        ('instructor', 'Instructeur'),
+        ('peer', 'Pair')
+    )
+    STATUS_CHOICES = (
+        ('assigned', 'Assigné'),
+        ('completed', 'Terminé')
+    )
+
+    submission = models.ForeignKey(ProjectSubmission, on_delete=models.CASCADE, related_name="reviews")
     reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviews_given")
-    submission = models.ForeignKey(ProjectSubmission, on_delete=models.CASCADE, related_name="peer_reviews")
-    score = models.PositiveIntegerField(verbose_name="Note (sur 100)")
-    feedback = models.TextField(verbose_name="Commentaires constructifs")
-    is_approved = models.BooleanField(default=False, verbose_name="Projet validé")
+    scores = models.JSONField(default=dict, verbose_name="Scores par critère")
+    feedback = models.TextField(verbose_name="Commentaires constructifs", blank=True)
+    review_type = models.CharField(max_length=20, choices=REVIEW_TYPES, default='peer')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='completed')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = "Correction par les pairs"
-        verbose_name_plural = "Corrections par les pairs"
-        unique_together = [["reviewer", "submission"]]
+        verbose_name = "Évaluation"
+        verbose_name_plural = "Évaluations"
+
+    def clean(self):
+        # Verrou anti-retardataire
+        if self.submission.status in ['approved', 'rejected', 'graded']:
+            raise ValidationError(
+                "Cette soumission a déjà été finalisée. Aucune évaluation supplémentaire n'est acceptée."
+            )
+        
+        if self.reviewer == self.submission.user:
+            raise ValidationError("Un étudiant ne peut pas valider sa propre soumission.")
+        
+        # Verify JSON keys against Project Rubric
+        is_valid, error_msg = self.submission.project.validate_submission_data(self.scores)
+        if not is_valid:
+            raise ValidationError(f"Les critères de la grille ne correspondent pas: {error_msg}")
+
+    def save(self, *args, **kwargs):
+        if self.status == 'completed':
+            self.clean()
+        super().save(*args, **kwargs)
+
+    def get_total_score(self):
+        if self.status != 'completed':
+            return 0
+        return sum(self.scores.values()) if self.scores else 0
 
     def __str__(self):
-        return f"Évaluation de {self.reviewer} pour la soumission {self.submission.id}"
+        return f"Évaluation ({self.get_review_type_display()}) de {self.reviewer} pour la soumission {self.submission.id}"
 
 
 #  CERTIFICATION (Exam Attempts & Certificates)
@@ -364,7 +495,7 @@ class CertificationExamAttempt(models.Model):
         related_name="exam_attempts"
     )
     exam = models.ForeignKey(
-        CertificationExam, on_delete=models.CASCADE,
+        "courses.CertificationExam", on_delete=models.CASCADE,
         related_name="attempts"
     )
     score = models.PositiveIntegerField(verbose_name="Score obtenu (%)")
@@ -402,7 +533,7 @@ class CertificationExamAttempt(models.Model):
                 )
 
     def __str__(self):
-        status = " Réussi ✅" if self.passed else " Échoué ❌"
+        status = " Réussi" if self.passed else " Échoué"
         return f"{self.user.email} - {self.exam.title} ({self.score}%) {status}"
 
 
@@ -439,6 +570,7 @@ class Certificate(models.Model):
     issued_at = models.DateTimeField(auto_now_add=True)
     certificate_id = models.CharField(max_length=100, unique=True, blank=True)
     final_score = models.PositiveIntegerField(default=0)
+    pdf_file = models.FileField(upload_to="certificates/", null=True, blank=True, verbose_name="Fichier PDF")
 
     class Meta:
         verbose_name = "Certificat"
