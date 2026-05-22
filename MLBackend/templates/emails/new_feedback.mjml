@@ -1,0 +1,21 @@
+<mjml>
+  <mj-head>
+    <mj-title>Nouvelle Évaluation - MLAcademy</mj-title>
+    <mj-attributes>
+      <mj-all font-family="Inter, Helvetica, Arial, sans-serif" />
+      <mj-text font-size="16px" color="#333333" line-height="24px" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f9fafb">
+    <mj-section background-color="#ffffff" padding="40px 20px" border-radius="12px">
+      <mj-column>
+        <mj-text align="center" font-size="24px" font-weight="800" color="#111827">Nouvelle Évaluation Reçue</mj-text>
+        <mj-text>Bonjour <strong>{{ student_name }}</strong>,</mj-text>
+        <mj-text>Un évaluateur vient de laisser un retour sur votre projet <strong>"{{ project_title }}"</strong>.</mj-text>
+        <mj-text>Allez vite consulter ses commentaires et sa grille d'évaluation détaillée.</mj-text>
+        <mj-button background-color="#4f46e5" color="white" border-radius="8px" href="{{ review_url }}">Voir les retours</mj-button>
+        <mj-text font-size="14px" color="#6b7280" align="center" padding-top="30px">L'équipe MLAcademy.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
