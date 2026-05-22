@@ -37,6 +37,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -60,10 +62,13 @@ INSTALLED_APPS = [
     "users",
     "courses",
     "learning",
+    "management",
+    "community",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -93,6 +98,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "MLBackend.wsgi.application"
+ASGI_APPLICATION = "MLBackend.asgi.application"
+
+# Channel Layers (Redis)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 
 # Database
@@ -105,6 +121,22 @@ DATABASES = {
     }
 }
 
+JAZZMIN_SETTINGS = {
+    # Titre de la page
+    "site_title": "MLAcademy",
+    "site_header": "MLAcademy",
+    "site_brand": "MLAcademy",
+    
+    # Logo
+    "site_logo": "/media/gu.png",
+    
+    # Mode sombre par défaut
+    "theme": "dark", 
+    
+    # Personnalisation du menu
+    "show_sidebar": True,
+    "navigation_expanded": True,
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -138,9 +170,17 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "MLBackend.storage.IgnoreMissingManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -207,6 +247,13 @@ CORS_ALLOW_HEADERS = list(
 # Email Configuration (console pour le dev, SMTP en prod)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
+# Celery Configuration
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
 # django-allauth Configuration
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
@@ -217,7 +264,7 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"  # Géré manuellement via notre vue
 SOCIALACCOUNT_LOGIN_ON_GET = True
-LOGIN_REDIRECT_URL = "http://localhost:3000/auth/social/complete?next=/parcours"
+LOGIN_REDIRECT_URL = "http://localhost:3000/onboarding"
 LOGOUT_REDIRECT_URL = "http://localhost:3000/login"
 FRONTEND_URL = "http://localhost:3000"
 
