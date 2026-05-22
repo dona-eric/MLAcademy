@@ -2,10 +2,10 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     LessonProgressView, LessonNoteViewSet, LessonQuizView, LessonCodeSubmissionView,
-    ProjectSubmissionViewSet, PeerReviewViewSet, NotificationViewSet,
+    ProjectSubmissionViewSet, PeerReviewViewSet, NotificationViewSet, SubmitReviewView,
     EnrollView, MyCoursesView,
     PathEnrollView, MyPathsView, MyCertificatesView,
-    DashboardSummaryView
+    DashboardSummaryView, AiTutorChatView, UserBadgesView
 )
 
 router = DefaultRouter()
@@ -17,6 +17,9 @@ router.register(r'peer-reviews', PeerReviewViewSet, basename='peer-review')
 router.register(r'notifications', NotificationViewSet, basename='notification')
 
 urlpatterns = [
+    # --- Reviews ---
+    path('reviews/submit/', SubmitReviewView.as_view(), name='submit-review'),
+
     # --- Enrollment Cours ---
     path('enroll/<slug:course_slug>/', EnrollView.as_view(), name='enroll'),
     path('my-courses/', MyCoursesView.as_view(), name='my-courses'),
@@ -42,4 +45,10 @@ urlpatterns = [
 
     # --- Dashboard Summary ---
     path('dashboard-summary/', DashboardSummaryView.as_view(), name='dashboard-summary'),
+
+    # --- Tuteur IA (RAG) ---
+    path('tutor/chat/', AiTutorChatView.as_view(), name='tutor-chat'),
+
+    # --- F-10: Gamification / Badges ---
+    path('badges/', UserBadgesView.as_view(), name='user-badges'),
 ]
