@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Enrollment, PathEnrollment, UserLessonProgress, UserNote,
     QuizQuestion, QuizChoice, UserQuizAttempt, UserCodeSubmission,
-    ProjectSubmission, ProjectPeerReview, CertificationExamAttempt, Certificate
+    ProjectSubmission, Review, CertificationExamAttempt, Certificate
 )
 
 #  ENROLLMENT
@@ -63,10 +63,10 @@ class UserCodeSubmissionAdmin(admin.ModelAdmin):
     search_fields = ('user__username', 'lesson__title')
 
 
-#  PEER REVIEW
+#  REVIEW
 
-class ProjectPeerReviewInline(admin.TabularInline):
-    model = ProjectPeerReview
+class ReviewInline(admin.TabularInline):
+    model = Review
     extra = 1
 
 @admin.register(ProjectSubmission)
@@ -74,12 +74,12 @@ class ProjectSubmissionAdmin(admin.ModelAdmin):
     list_display = ('user', 'project', 'status', 'submitted_at')
     list_filter = ('status', 'project')
     search_fields = ('user__username', 'project__title')
-    inlines = [ProjectPeerReviewInline]
+    inlines = [ReviewInline]
 
-@admin.register(ProjectPeerReview)
-class ProjectPeerReviewAdmin(admin.ModelAdmin):
-    list_display = ('reviewer', 'submission', 'score', 'is_approved')
-    list_filter = ('is_approved',)
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('reviewer', 'submission', 'review_type')
+    list_filter = ('review_type',)
 
 
 #  CERTIFICATION
