@@ -1,7 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser
-
+from .models import CustomUser, InstructorApplication
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
@@ -29,8 +31,6 @@ class CustomUserAdmin(UserAdmin):
         }),
     )
 
-from .models import InstructorApplication
-
 @admin.register(InstructorApplication)
 class InstructorApplicationAdmin(admin.ModelAdmin):
     list_display = ["user_email", "status", "expertise", "submitted_at", "reviewed_at"]
@@ -45,9 +45,6 @@ class InstructorApplicationAdmin(admin.ModelAdmin):
 
     @admin.action(description="Approuver les candidatures sélectionnées")
     def approve_applications(self, request, queryset):
-        from django.core.mail import send_mail
-        from django.conf import settings
-        from django.utils import timezone
 
         count = 0
         for app in queryset.filter(status=InstructorApplication.STATUS_PENDING):
