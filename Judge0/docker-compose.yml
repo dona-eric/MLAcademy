@@ -33,7 +33,7 @@ services:
     image: redis:6.0
     command: [
       "bash", "-c",
-      'docker-entrypoint.sh --appendonly yes'
+      'docker-entrypoint.sh --appendonly yes --requirepass judge0secret'
     ]
     volumes:
       - redis-data:/data
