@@ -1,6 +1,8 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from .models import UserQuizAttempt, Enrollment, Certificate, ProjectPeerReview, ProjectSubmission
+from .models import UserQuizAttempt, Enrollment, Certificate, Review, ProjectSubmission, UserLessonProgress
+from .services.review_service import ReviewService
+from .tasks import send_submission_received_email, send_new_feedback_email
 from users.models import Notification, Message, CustomUser
 
 @receiver(post_save, sender=CustomUser)
@@ -40,17 +42,46 @@ def notify_quiz_result(sender, instance, created, **kwargs):
             link=f"/dashboard/grades"
         )
 
-@receiver(post_save, sender=ProjectPeerReview)
+@receiver(post_save, sender=Review)
 def notify_peer_review(sender, instance, created, **kwargs):
-    """Notifie l'auteur d'un projet qu'il a reçu une correction."""
-    if created:
+    """Notifie l'auteur d'un projet qu'il a reçu une évaluation."""
+    if instance.status == 'completed':
         Notification.objects.create(
             user=instance.submission.user,
             type='grade',
-            title="Nouvelle correction reçue",
-            content=f"Un pair a évalué votre projet '{instance.submission.project.title}'. Score : {instance.score}/100.",
+            title="Nouvelle évaluation reçue",
+            content=f"Un {instance.get_review_type_display().lower()} a évalué votre projet '{instance.submission.project.title}'. Score : {instance.get_total_score()}.",
             link=f"/dashboard/grades"
         )
+        # Envoi de l'e-mail asynchrone
+        send_new_feedback_email.delay(
+            user_email=instance.submission.user.email,
+            student_name=instance.submission.user.get_full_name() or instance.submission.user.username,
+            project_title=instance.submission.project.title,
+            review_url="http://localhost:3000/dashboard/grades"
+        )
+
+@receiver(post_save, sender=Review)
+def handle_review_completion(sender, instance, **kwargs):
+    """Déclenche check_and_finalize quand une Review passe en 'completed'."""
+    if instance.status == 'completed':
+        instance.submission.check_and_finalize()
+
+@receiver(post_save, sender=ProjectSubmission)
+def trigger_review_workflow(sender, instance, created, **kwargs):
+    """Déclenche le workflow d'assignation des revues quand le statut passe à pending."""
+    # On vérifie seulement si des updates sont faites ou si la soumission est créée directement en pending
+    if instance.status == 'pending':
+        if not instance.reviews.exists():
+            ReviewService.assign_automated_reviews(instance)
+            
+            # Envoi de l'accusé de réception (on le fait ici pour s'assurer que c'est une soumission initiale/nouvelle)
+            send_submission_received_email.delay(
+                user_email=instance.user.email,
+                student_name=instance.user.get_full_name() or instance.user.username,
+                project_title=instance.project.title,
+                dashboard_url="http://localhost:3000/dashboard/grades"
+            )
 
 @receiver(post_save, sender=Certificate)
 def notify_certificate_issued(sender, instance, created, **kwargs):
@@ -96,3 +127,53 @@ def notify_new_message(sender, instance, created, **kwargs):
             content=instance.subject,
             link="/dashboard/messages"
         )
+
+# --- GAMIFICATION XP SIGNALS ---
+
+@receiver(pre_save, sender=UserLessonProgress)
+def award_xp_for_lesson(sender, instance, **kwargs):
+    """F-10 : +50 XP lorsque la leçon est marquée comme terminée pour la première fois."""
+    if instance.pk:
+        try:
+            old_instance = UserLessonProgress.objects.get(pk=instance.pk)
+            if not old_instance.is_completed and instance.is_completed:
+                instance.user.xp_points += 50
+                instance.user.save(update_fields=['xp_points'])
+        except UserLessonProgress.DoesNotExist:
+            pass
+    else:
+        if instance.is_completed:
+            instance.user.xp_points += 50
+            instance.user.save(update_fields=['xp_points'])
+
+
+@receiver(pre_save, sender=UserQuizAttempt)
+def award_xp_for_quiz(sender, instance, **kwargs):
+    """F-10 : +100 XP lors de la première réussite d'un quiz."""
+    if instance.passed:
+        already_passed = UserQuizAttempt.objects.filter(
+            user=instance.user, 
+            lesson=instance.lesson, 
+            passed=True
+        ).exclude(pk=instance.pk).exists()
+
+        if not already_passed:
+            if instance.pk:
+                try:
+                    old_instance = UserQuizAttempt.objects.get(pk=instance.pk)
+                    if not old_instance.passed:
+                        instance.user.xp_points += 100
+                        instance.user.save(update_fields=['xp_points'])
+                except UserQuizAttempt.DoesNotExist:
+                    pass
+            else:
+                instance.user.xp_points += 100
+                instance.user.save(update_fields=['xp_points'])
+
+
+@receiver(post_save, sender=Certificate)
+def award_xp_for_certificate(sender, instance, created, **kwargs):
+    """F-10 : +500 XP lors de l'obtention d'une certification."""
+    if created:
+        instance.user.xp_points += 500
+        instance.user.save(update_fields=['xp_points'])
