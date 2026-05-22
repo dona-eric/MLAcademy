@@ -28,6 +28,12 @@ class CustomUser(AbstractUser):
     is_instructor = models.BooleanField(
         default=False, verbose_name="Est instructeur"
     )
+    is_recruiter = models.BooleanField(
+        default=False, verbose_name="Est recruteur"
+    )
+    is_mentor = models.BooleanField(
+        default=False, verbose_name="Est mentor"
+    )
 
     # --- Profil ---
     bio = models.TextField(blank=True, verbose_name="Biographie")
@@ -54,6 +60,11 @@ class CustomUser(AbstractUser):
     )
     is_public_profile = models.BooleanField(
         default=True, verbose_name="Profil public"
+    )
+
+    # --- Gamification ---
+    xp_points = models.IntegerField(
+        default=0, verbose_name="Points d'expérience"
     )
 
     USERNAME_FIELD = "email"
@@ -184,4 +195,97 @@ class InstructorApplication(models.Model):
     def mark_reviewing(self):
         self.status = self.STATUS_REVIEWING
         self.save(update_fields=["status"])
+
+
+class StudentProfile(models.Model):
+    """
+    Profil détaillé de l'apprenant, rempli lors de l'onboarding.
+    Contient les informations professionnelles, académiques et logistiques.
+    """
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="student_profile")
+    
+    # --- Contact & Localisation ---
+    phone = models.CharField(max_length=20, blank=True)
+    gender = models.CharField(max_length=20, blank=True)
+    address_street = models.CharField(max_length=255, blank=True)
+    address_zip = models.CharField(max_length=20, blank=True)
+    address_city = models.CharField(max_length=100, blank=True)
+    address_country = models.CharField(max_length=100, default="Bénin")
+
+    # --- Langues ---
+    french_level = models.CharField(max_length=50, blank=True)
+    english_level = models.CharField(max_length=50, blank=True)
+
+    # --- Situation Professionnelle ---
+    current_situation = models.CharField(max_length=100, blank=True)
+    professional_experiences = models.JSONField(default=list, blank=True) # Liste d'objets {company, role, missions, duration}
+    work_permits = models.JSONField(default=list, blank=True) # Liste de pays
+    specific_statuses = models.JSONField(default=list, blank=True) # handicap, militaire, etc.
+
+    # --- Diplômes & Certifications ---
+    diplomas = models.JSONField(default=list, blank=True) # Liste d'objets {title, school, year}
+
+    # --- Formation & Disponibilité ---
+    hours_per_week = models.IntegerField(default=20)
+    desired_start_date = models.DateField(null=True, blank=True)
+    
+    # --- État Onboarding ---
+    onboarding_completed = models.BooleanField(default=False)
+    honor_declaration_accepted = models.BooleanField(default=False)
+    selected_training_slug = models.SlugField(max_length=100, blank=True)
+    funding_method = models.CharField(max_length=100, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Profil Apprenant de {self.user.email}"
+
+
+class Notification(models.Model):
+    """
+    Système de notifications pour le dashboard (échéances, nouveaux cours, messages).
+    """
+    TYPE_CHOICES = [
+        ('deadline', 'Échéance à venir'),
+        ('grade', 'Nouvelle note'),
+        ('message', 'Nouveau message'),
+        ('system', 'Système / Plateforme'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='system')
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    link = models.CharField(max_length=255, blank=True, null=True, help_text="Lien relatif (ex: /dashboard/grades)")
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+
+    def __str__(self):
+        return f"[{self.type}] {self.title} pour {self.user.email}"
+
+
+class Message(models.Model):
+    """
+    Messagerie interne entre étudiants et instructeurs.
+    """
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_messages")
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="received_messages")
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Message"
+        verbose_name_plural = "Messages"
+
+    def __str__(self):
+        return f"De: {self.sender.email} À: {self.recipient.email} - {self.subject}"
  
