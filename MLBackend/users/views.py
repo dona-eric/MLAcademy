@@ -2,6 +2,7 @@ import io
 import uuid
 import base64
 import qrcode
+import requests
 import qrcode.image.svg
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -28,7 +29,8 @@ from .serializers import (
     UserPublicProfileSerializer,
     UserRegisterSerializer,
     InstructorApplicationSerializer,
-    InstructorApplicationStatusSerializer,  
+    InstructorApplicationStatusSerializer,
+    StudentProfileSerializer
 )
 
 User = get_user_model()
@@ -317,21 +319,21 @@ class Enable2FAView(APIView):
         TOTPDevice.objects.filter(user=user).delete()
 
         device = TOTPDevice.objects.create(
-            user=user, name="MLAcademy 2FA", confirmed=False
+            user=user, name=f"MLAcademy ({user.email})", confirmed=False
         )
 
-        # Génération du QR Code
-        otp_url = device.config_url
-        qr = qrcode.make(otp_url)
+        # Génération du QR Code en SVG (plus robuste que PNG pour le base64 direct)
+        factory = qrcode.image.svg.SvgPathImage
+        img = qrcode.make(device.config_url, image_factory=factory)
+        
         buffer = io.BytesIO()
-        qr.save(buffer, format="PNG")
-
+        img.save(buffer)
         qr_b64 = base64.b64encode(buffer.getvalue()).decode()
 
         return Response(
             {
                 "message": "Scannez ce QR Code avec Google Authenticator ou Authy.",
-                "qr_code": f"data:image/png;base64,{qr_b64}",
+                "qr_code": qr_b64,
                 "secret": device.bin_key.hex(),
             }
         )
@@ -346,26 +348,27 @@ class Verify2FAView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        otp_token = request.data.get("token")
+        otp_token = request.data.get("otp_token") # Aligné avec le frontend
         if not otp_token:
             return Response(
                 {"error": "Le code OTP est requis."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            device = TOTPDevice.objects.get(user=request.user, confirmed=False)
+            device = TOTPDevice.objects.get(user=request.user)
         except TOTPDevice.DoesNotExist:
             return Response(
-                {"error": "Aucun dispositif 2FA en attente de confirmation."},
+                {"error": "Aucun dispositif 2FA configuré."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if device.verify_token(otp_token):
-            device.confirmed = True
-            device.save(update_fields=["confirmed"])
-            request.user.otp_enabled = True
-            request.user.save(update_fields=["otp_enabled"])
-            return Response({"message": "2FA activé avec succès !"})
+            if not device.confirmed:
+                device.confirmed = True
+                device.save(update_fields=["confirmed"])
+                request.user.otp_enabled = True
+                request.user.save(update_fields=["otp_enabled"])
+            return Response({"message": "Code 2FA vérifié avec succès !"})
 
         return Response(
             {"error": "Code OTP incorrect."}, status=status.HTTP_400_BAD_REQUEST
@@ -515,6 +518,7 @@ class InstructorAccountActivateView(APIView):
             user = app.user
             user.set_password(password)
             user.is_active = True
+            user.is_instructor = True
             user.email_verified = True # On considère l'email vérifié s'il a reçu le token
             user.save()
 
@@ -525,6 +529,44 @@ class InstructorAccountActivateView(APIView):
             return Response({"message": "Compte activé avec succès ! Vous pouvez maintenant vous connecter."})
         except InstructorApplication.DoesNotExist:
             return Response({"error": "Lien invalide ou expiré."}, status=400)
+
+class AdminAccountActivateView(APIView):
+    """
+    POST /api/public/users/admin-activate/
+    Permet à un administrateur invité d'activer son compte et définir son mot de passe.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        token = request.data.get("token")
+        password = request.data.get("password")
+        password_confirm = request.data.get("password_confirm")
+
+        if not token or not password:
+            return Response({"error": "Token et mot de passe requis."}, status=400)
+        
+        if password != password_confirm:
+            return Response({"error": "Les mots de passe ne correspondent pas."}, status=400)
+
+        try:
+            # We use CustomUser verification_token for this
+            user = CustomUser.objects.get(
+                verification_token=token,
+                is_staff=True,
+                is_active=False
+            )
+            user.set_password(password)
+            user.is_active = True
+            user.email_verified = True
+            
+            # Rotate token for security
+            import uuid
+            user.verification_token = uuid.uuid4()
+            user.save()
+
+            return Response({"message": "Compte administrateur activé avec succès."})
+        except CustomUser.DoesNotExist:
+            return Response({"error": "Lien invalide, expiré ou compte déjà activé."}, status=400)
 
 
 class PublicInstructorStatusView(APIView):
@@ -549,3 +591,83 @@ class PublicInstructorStatusView(APIView):
             return Response(serializer.data)
         except (User.DoesNotExist, InstructorApplication.DoesNotExist):
             return Response({"error": "Candidature introuvable."}, status=404)
+
+class SocialView(APIView):
+    """
+    POST /api/public/users/auth/social/
+    Flux Better-Auth : Échange un token social (Google, GitHub, etc.) 
+    contre un JWT MLAcademy.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        provider = request.data.get("provider")
+        access_token = request.data.get("access_token")
+
+        if not provider or not access_token:
+            return Response({"error": "Provider and access_token are required."}, status=400)
+
+        user_email = None
+        user_first_name = ""
+        user_last_name = ""
+
+        if provider == "google":
+            # Vérification du token auprès de Google
+            resp = requests.get(f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={access_token}", timeout=5)
+            if resp.status_code == 200:
+                data = resp.json()
+                if not data.get("email_verified"):
+                    return None
+                user_email = data.get("email")
+                user_first_name = data.get("given_name", "")
+                user_last_name = data.get("family_name", "")
+            else:
+                return Response({"error": "Invalid Google token"}, status=400)
+
+        elif provider == "github":
+            # Vérification du token auprès de GitHub
+            headers = {"Authorization": f"token {access_token}"}
+            resp = requests.get("https://api.github.com/user", headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                user_email = data.get("email")
+                # GitHub peut retourner un email null s'il n'est pas public
+                if not user_email:
+                    emails_resp = requests.get("https://api.github.com/user/emails", headers=headers)
+                    if emails_resp.status_code == 200:
+                        primary_email = next((e for e in emails_resp.json() if e['primary']), None)
+                        if primary_email:
+                            user_email = primary_email['email']
+                
+                name_parts = (data.get("name") or "").split(" ")
+                user_first_name = name_parts[0] if name_parts else ""
+                user_last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+            else:
+                return Response({"error": "Invalid GitHub token"}, status=400)
+
+        if not user_email:
+            return Response({"error": "Could not retrieve email from provider"}, status=400)
+
+        # Création ou récupération de l'utilisateur
+        user, created = User.objects.get_or_create(
+            email=user_email,
+            defaults={
+                'username': user_email.split('@')[0] + "_" + str(uuid.uuid4())[:4],
+                'first_name': user_first_name,
+                'last_name': user_last_name,
+                'email_verified': True,
+                'is_active': True
+            }
+        )
+
+        # Génération du JWT
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": {
+                "email": user.email,
+                "first_name": user.first_name,
+                "is_new": created
+            }
+        })
