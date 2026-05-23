@@ -6,10 +6,11 @@ from .models import (
     SkillBadge, UserBadge
 )
 from users.models import Notification
-from courses.models import LearningPath, LearningPathCourse, Course
 
 
-#  ENROLLMENT
+# ═════════════════════════════════════════════
+#  ENROLLMENT (Inscriptions)
+# ═════════════════════════════════════════════
 
 class EnrollmentSerializer(serializers.ModelSerializer):
     course_title = serializers.CharField(source='course.title', read_only=True)
@@ -19,8 +20,11 @@ class EnrollmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Enrollment
-        fields = ['id', 'course', 'course_title', 'course_slug', 'course_level', 'course_thumbnail', 
-        'enrolled_at', 'progress_percentage', 'is_completed', 'completed_at']
+        fields = [
+            'id', 'course', 'course_title', 'course_slug', 'course_level', 
+            'course_thumbnail', 'enrolled_at', 'progress_percentage', 
+            'is_completed', 'completed_at'
+        ]
         read_only_fields = ['enrolled_at', 'progress_percentage', 'is_completed', 'completed_at']
 
     def get_course_thumbnail(self, obj):
@@ -56,13 +60,15 @@ class PathEnrollmentSerializer(serializers.ModelSerializer):
         return obj.can_take_certification_exam()
 
 
-#  PROGRESSION & NOTES
+# ═════════════════════════════════════════════
+#  PROGRESSION & NOTES (Suivi Éléments)
+# ═════════════════════════════════════════════
 
 class UserLessonProgressSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserLessonProgress
         fields = ['id', 'lesson', 'is_completed', 'last_watched_position', 'updated_at']
-        read_only_fields = ['lesson']
+        read_only_fields = ['lesson']  # Injecté généralement par l'URL de la vue
 
 
 class UserNoteSerializer(serializers.ModelSerializer):
@@ -72,12 +78,15 @@ class UserNoteSerializer(serializers.ModelSerializer):
         read_only_fields = ['lesson']
 
 
-#  QUIZ
+# ═════════════════════════════════════════════
+#  QUIZ MANAGEMENT
+# ═════════════════════════════════════════════
 
 class QuizChoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuizChoice
-        fields = ['id', 'text']  # Ne pas exposer is_correct ici pour la sécurité
+        fields = ['id', 'text']  # Sécurité : masquage de 'is_correct'
+
 
 class QuizQuestionSerializer(serializers.ModelSerializer):
     choices = QuizChoiceSerializer(many=True, read_only=True)
@@ -86,12 +95,14 @@ class QuizQuestionSerializer(serializers.ModelSerializer):
         model = QuizQuestion
         fields = ['id', 'text', 'choices', 'order']
 
+
 class QuizSubmissionSerializer(serializers.Serializer):
-    # Dictionnaire de forme {question_id: choice_id}
+    """Payload de validation pour la soumission d'un Quiz entier."""
     answers = serializers.DictField(
         child=serializers.IntegerField(),
-        help_text="Format: {'question_id': choice_id}"
+        help_text="Format attendu : {'question_id': choice_id}"
     )
+
 
 class UserQuizAttemptSerializer(serializers.ModelSerializer):
     class Meta:
@@ -99,7 +110,10 @@ class UserQuizAttemptSerializer(serializers.ModelSerializer):
         fields = ['id', 'lesson', 'score', 'passed', 'created_at']
         read_only_fields = ['lesson', 'score', 'passed']
 
-#  CODE SUBMISSION
+
+# ═════════════════════════════════════════════
+#  CODE INTERACTIF
+# ═════════════════════════════════════════════
 
 class UserCodeSubmissionSerializer(serializers.ModelSerializer):
     starter_code = serializers.CharField(source='lesson.starter_code', read_only=True)
@@ -111,7 +125,9 @@ class UserCodeSubmissionSerializer(serializers.ModelSerializer):
         read_only_fields = ['lesson', 'last_result']
 
 
-#  REVIEW
+# ═════════════════════════════════════════════
+#  PEER REVIEW & PROJECT SUBMISSION
+# ═════════════════════════════════════════════
 
 class ReviewSerializer(serializers.ModelSerializer):
     reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
@@ -123,32 +139,18 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ['reviewer_name', 'total_score']
 
     def validate(self, data):
-        submission = data.get('submission')
-        # Si on fait un update partiel sans submission, on le recupere de l'instance
-        if not submission and self.instance:
-            submission = self.instance.submission
-            
+        # Récupération de la soumission (en création ou mise à jour partielle)
+        submission = data.get('submission') or (self.instance.submission if self.instance else None)
+        
         if not submission:
-            raise serializers.ValidationError("La soumission est requise.")
+            raise serializers.ValidationError("La soumission de projet est requise.")
             
-        project = submission.project
-        submitted_scores = data.get('scores', {})
+        submitted_scores = data.get('scores', self.instance.scores if self.instance else {})
         
-        # 1. Vérifier si la grille existe
-        if not project.rubric:
-            raise serializers.ValidationError("Ce projet ne possède pas de grille d'évaluation (rubric).")
-            
-        rubric_criteria = project.rubric.criteria_definition
-        
-        # 2. Validation des clés (Anti-triche sur les critères)
-        for criterion, score in submitted_scores.items():
-            if criterion not in rubric_criteria:
-                raise serializers.ValidationError(f"Le critère '{criterion}' n'existe pas dans la grille.")
-            
-            # 3. Validation des bornes
-            max_p = rubric_criteria[criterion].get('max_points', 0)
-            if not (0 <= score <= max_p):
-                raise serializers.ValidationError(f"Score invalide pour '{criterion}'. Max: {max_p}")
+        # Delegation propre de la validation de conformité à la méthode native du modèle
+        is_valid, error_msg = submission.project.validate_submission_data(submitted_scores)
+        if not is_valid:
+            raise serializers.ValidationError({"scores": f"Grille d'évaluation invalide : {error_msg}"})
                 
         return data
 
@@ -161,8 +163,9 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
         model = ProjectSubmission
         fields = [
             'id', 'project', 'repo_url', 'code_content', 'status', 
-            'submitted_at', 'reviews', 'final_grade', 'certificate_id', 'created_at', 'updated_at']
-        read_only_fields = ['status', 'submitted_at']
+            'submitted_at', 'reviews', 'final_grade', 'certificate_id', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['status', 'submitted_at', 'final_grade']
 
     def get_certificate_id(self, obj):
         if obj.status == 'approved' and obj.project.is_final:
@@ -172,7 +175,25 @@ class ProjectSubmissionSerializer(serializers.ModelSerializer):
         return None
 
 
-#  CERTIFICATION
+class ProjectPeerReviewSerializer(serializers.ModelSerializer):
+    """Serializer plat dédié aux interfaces de modération et vues d'ensemble."""
+    reviewer_name = serializers.CharField(source='reviewer.get_full_name', read_only=True)
+    student_name = serializers.CharField(source='submission.user.get_full_name', read_only=True)
+    project_title = serializers.CharField(source='submission.project.title', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'submission', 'project_title', 'student_name', 
+            'reviewer', 'reviewer_name', 'scores', 'feedback', 
+            'review_type', 'status', 'created_at'
+        ]
+        read_only_fields = ['reviewer_name', 'student_name', 'project_title']
+
+
+# ═════════════════════════════════════════════
+#  EXAMS, CERTIFICATES & GAMIFICATION
+# ═════════════════════════════════════════════
 
 class CertificationExamAttemptSerializer(serializers.ModelSerializer):
     class Meta:
@@ -186,7 +207,8 @@ class CertificateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Certificate
-        fields = ['id', 'certificate_id', 'cert_type', 'target_name', 'final_score', 'issued_at']
+        fields = ['id', 'certificate_id', 'cert_type', 'target_name', 'final_score', 'issued_at', 'pdf_file']
+        read_only_fields = ['certificate_id', 'issued_at', 'pdf_file']
 
     def get_target_name(self, obj):
         if obj.learning_path:
@@ -202,10 +224,12 @@ class NotificationSerializer(serializers.ModelSerializer):
         fields = ['id', 'type', 'title', 'content', 'link', 'is_read', 'created_at']
         read_only_fields = ['id', 'type', 'title', 'content', 'link', 'created_at']
 
+
 class SkillBadgeSerializer(serializers.ModelSerializer):
     class Meta:
         model = SkillBadge
         fields = ['id', 'name', 'icon', 'badge_type', 'description']
+
 
 class UserBadgeSerializer(serializers.ModelSerializer):
     badge = SkillBadgeSerializer(read_only=True)
