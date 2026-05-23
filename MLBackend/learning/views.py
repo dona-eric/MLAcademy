@@ -1,34 +1,41 @@
+import os
+from datetime import timedelta
+import httpx
+
 from django.shortcuts import get_object_or_404
-from django.db.models import Avg, Count
+from django.db import models
+from django.db.models import Avg
+from django.db.models.functions import TruncDate
+from django.utils import timezone
+
 from rest_framework import permissions, status, viewsets, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.utils import timezone
-from django.db.models.functions import TruncDate
-from datetime import timedelta
-import httpx
-import os
-from .models import ( ProjectSubmission, Review, UserLessonProgress, UserNote,
-    QuizQuestion, QuizChoice, UserCodeSubmission, UserQuizAttempt,
-    Enrollment, PathEnrollment, CertificationExamAttempt, Certificate,
-    SkillBadge, UserBadge
-    )
+
+from .models import (
+    ProjectSubmission, Review, UserLessonProgress, UserNote,
+    QuizQuestion, UserCodeSubmission, UserQuizAttempt,
+    Enrollment, PathEnrollment, Certificate, SkillBadge, UserBadge
+)
 from .permissions import IsAuthorizedReviewer
-from courses.models import Lesson, Course, LearningPath, LearningPathCourse
+from courses.models import Lesson, Course, LearningPath
 from .serializers import (
     UserLessonProgressSerializer, UserNoteSerializer, QuizQuestionSerializer,
-    QuizSubmissionSerializer, UserQuizAttemptSerializer, UserCodeSubmissionSerializer,
+    QuizSubmissionSerializer, UserCodeSubmissionSerializer,
     EnrollmentSerializer, ProjectSubmissionSerializer, ReviewSerializer,
     PathEnrollmentSerializer, CertificateSerializer, NotificationSerializer,
     SkillBadgeSerializer, UserBadgeSerializer
 )
 from users.models import Notification, Message
 
+
+# ═════════════════════════════════════════════
+#  NOTIFICATIONS MANAGEMENT
+# ═════════════════════════════════════════════
+
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet pour gérer les notifications de l'utilisateur.
-    """
+    """ViewSet pour gérer et acquitter les notifications de l'utilisateur connecté."""
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -39,7 +46,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     def mark_as_read(self, request, pk=None):
         notification = self.get_object()
         notification.is_read = True
-        notification.save()
+        notification.save(update_fields=['is_read'])
         return Response({'status': 'notification marquée comme lue'})
 
     @action(detail=False, methods=['post'])
@@ -48,32 +55,29 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({'status': 'toutes les notifications marquées comme lues'})
 
 
-#  DASHBOARD SUMMARY 
+# ═════════════════════════════════════════════
+#  DASHBOARD SUMMARY
+# ═════════════════════════════════════════════
 
 class DashboardSummaryView(APIView):
-    """
-    GET /api/learning/dashboard-summary/
-    Vue unifiée pour le dashboard
-    Regroupe enrollments, stats, échéances et notifications.
-    """
+    """Vue agrégée pour alimenter l'ensemble des widgets du tableau de bord étudiant."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         user = request.user
 
-        # 1. Inscriptions actives
+        # 1. Inscriptions actives (Optimisation via select_related)
         course_enrollments = Enrollment.objects.filter(user=user, is_completed=False).select_related('course')
         path_enrollments = PathEnrollment.objects.filter(user=user, is_completed=False).select_related('learning_path')
         
         # 2. Certificats
         certificates = Certificate.objects.filter(user=user).order_by('-issued_at')
         
-        # 3. Calcul des échéances dynamiques
+        # 3. Calcul des échéances dynamiques (simulation basée sur le rythme hebdomadaire)
         deadlines = []
+        now = timezone.now()
         for enr in course_enrollments:
-            # On simule une échéance par module (1 semaine par module)
-            # Dans une logique réelle, on regarderait le module actuel
-            days_since_start = (timezone.now() - enr.enrolled_at).days
+            days_since_start = (now - enr.enrolled_at).days
             expected_module = (days_since_start // 7) + 1
             
             deadlines.append({
@@ -85,10 +89,10 @@ class DashboardSummaryView(APIView):
                 "priority": "high" if enr.progress_percentage < (expected_module * 10) else "medium"
             })
 
-        # 4. Statistiques réelles
+        # 4. Statistiques réelles de performance
         avg_score = UserQuizAttempt.objects.filter(user=user).aggregate(Avg('score'))['score__avg'] or 0
         
-        # Calcul de la série (Streak) réelle basée sur la progression des leçons
+        # Calcul de l'assiduité (Série / Streak de jours actifs consécutifs)
         active_days = UserLessonProgress.objects.filter(user=user) \
             .annotate(date=TruncDate('updated_at')) \
             .values_list('date', flat=True) \
@@ -96,8 +100,8 @@ class DashboardSummaryView(APIView):
         
         streak = 0
         if active_days:
-            current_date = timezone.now().date()
-            if active_days[0] == current_date or active_days[0] == (current_date - timedelta(days=1)):
+            current_date = now.date()
+            if active_days[0] in (current_date, current_date - timedelta(days=1)):
                 streak = 1
                 for i in range(len(active_days) - 1):
                     if active_days[i] - active_days[i+1] == timedelta(days=1):
@@ -105,7 +109,7 @@ class DashboardSummaryView(APIView):
                     else:
                         break
         
-        # 5. Notifications & Messages
+        # 5. Flux de messagerie et notifications non lues
         recent_notifications = Notification.objects.filter(user=user, is_read=False)[:5]
         unread_messages_count = Message.objects.filter(recipient=user, is_read=False).count()
 
@@ -134,41 +138,30 @@ class DashboardSummaryView(APIView):
         })
 
 
-#  ENROLLMENT (Cours individuel)
+# ═════════════════════════════════════════════
+#  ENROLLMENT CONTROLLERS (Cours & Parcours)
+# ═════════════════════════════════════════════
 
 class EnrollView(APIView):
-    """
-    POST /api/learning/enroll/<course_slug>/ → S'inscrire à un cours
-    DELETE /api/learning/enroll/<course_slug>/ → Se désinscrire
-    """
+    """Gestion des inscriptions et désinscriptions à un cours individuel avec contrôle des prérequis."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, course_slug):
         course = get_object_or_404(Course, slug=course_slug, is_published=True)
 
-        # Vérifier les prérequis
         can_access, missing = course.check_prerequisites(request.user)
         if not can_access:
             return Response({
                 "error": "Vous devez d'abord terminer les cours prérequis.",
-                "missing_courses": [
-                    {"id": c.id, "title": c.title, "slug": c.slug}
-                    for c in missing
-                ]
+                "missing_courses": [{"id": c.id, "title": c.title, "slug": c.slug} for c in missing]
             }, status=status.HTTP_403_FORBIDDEN)
 
-        enrollment, created = Enrollment.objects.get_or_create(
-            user=request.user, course=course
-        )
+        enrollment, created = Enrollment.objects.get_or_create(user=request.user, course=course)
         if not created:
-            return Response(
-                {"detail": "Vous êtes déjà inscrit à ce cours."},
-                status=status.HTTP_200_OK
-            )
-        # Incrémenter le compteur d'inscrits
-        Course.objects.filter(pk=course.pk).update(
-            enrolled_count=course.enrolled_count + 1
-        )
+            return Response({"detail": "Vous êtes déjà inscrit à ce cours."}, status=status.HTTP_200_OK)
+            
+        Course.objects.filter(pk=course.pk).update(enrolled_count=models.F('enrolled_count') + 1)
+        
         serializer = EnrollmentSerializer(enrollment, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -176,88 +169,62 @@ class EnrollView(APIView):
         course = get_object_or_404(Course, slug=course_slug)
         enrollment = get_object_or_404(Enrollment, user=request.user, course=course)
         enrollment.delete()
-        Course.objects.filter(pk=course.pk).update(
-            enrolled_count=max(0, course.enrolled_count - 1)
-        )
+        
+        Course.objects.filter(pk=course.pk).update(enrolled_count=models.Case(
+            models.When(enrolled_count__gt=0, then=models.F('enrolled_count') - 1),
+            default=0
+        ))
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-#  PATH ENROLLMENT (Parcours complet)
-
 class PathEnrollView(APIView):
-    """
-    POST /api/learning/enroll-path/<path_slug>/ → S'inscrire à un parcours
-    GET /api/learning/enroll-path/<path_slug>/ → Voir sa progression
-    """
+    """Inscription et consultation de la progression sur un parcours de certification complet."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, path_slug):
         learning_path = get_object_or_404(LearningPath, slug=path_slug, is_published=True)
 
-        path_enrollment, created = PathEnrollment.objects.get_or_create(
-            user=request.user, learning_path=learning_path
-        )
+        path_enrollment, created = PathEnrollment.objects.get_or_create(user=request.user, learning_path=learning_path)
         if not created:
-            return Response(
-                {"detail": "Vous êtes déjà inscrit à ce parcours."},
-                status=status.HTTP_200_OK
-            )
+            return Response({"detail": "Vous êtes déjà inscrit à ce parcours."}, status=status.HTTP_200_OK)
 
-        # Auto-inscrire à tous les cours du parcours
         path_enrollment.auto_enroll_courses()
-
-        # Mettre à jour le compteur
-        LearningPath.objects.filter(pk=learning_path.pk).update(
-            enrolled_count=learning_path.enrolled_count + 1
-        )
+        LearningPath.objects.filter(pk=learning_path.pk).update(enrolled_count=models.F('enrolled_count') + 1)
 
         serializer = PathEnrollmentSerializer(path_enrollment, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request, path_slug):
         learning_path = get_object_or_404(LearningPath, slug=path_slug)
-        path_enrollment = get_object_or_404(
-            PathEnrollment, user=request.user, learning_path=learning_path
-        )
-        path_enrollment.update_progress()
+        path_enrollment = get_object_or_404(PathEnrollment, user=request.user, learning_path=learning_path)
+        
+        # Sérialisation directe sans recalcul forcé en GET (l'état est déjà synchronisé en DB)
         serializer = PathEnrollmentSerializer(path_enrollment, context={'request': request})
         return Response(serializer.data)
 
 
 class MyCoursesView(APIView):
-    """
-    GET /api/learning/my-courses/ → Cours de l'étudiant avec progression
-    """
+    """Retourne la liste des cours de l'étudiant avec leur état d'avancement."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         enrollments = Enrollment.objects.filter(user=request.user).select_related('course')
-        for enrollment in enrollments:
-            enrollment.update_progress()
         serializer = EnrollmentSerializer(enrollments, many=True, context={'request': request})
         return Response(serializer.data)
 
 
 class MyPathsView(APIView):
-    """
-    GET /api/learning/my-paths/ → Parcours de l'étudiant avec progression globale
-    """
+    """Retourne l'ensemble des parcours de certification suivis par l'étudiant."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        path_enrollments = PathEnrollment.objects.filter(
-            user=request.user
-        ).select_related('learning_path')
-        for pe in path_enrollments:
-            pe.update_progress()
+        path_enrollments = PathEnrollment.objects.filter(user=request.user).select_related('learning_path')
         serializer = PathEnrollmentSerializer(path_enrollments, many=True, context={'request': request})
         return Response(serializer.data)
 
 
 class MyCertificatesView(APIView):
-    """
-    GET /api/learning/my-certificates/ → Certificats et attestations obtenus
-    """
+    """Historique des diplômes et attestations d'études obtenus par l'étudiant."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -266,19 +233,17 @@ class MyCertificatesView(APIView):
         return Response(serializer.data)
 
 
-#  LESSON PROGRESS (F-05)
+# ═════════════════════════════════════════════
+#  LESSON PROGRESS & USER NOTES
+# ═════════════════════════════════════════════
 
 class LessonProgressView(APIView):
-    """
-    POST /api/learning/lessons/{id}/progress/
-    """
+    """Met à jour le timecode de lecture ou valide le visionnage d'une leçon."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, pk=lesson_id)
-        progress, created = UserLessonProgress.objects.get_or_create(
-            user=request.user, lesson=lesson
-        )
+        progress, _ = UserLessonProgress.objects.get_or_create(user=request.user, lesson=lesson)
 
         is_completed = request.data.get('is_completed')
         last_watched_position = request.data.get('last_watched_position')
@@ -290,10 +255,8 @@ class LessonProgressView(APIView):
 
         progress.save()
 
-        # Mettre à jour la progression du cours parent
-        enrollment = Enrollment.objects.filter(
-            user=request.user, course=lesson.module.course
-        ).first()
+        # Cascade événementielle : mise à jour asynchrone/directe de la progression globale du cours
+        enrollment = Enrollment.objects.filter(user=request.user, course=lesson.module.course).first()
         if enrollment:
             enrollment.update_progress()
 
@@ -301,35 +264,37 @@ class LessonProgressView(APIView):
         return Response(serializer.data)
 
 
-#  NOTES (F-05)
-
 class LessonNoteViewSet(viewsets.ModelViewSet):
+    """CRUD complet pour les notes personnelles prises en cours de lecture vidéo."""
     serializer_class = UserNoteSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        lesson_id = self.kwargs.get('lesson_id')
-        return UserNote.objects.filter(user=self.request.user, lesson_id=lesson_id)
+        return UserNote.objects.filter(user=self.request.user, lesson_id=self.kwargs.get('lesson_id'))
 
     def perform_create(self, serializer):
         lesson = get_object_or_404(Lesson, pk=self.kwargs.get('lesson_id'))
         serializer.save(user=self.request.user, lesson=lesson)
 
 
-#  QUIZ (F-07)
+# ═════════════════════════════════════════════
+#  QUIZ SYSTEM (Validation Théorique)
+# ═════════════════════════════════════════════
+
 class LessonQuizView(APIView):
+    """Consultation et soumission sécurisée des réponses aux questionnaires de validation."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, pk=lesson_id)
-        questions = QuizQuestion.objects.filter(lesson=lesson)
+        questions = QuizQuestion.objects.filter(lesson=lesson).prefetch_related('choices')
         serializer = QuizQuestionSerializer(questions, many=True)
         return Response(serializer.data)
 
     def post(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, pk=lesson_id)
-
         MAX_ATTEMPTS = 3
+
         attempts_count = UserQuizAttempt.objects.filter(user=request.user, lesson=lesson).count()
         if attempts_count >= MAX_ATTEMPTS:
             return Response(
@@ -341,12 +306,10 @@ class LessonQuizView(APIView):
         submission_serializer.is_valid(raise_exception=True)
         answers = submission_serializer.validated_data['answers']
 
-        questions = QuizQuestion.objects.filter(lesson=lesson)
+        # Optimisation majeure : utilisation du prefetch_related pour éviter le N+1 SQL dans la boucle
+        questions = QuizQuestion.objects.filter(lesson=lesson).prefetch_related('choices')
         if not questions.exists():
-            return Response(
-                {"error": "Cette leçon n'a pas de quiz."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Cette leçon n'a pas de quiz."}, status=status.HTTP_400_BAD_REQUEST)
 
         correct_count = 0
         total_questions = questions.count()
@@ -354,35 +317,31 @@ class LessonQuizView(APIView):
 
         for q in questions:
             user_choice_id = answers.get(str(q.id)) or answers.get(q.id)
-            correct_choice = q.choices.filter(is_correct=True).first()
-            is_correct = False
+            
+            # Recherche filtrée en mémoire Python via le cache du prefetch
+            correct_choice = next((c for c in q.choices.all() if c.is_correct), None)
+            is_correct = (correct_choice is not None and user_choice_id == correct_choice.id)
 
-            if correct_choice and user_choice_id == correct_choice.id:
+            if is_correct:
                 correct_count += 1
-                is_correct = True
 
             results.append({
                 "question_id": q.id,
                 "is_correct": is_correct,
-                "explanation": q.explanation if hasattr(q, 'explanation') else ""
+                "explanation": getattr(q, 'explanation', "")
             })
 
         score_percentage = int((correct_count / total_questions) * 100)
         passed = score_percentage >= 85
 
-        attempt = UserQuizAttempt.objects.create(
-            user=request.user, lesson=lesson,
-            score=score_percentage, passed=passed
-        )
+        UserQuizAttempt.objects.create(user=request.user, lesson=lesson, score=score_percentage, passed=passed)
 
         if passed:
             progress, _ = UserLessonProgress.objects.get_or_create(user=request.user, lesson=lesson)
             progress.is_completed = True
-            progress.save()
+            progress.save(update_fields=['is_completed'])
 
-            enrollment = Enrollment.objects.filter(
-                user=request.user, course=lesson.module.course
-            ).first()
+            enrollment = Enrollment.objects.filter(user=request.user, course=lesson.module.course).first()
             if enrollment:
                 enrollment.update_progress()
 
@@ -395,9 +354,12 @@ class LessonQuizView(APIView):
         })
 
 
-#  CODE SUBMISSION (F-06)
+# ═════════════════════════════════════════════
+#  INTERACTIVE CODE SANDBOX
+# ═════════════════════════════════════════════
 
 class LessonCodeSubmissionView(APIView):
+    """Sauvegarde et soumission de code source vers le bac à sable d'exécution isolé (Sandbox)."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, lesson_id):
@@ -420,9 +382,8 @@ class LessonCodeSubmissionView(APIView):
         if not code:
             return Response({"error": "Le code est requis."}, status=status.HTTP_400_BAD_REQUEST)
 
-        submission, created = UserCodeSubmission.objects.update_or_create(
-            user=request.user, lesson=lesson,
-            defaults={'code': code}
+        submission, _ = UserCodeSubmission.objects.update_or_create(
+            user=request.user, lesson=lesson, defaults={'code': code}
         )
 
         save_only = request.data.get('save_only', False)
@@ -433,14 +394,9 @@ class LessonCodeSubmissionView(APIView):
             try:
                 with httpx.Client() as client:
                     response = client.post(
-                        sandbox_url,
-                        json={"source_code": code, "language_id": 71},
-                        timeout=25.0
+                        sandbox_url, json={"source_code": code, "language_id": 71}, timeout=25.0
                     )
-                    if response.status_code == 200:
-                        execution_result = response.json()
-                    else:
-                        execution_result = {"error": f"Sandbox error: {response.text}"}
+                    execution_result = response.json() if response.status_code == 200 else {"error": f"Sandbox error: {response.text}"}
             except Exception as e:
                 execution_result = {"error": f"Connection to sandbox failed: {str(e)}"}
 
@@ -454,14 +410,17 @@ class LessonCodeSubmissionView(APIView):
         return Response(response_data)
 
 
-#  PEER REVIEW
+# ═════════════════════════════════════════════
+#  PEER REVIEW FLOW (Correction par les Pairs)
+# ═════════════════════════════════════════════
 
 class ProjectSubmissionViewSet(viewsets.ModelViewSet):
+    """Point de dépôt pour les livrables de fin de module soumis par les étudiants."""
     serializer_class = ProjectSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ProjectSubmission.objects.filter(user=self.request.user)
+        return ProjectSubmission.objects.filter(user=self.request.user).select_related('project')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -471,67 +430,53 @@ class ProjectSubmissionViewSet(viewsets.ModelViewSet):
         submission = self.get_object()
         submission.status = 'pending'
         submission.submitted_at = timezone.now()
-        submission.save()
+        submission.save(update_fields=['status', 'submitted_at'])
         return Response({"status": "Projet soumis pour correction aux pairs."})
 
 
 class PeerReviewViewSet(viewsets.ViewSet):
+    """Gestion de la file d'attente des projets assignés à l'utilisateur pour correction."""
     permission_classes = [permissions.IsAuthenticated]
 
     @action(detail=False, methods=['get'])
     def to_review(self, request):
-        submissions = ProjectSubmission.objects.filter(
-            status='in_review', # ou pending selon le flux
-            reviews__reviewer=request.user,
-            reviews__status='assigned'
-        )
-        # Mais le ReviewService se déclenche sur pending. Donc il se peut que ça soit encore pending ou in_review.
+        # Correction de la double affectation + ajout select_related pour alléger la sérialisation
         submissions = ProjectSubmission.objects.filter(
             status__in=['pending', 'in_review'],
             reviews__reviewer=request.user,
             reviews__status='assigned'
-        ).distinct()
+        ).distinct().select_related('project', 'user')
         
         serializer = ProjectSubmissionSerializer(submissions, many=True)
         return Response(serializer.data)
 
+
 class SubmitReviewView(generics.CreateAPIView):
-    """
-    Vue sécurisée pour soumettre une évaluation.
-    """
+    """Soumission finale d'une note chiffrée basée sur la grille d'évaluation du projet."""
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticated, IsAuthorizedReviewer]
 
     def perform_create(self, serializer):
         submission = serializer.validated_data['submission']
         
-        # 1. Anti-auto-évaluation (sécurité supplémentaire)
         if submission.user == self.request.user:
-            raise serializers.ValidationError("Vous ne pouvez pas évaluer votre propre projet.")
+            raise generics.ValidationError("Vous ne pouvez pas évaluer votre propre projet.")
         
-        # 2. Empêcher les doublons (Une review par utilisateur par submission)
         if Review.objects.filter(submission=submission, reviewer=self.request.user, status='completed').exists():
-            raise serializers.ValidationError("Vous avez déjà soumis une évaluation terminée pour ce projet.")
+            raise generics.ValidationError("Vous avez déjà soumis une évaluation terminée pour ce projet.")
             
-        # 3. Supprimer la review 'assignée' si elle existe pour éviter un doublon
+        # Nettoyage de l'assignation en attente pour éviter les doublons de lignes historiques
         Review.objects.filter(submission=submission, reviewer=self.request.user, status='assigned').delete()
             
-        # 4. Sauvegarder en forçant l'évaluateur comme étant le user connecté
-        # Le signal handle_review_completion se chargera d'appeler check_and_finalize()
         serializer.save(reviewer=self.request.user, status='completed')
 
 
 # ═════════════════════════════════════════════
-#  TUTEUR IA (RAG)
+#  AI TUTOR (RAG Integration) & GAMIFICATION
 # ═════════════════════════════════════════════
 
 class AiTutorChatView(APIView):
-    """
-    POST /api/learning/tutor/chat/
-    Body: { "lesson_id": int, "messages": [{"role": "user"|"assistant", "content": "..."}] }
-    
-    Envoie la conversation à OpenAI avec le contexte complet de la leçon (RAG).
-    """
+    """Interface de discussion contextuelle avec l'assistant IA basé sur le contenu textuel de la leçon."""
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -539,52 +484,37 @@ class AiTutorChatView(APIView):
         conversation = request.data.get('messages', [])
 
         if not lesson_id:
-            return Response(
-                {"error": "lesson_id est requis."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "lesson_id est requis."}, status=status.HTTP_400_BAD_REQUEST)
 
         lesson = get_object_or_404(Lesson, pk=lesson_id)
 
-        # Valider le format des messages
         valid_messages = []
         for msg in conversation:
             if isinstance(msg, dict) and msg.get('role') in ('user', 'assistant') and msg.get('content'):
                 valid_messages.append({
                     'role': msg['role'],
-                    'content': msg['content'][:2000]  # Limiter la taille par message
+                    'content': msg['content'][:2000]
                 })
 
         if not valid_messages or valid_messages[-1]['role'] != 'user':
-            return Response(
-                {"error": "Au moins un message utilisateur est requis."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "Au moins un message utilisateur est requis."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             from .services.ai_tutor import chat_with_tutor
             reply = chat_with_tutor(lesson, valid_messages)
             return Response({"reply": reply})
         except Exception as e:
-            return Response(
-                {"error": f"Erreur du Tuteur IA : {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"error": f"Erreur du Tuteur IA : {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UserBadgesView(APIView):
-    """
-    F-10 : Retourne tous les badges de l'utilisateur connecté (obtenus et à débloquer).
-    GET /api/private/learning/badges/
-    """
+    """Récupère l'inventaire des compétences débloquées (badges) et affiche celles en attente de validation."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        # Badges déjà obtenus par l'utilisateur
         user_badges = UserBadge.objects.filter(user=request.user).select_related('badge')
         obtained_data = UserBadgeSerializer(user_badges, many=True).data
 
-        # Tous les badges disponibles (pour afficher ceux encore à débloquer)
         obtained_badge_ids = user_badges.values_list('badge_id', flat=True)
         locked_badges = SkillBadge.objects.exclude(id__in=obtained_badge_ids)
         locked_data = SkillBadgeSerializer(locked_badges, many=True).data
@@ -595,5 +525,3 @@ class UserBadgesView(APIView):
             "total_obtained": len(obtained_data),
             "total_available": SkillBadge.objects.count(),
         })
-
-

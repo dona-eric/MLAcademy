@@ -5,12 +5,21 @@ from django.shortcuts import get_object_or_404
 from .models import Certificate
 
 class PublicCertificateView(APIView):
+    """
+    Point d'accès public permettant la vérification d'un diplôme 
+    par des tiers (ex: lien de partage LinkedIn, recruteurs).
+    """
     permission_classes = [AllowAny]
 
     def get(self, request, certificate_id):
-        certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+        # Jointure préventive (select_related) pour éliminer le fléau des requêtes N+1
+        queryset = Certificate.objects.select_related('user', 'learning_path', 'course')
+        certificate = get_object_or_404(queryset, certificate_id=certificate_id)
         
-        target_name = certificate.learning_path.title if certificate.learning_path else (certificate.course.title if certificate.course else "Formation MLAcademy")
+        target_name = (
+            certificate.learning_path.title if certificate.learning_path 
+            else (certificate.course.title if certificate.course else "Formation MLAcademy")
+        )
         student_name = certificate.user.get_full_name() or certificate.user.username
         
         data = {
