@@ -5,9 +5,6 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
 
-# 💡 CORRECTION : L'import direct de learning.models a été supprimé 
-# pour éradiquer définitivement les imports circulaires au démarrage.
-
 
 class Category(models.Model):
     """
@@ -39,7 +36,7 @@ class Category(models.Model):
 
 
 # ═════════════════════════════════════════════
-#  MODULE LIBRARY (Bibliothèque de Modules réutilisables)
+#  MODULE LIBRARY
 # ═════════════════════════════════════════════
 
 class Module(models.Model):
@@ -269,7 +266,7 @@ class LearningPathCourse(models.Model):
         verbose_name = "Cours du Parcours"
         verbose_name_plural = "Cours du Parcours"
         ordering = ["order"]
-        # 💡 CORRECTION : Remplacement de unique_together obsolète par la nouvelle API de contraintes
+        # 💡 Remplacement de unique_together obsolète par la nouvelle API de contraintes
         constraints = [
             models.UniqueConstraint(fields=['learning_path', 'course'], name='unique_path_course'),
             models.UniqueConstraint(fields=['learning_path', 'order'], name='unique_path_order_position')
@@ -281,7 +278,7 @@ class LearningPathCourse(models.Model):
 
 
 # ═════════════════════════════════════════════
-#  COURSE (Cours — l'unité de base)
+#  COURSE (l'unité de base)
 # ═════════════════════════════════════════════
 
 class Course(models.Model):
@@ -361,7 +358,7 @@ class Course(models.Model):
 
     def check_prerequisites(self, user):
         """Vérifie si l'utilisateur a terminé les prérequis."""
-        # 💡 CORRECTION : Récupération dynamique du modèle pour éliminer l'import circulaire au niveau du fichier
+        # 💡 Récupération dynamique du modèle pour éliminer l'import circulaire au niveau du fichier
         Enrollment = apps.get_model('learning', 'Enrollment')
         required = self.prerequisites_set.all()
         missing = []
@@ -397,7 +394,7 @@ class CourseModule(models.Model):
         verbose_name = "Module du Cours"
         verbose_name_plural = "Modules du Cours"
         ordering = ["order"]
-        # 💡 CORRECTION : Modernisation des contraintes
+        #  Modernisation des contraintes
         constraints = [
             models.UniqueConstraint(fields=['course', 'module'], name='unique_course_module_link'),
             models.UniqueConstraint(fields=['course', 'order'], name='unique_course_module_position')

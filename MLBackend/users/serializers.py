@@ -232,6 +232,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return None
 
     def get_is_instructor(self, obj):
+        # Vérifier le champ direct du modèle EN PRIORITÉ, puis l'application approuvée
+        if getattr(obj, 'is_instructor', False):
+            return True
         from .models import InstructorApplication
         return InstructorApplication.objects.filter(user=obj, status='approved').exists()
 

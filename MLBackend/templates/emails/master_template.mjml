@@ -1,0 +1,70 @@
+<mjml>
+  <mj-head>
+    <mj-title>{{ email_title }}</mj-title>
+    <mj-font name="Inter" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&amp;display=swap" />
+    <mj-attributes>
+      <mj-all font-family="Inter, Arial, sans-serif" color="#ffffff" />
+      <mj-text font-size="16px" line-height="24px" color="#94a3b8" />
+      <mj-section padding="0px" />
+    </mj-attributes>
+    <mj-style>
+      .glass-card {
+        background: rgba(30, 41, 59, 0.7) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 24px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+        padding: 32px !important;
+      }
+      .gradient-text {
+        color: transparent !important;
+        background-clip: text !important;
+        -webkit-background-clip: text !important;
+        background-image: linear-gradient(to right, #818cf8, #22d3ee) !important;
+      }
+    </mj-style>
+  </mj-head>
+
+  <mj-body background-color="#090C14">
+    <!-- Header: Espace (pour aérer) -->
+    <mj-section padding-top="40px"></mj-section>
+
+    <!-- Main Card -->
+    <mj-section>
+      <mj-column css-class="glass-card" width="90%">
+        
+        <!-- Logo ou Icône d'en-tête -->
+        <mj-image src="https://mlacademy.io/logo.png" alt="MLAcademy" width="150px" align="center" padding-bottom="30px" />
+
+        <!-- Titre Principal -->
+        <mj-text font-size="28px" font-weight="900" color="#ffffff" align="center" padding-bottom="16px">
+          <span class="gradient-text">{{ heading }}</span>
+        </mj-text>
+
+        <!-- Message -->
+        <mj-text align="left" padding-bottom="24px">
+          Bonjour <strong>{{ user_name }}</strong>,<br/><br/>
+          {{ main_message_html }}
+        </mj-text>
+
+        <!-- Call To Action (Optionnel) -->
+        <!-- Utilisez un block if/endif côté Django si besoin de conditionner le bouton -->
+        <mj-button href="{{ cta_url }}" background-color="#4f46e5" color="#ffffff" font-size="16px" font-weight="bold" border-radius="12px" inner-padding="16px 32px" padding-bottom="32px" width="100%">
+          {{ cta_text }}
+        </mj-button>
+
+        <!-- Séparateur -->
+        <mj-divider border-color="rgba(255, 255, 255, 0.1)" border-width="1px" padding-bottom="24px" />
+
+        <!-- Footer -->
+        <mj-text align="center" font-size="12px" color="#64748b">
+          Besoin d'aide ? Répondez simplement à cet e-mail.<br/><br/>
+          &copy; 2026 MLAcademy. Tous droits réservés.<br/>
+          Cotonou, Bénin.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer Space -->
+    <mj-section padding-bottom="40px"></mj-section>
+  </mj-body>
+</mjml>

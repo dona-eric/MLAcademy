@@ -15,6 +15,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import generics, permissions, status
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -304,19 +305,28 @@ class PasswordResetConfirmView(APIView):
 
 #  2FA — TOTP
 
+class TwoFactorRateThrottle(UserRateThrottle):
+    rate = "5/minute"
 
 class Enable2FAView(APIView):
     """
     POST /api/users/2fa/enable/
     Active le 2FA et retourne un QR Code (base64 SVG).
     """
-
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TwoFactorRateThrottle]  
 
     def post(self, request):
         user = request.user
+
+        # Bloquer si déjà configuré et confirmé
+        if getattr(user, 'otp_enabled', False):
+            return Response(
+                {"error": "Le 2FA est déjà activé. Vous devez le désactiver d'abord."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         # Supprimer les anciens devices si existants
-        TOTPDevice.objects.filter(user=user).delete()
+        TOTPDevice.objects.filter(user=user, confirmed=False).delete()
 
         device = TOTPDevice.objects.create(
             user=user, name=f"MLAcademy ({user.email})", confirmed=False
@@ -334,7 +344,7 @@ class Enable2FAView(APIView):
             {
                 "message": "Scannez ce QR Code avec Google Authenticator ou Authy.",
                 "qr_code": qr_b64,
-                "secret": device.bin_key.hex(),
+                "secret": base64.b32encode(device.bin_key).decode('utf-8'),
             }
         )
 

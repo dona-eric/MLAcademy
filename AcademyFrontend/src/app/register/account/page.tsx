@@ -23,7 +23,7 @@ export default function UnifiedAuthPage() {
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
   const googleLoginUrl = `${API_BASE_URL}/api/auth/google/login/?process=login`;
   const githubLoginUrl = `${API_BASE_URL}/api/auth/github/login/?process=login`;
 
@@ -74,7 +74,7 @@ export default function UnifiedAuthPage() {
     
     try {
       await login(formData.email, formData.password);
-      router.push('/dashboard');
+      // Le routage est maintenant géré dynamiquement par AuthContext (Dashboard ou 2FA)
     } catch (err: any) {
       setError(err.message );
     } finally {
@@ -364,8 +364,7 @@ export default function UnifiedAuthPage() {
 
       {/* RIGHT COLUMN: Testimonial OR Forgot Password Form */}
       <div className="hidden lg:flex w-1/2 relative bg-indigo-900/20 items-center justify-center p-12 overflow-hidden transition-all duration-700">
-        <div className="absolute inset-0 bg-gradient-to-bl from-[#090C14] to-transparent z-10 opacity-60"></div>
-        
+        <div className="absolute inset-0 bg-gradient-to-r from-[#090C14] via-[#090C14]/30 to-transparent z-10"></div>        
         {/* Testimonial Display (when Forgot Password is closed) */}
         {!isForgotPasswordOpen && (
           <>
@@ -373,23 +372,15 @@ export default function UnifiedAuthPage() {
               <blockquote className="text-3xl font-bold text-white leading-relaxed mb-8 italic drop-shadow-lg">
                 « J'ai validé ma formation en Machine Learning en étant étudiante et entrepreneuse. C'était intense... mais je l'ai fait ! »
               </blockquote>
-              
-              <div className="flex items-center gap-4">
-                <div>
-                  <p className="font-black text-white text-lg">Mathilde</p>
-                  <p className="text-indigo-300 font-medium">Diplômée MLAcademy</p>
-                </div>
-              </div>
             </div>
-
-            {/* Full background image */}
             <div className="absolute inset-0 z-0">
-              <Image 
-                src="/images/testimonial_student.png" 
-                alt="Témoignage Mathilde" 
+              <Image
+                src="/images/femme_africaine_tech_mlacademy_2.png"
+                alt="Témoignage MLAcademy"
                 fill
-                sizes='10'
-                className="object-cover object-center" 
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover object-top"       
               />
             </div>
           </>

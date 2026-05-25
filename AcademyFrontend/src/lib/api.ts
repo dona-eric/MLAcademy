@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type FetchOptions = RequestInit & {
   // Les cookies HttpOnly sont envoyés automatiquement avec credentials: include.
@@ -99,6 +99,16 @@ export async function fetchApi(endpoint: string, options: FetchOptions = {}) {
     !(restOptions.body instanceof FormData)
   ) {
     headers.set("Content-Type", "application/json");
+  }
+
+  if (typeof window !== "undefined") {
+    // Remplace access_token par la clé exacte que tu utilises dans ton AuthContext pour sauvegarder le token
+    const token = localStorage.getItem("access_token"); 
+    
+    // Si un token existe et que l'en-tête n'est pas déjà défini manuellement
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
 
   const url = buildUrl(endpoint);

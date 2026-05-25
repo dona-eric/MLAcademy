@@ -8,7 +8,7 @@ import { Mail, Lock, ArrowRight,Zap,Loader2, Eye, EyeOff} from "lucide-react";
 import { FiGithub } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(formData.email, formData.password);
-      router.push("/dashboard");
+      // Le routage est maintenant géré par AuthContext
     } catch (err: any) {
       setError(err.message);
     } finally {

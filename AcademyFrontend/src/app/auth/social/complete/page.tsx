@@ -51,13 +51,12 @@ export default function SocialAuthCompletePage() {
         if (response.refresh) localStorage.setItem("refresh_token", response.refresh);
 
         setStatus("success");
-        setMessage(response?.message || "Connexion sociale réussie.");
+        setMessage(response?.message || "Connexion sociale réussie. Redirection vers la sécurisation 2FA...");
 
-        const destination = sanitizeNextPath(response?.next || nextPath);
-
+        // On ignore la destination voulue temporairement pour forcer le 2FA
         window.setTimeout(() => {
           if (!isMounted) return;
-          router.replace(destination);
+          router.replace("/2fa");
         }, 900);
       } catch (error) {
         if (!isMounted) return;

@@ -73,10 +73,10 @@ export default function RegistrationStepsPage() {
               <div className="relative w-64 h-64 rounded-full bg-gradient-to-tr from-indigo-500/20 to-cyan-500/20 border border-white/10 overflow-hidden shadow-2xl animate-reveal">
                 <Image 
                   src="/images/registration_illustration.png" 
-                  alt="Illustration" 
+                  alt="Illustration MLAcademy" 
                   fill
-                  sizes="20"
-                  className="object-cover"
+                  sizes="256px"
+                  className="object-cover object-top"  
                 />
               </div>
             </div>
@@ -171,7 +171,7 @@ export default function RegistrationStepsPage() {
 
         {/* FAQ SECTION */}
         <section className="space-y-4">
-          <h2 className="text-1xl font-black text-white">Les questions fréquentes</h2>
+          <h2 className="text-2xl font-black text-white">Les questions fréquentes</h2>
           <div className="space-y-3">
             {faqs.map((faq, index) => (
               <div key={index} className="glass-card border border-white/5 rounded-2xl overflow-hidden">
@@ -187,7 +187,7 @@ export default function RegistrationStepsPage() {
                   )}
                 </button>
                 {openFaq === index && (
-                  <div className="p-5 pt-0 text-slate-400 text-sm leading-relaxed border-t border-white/5 mt-2 pt-4">
+                  <div className="px-5 pb-5 pt-4 text-slate-400 text-sm leading-relaxed border-t border-white/5 mt-2">
                     {faq.answer}
                   </div>
                 )}
