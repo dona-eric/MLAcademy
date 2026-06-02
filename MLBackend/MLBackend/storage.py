@@ -31,7 +31,7 @@ class CustomManifestStaticFilesStorage(CompressedManifestStaticFilesStorage):
         found_files, errors = super().post_process(paths, allowed_extensions, *args, **kwargs)
         
         # On filtre les erreurs pour retirer celles liées aux fichiers manquants
-        # L'erreur "MissingFileError" se trouve dans le tuple (nom_fichier, message_erreur)
+        # L'erreur MissingFileError se trouve dans le tuple nom_fichier, message_erreur
         filtered_errors = [e for e in errors if "MissingFileError" not in str(e[1])]
         
         # Retourne les fichiers trouvés et les erreurs filtrées

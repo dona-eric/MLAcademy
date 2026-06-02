@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     "learning",
     "management",
     "community",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -100,15 +101,21 @@ TEMPLATES = [
 WSGI_APPLICATION = "MLBackend.wsgi.application"
 ASGI_APPLICATION = "MLBackend.asgi.application"
 
-# Channel Layers (Redis)
+# Channel Layers (Local Dev - No Redis Required)
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
     },
 }
+
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [("localhost", 6379)],
+#         },
+#     }
+# }
 
 
 # Database
@@ -126,10 +133,7 @@ JAZZMIN_SETTINGS = {
     "site_title": "MLAcademy",
     "site_header": "MLAcademy",
     "site_brand": "MLAcademy",
-    
-    # Logo
-    "site_logo": "/media/gu.png",
-    
+        
     # Mode sombre par défaut
     "theme": "dark", 
     
