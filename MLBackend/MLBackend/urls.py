@@ -7,16 +7,17 @@ from users.views import SocialView
 urlpatterns = [
     path("admin/", admin.site.urls),
     
-    # --- API PUBLIQUE ---
+    # API PUBLIQUE
     path("api/public/users/", include("users.urls_public")),
     path("api/public/courses/", include("courses.urls")), # Catalogue public
     path("api/public/certificates/", include("learning.urls_public")),
     
-    # --- API PRIVÉE ---
+    # - API PRIVÉE ---
     path("api/private/users/", include("users.urls_private")),
     path("api/private/learning/", include("learning.urls")), # Progression, Enrôlement, Quiz
+
     
-    # --- AUTRES ---
+    # AUTRES 
     path("api/admin/management/", include("management.urls")),
     # API Instructeur (Privé par nature via IsInstructor)
     path("api/instructor/", include("courses.instructor_urls")),
