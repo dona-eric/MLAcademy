@@ -1,22 +1,213 @@
 <mjml>
   <mj-head>
     <mj-title>Projet Reçu - MLAcademy</mj-title>
+    <mj-preview>✅ Votre projet "{{ project_title }}" a bien été reçu — on s'en occupe !</mj-preview>
     <mj-attributes>
       <mj-all font-family="Inter, Helvetica, Arial, sans-serif" />
-      <mj-text font-size="16px" color="#333333" line-height="24px" />
+      <mj-text font-size="15px" color="#374151" line-height="26px" />
     </mj-attributes>
   </mj-head>
-  <mj-body background-color="#f9fafb">
-    <mj-section background-color="#ffffff" padding="40px 20px" border-radius="12px">
+
+  <mj-body background-color="#f3f4f6">
+
+    <!-- HEADER BRAND -->
+    <mj-section background-color="#0f172a" padding="24px 40px" border-radius="12px 12px 0 0">
       <mj-column>
-        <mj-image width="150px" src="https://mlacademy.com/logo.png" alt="MLAcademy Logo" align="center" />
-        <mj-text align="center" font-size="24px" font-weight="800" color="#111827">Accusé de réception</mj-text>
-        <mj-text>Bonjour <strong>{{ student_name }}</strong>,</mj-text>
-        <mj-text>Nous avons bien reçu votre soumission pour le projet <strong>"{{ project_title }}"</strong>.</mj-text>
-        <mj-text>Votre projet est actuellement dans la file d'attente d'évaluation. Vous recevrez une notification dès qu'un évaluateur aura partagé ses retours.</mj-text>
-        <mj-button background-color="#4f46e5" color="white" border-radius="8px" href="{{ dashboard_url }}">Voir mon projet</mj-button>
-        <mj-text font-size="14px" color="#6b7280" align="center" padding-top="30px">Merci de votre patience ! L'équipe MLAcademy.</mj-text>
+        <mj-text align="center" font-size="22px" font-weight="800" color="#ffffff" letter-spacing="2px">
+          ML<span style="color:#f59e0b;">Academy</span>
+        </mj-text>
+        <mj-text align="center" font-size="11px" color="#94a3b8" letter-spacing="3px" padding-top="0px">
+          ACCUSÉ DE RÉCEPTION
+        </mj-text>
       </mj-column>
     </mj-section>
+
+    <!-- HERO -->
+    <mj-section background-color="#ffffff" padding="48px 40px 32px">
+      <mj-column>
+
+        <mj-text align="center" font-size="52px" padding-bottom="8px">📬</mj-text>
+
+        <mj-text align="center" padding-bottom="16px">
+          <span style="display:inline-block; background:#f0fdf4; color:#16a34a; padding:4px 14px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">
+            ✦ Soumission Confirmée
+          </span>
+        </mj-text>
+
+        <mj-text align="center" font-size="26px" font-weight="800" color="#0f172a" line-height="34px" padding-bottom="8px">
+          Projet bien reçu,<br/>{{ student_name }} !
+        </mj-text>
+
+        <mj-divider border-color="#4f46e5" border-width="2px" width="60px" padding="8px 0 24px" />
+
+        <mj-text align="center" color="#4b5563" font-size="15px" line-height="28px" padding-bottom="24px">
+          Votre soumission pour le projet<br/>
+          <strong style="color:#0f172a;">"{{ project_title }}"</strong><br/>
+          du programme <strong style="color:#0f172a;">{{ course_name }}</strong><br/>
+          a été enregistrée avec succès.
+        </mj-text>
+
+        <!-- Carte de confirmation -->
+        <mj-section padding="0" border-radius="12px" background-color="#f8fafc">
+          <mj-column>
+            <mj-text padding="20px 24px">
+              <span style="display:block; font-size:11px; font-weight:700; color:#6b7280; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px;">Détails de la soumission</span>
+
+              <span style="display:block; padding:8px 0; border-bottom:1px solid #e5e7eb;">
+                <span style="color:#6b7280; font-size:13px;">📁 Projet</span>
+                <strong style="float:right; color:#0f172a; font-size:13px;">{{ project_title }}</strong>
+              </span>
+
+              <span style="display:block; padding:8px 0; border-bottom:1px solid #e5e7eb;">
+                <span style="color:#6b7280; font-size:13px;">🕐 Soumis le</span>
+                <strong style="float:right; color:#0f172a; font-size:13px;">{{ submission_date }}</strong>
+              </span>
+
+              <span style="display:block; padding:8px 0; border-bottom:1px solid #e5e7eb;">
+                <span style="color:#6b7280; font-size:13px;">🔢 Tentative</span>
+                <strong style="float:right; color:#0f172a; font-size:13px;">#{{ attempt_number }}</strong>
+              </span>
+
+              <span style="display:block; padding:8px 0;">
+                <span style="color:#6b7280; font-size:13px;">⏱️ Délai d'évaluation estimé</span>
+                <strong style="float:right; color:#4f46e5; font-size:13px;">{{ estimated_review_delay }}</strong>
+              </span>
+            </mj-text>
+          </mj-column>
+        </mj-section>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- TIMELINE DU PROCESSUS -->
+    <mj-section background-color="#ffffff" padding="0 40px 32px">
+      <mj-column>
+
+        <mj-text font-size="12px" font-weight="700" color="#6b7280" letter-spacing="2px" padding-bottom="16px">
+          PROCHAINES ÉTAPES
+        </mj-text>
+
+        <!-- Étape 1 — Faite -->
+        <mj-text font-size="14px" padding="8px 0">
+          <span style="display:flex; align-items:flex-start; gap:12px;">
+            <span style="background:#4f46e5; color:#fff; border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">✓</span>
+            <span>
+              <strong style="color:#0f172a; display:block;">Soumission reçue</strong>
+              <span style="color:#6b7280; font-size:13px;">Votre projet a été enregistré dans notre système.</span>
+            </span>
+          </span>
+        </mj-text>
+
+        <mj-text padding="0 0 0 36px">
+          <span style="border-left:2px dashed #e5e7eb; display:block; height:16px;"></span>
+        </mj-text>
+
+        <!-- Étape 2 — En cours -->
+        <mj-text font-size="14px" padding="8px 0">
+          <span style="display:flex; align-items:flex-start; gap:12px;">
+            <span style="background:#f59e0b; color:#fff; border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">2</span>
+            <span>
+              <strong style="color:#0f172a; display:block;">Assignation aux évaluateurs</strong>
+              <span style="color:#6b7280; font-size:13px;">2 pairs seront automatiquement sélectionnés pour évaluer votre travail.</span>
+            </span>
+          </span>
+        </mj-text>
+
+        <mj-text padding="0 0 0 36px">
+          <span style="border-left:2px dashed #e5e7eb; display:block; height:16px;"></span>
+        </mj-text>
+
+        <!-- Étape 3 — À venir -->
+        <mj-text font-size="14px" padding="8px 0">
+          <span style="display:flex; align-items:flex-start; gap:12px;">
+            <span style="background:#e5e7eb; color:#9ca3af; border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">3</span>
+            <span>
+              <strong style="color:#9ca3af; display:block;">Évaluation en cours</strong>
+              <span style="color:#9ca3af; font-size:13px;">Vos pairs analysent votre projet selon la grille de critères.</span>
+            </span>
+          </span>
+        </mj-text>
+
+        <mj-text padding="0 0 0 36px">
+          <span style="border-left:2px dashed #e5e7eb; display:block; height:16px;"></span>
+        </mj-text>
+
+        <!-- Étape 4 — À venir -->
+        <mj-text font-size="14px" padding="8px 0">
+          <span style="display:flex; align-items:flex-start; gap:12px;">
+            <span style="background:#e5e7eb; color:#9ca3af; border-radius:50%; width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">4</span>
+            <span>
+              <strong style="color:#9ca3af; display:block;">Résultats disponibles</strong>
+              <span style="color:#9ca3af; font-size:13px;">Vous recevrez un email avec votre score et les feedbacks détaillés.</span>
+            </span>
+          </span>
+        </mj-text>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- OBLIGATION PAIR -->
+    <mj-section background-color="#eff6ff" padding="24px 40px">
+      <mj-column>
+        <mj-text font-size="14px" color="#1e40af" line-height="24px">
+          <strong>📌 Rappel important</strong><br/>
+          Pour recevoir vos résultats, vous devez également évaluer
+          <strong>{{ peer_reviews_required }} projet(s)</strong> de vos pairs.
+          C'est une condition obligatoire du système de peer review.
+        </mj-text>
+        <mj-button
+          background-color="#1d4ed8"
+          color="#ffffff"
+          border-radius="8px"
+          font-size="14px"
+          font-weight="700"
+          href="{{ evaluate_url }}"
+          inner-padding="12px 24px">
+          ✏️ Évaluer les projets assignés
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA PRINCIPAL -->
+    <mj-section background-color="#ffffff" padding="32px 40px 48px">
+      <mj-column>
+        <mj-divider border-color="#e5e7eb" border-width="1px" padding-bottom="24px" />
+        <mj-text align="center" font-size="14px" color="#6b7280" padding-bottom="20px">
+          Suivez l'avancement de votre évaluation en temps réel.
+        </mj-text>
+        <mj-button
+          background-color="#4f46e5"
+          color="#ffffff"
+          border-radius="10px"
+          font-size="15px"
+          font-weight="700"
+          href="{{ dashboard_url }}"
+          inner-padding="14px 32px">
+          🖥️ Voir mon tableau de bord
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- FOOTER SOMBRE -->
+    <mj-section background-color="#0f172a" padding="32px 40px" border-radius="0 0 12px 12px">
+      <mj-column>
+        <mj-text align="center" font-size="13px" color="#94a3b8" line-height="22px">
+          Une question ? Contactez-nous à
+          <a href="mailto:support@mlacademy.com" style="color:#f59e0b;">support@mlacademy.com</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- FOOTER LÉGAL -->
+    <mj-section padding="24px 40px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#9ca3af" line-height="20px">
+          MLAcademy · Cet email a été envoyé à {{ student_email }}<br/>
+          <a href="{{ unsubscribe_url }}" style="color:#9ca3af;">Se désabonner</a> ·
+          <a href="{{ privacy_url }}" style="color:#9ca3af;">Politique de confidentialité</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
   </mj-body>
 </mjml>

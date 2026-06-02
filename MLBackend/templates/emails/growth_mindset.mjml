@@ -1,21 +1,254 @@
 <mjml>
   <mj-head>
     <mj-title>Retours sur votre projet - MLAcademy</mj-title>
+    <mj-preview>💪 Des ajustements sont nécessaires — mais vous êtes sur la bonne voie, {{ student_name }} !</mj-preview>
     <mj-attributes>
       <mj-all font-family="Inter, Helvetica, Arial, sans-serif" />
-      <mj-text font-size="16px" color="#333333" line-height="24px" />
+      <mj-text font-size="15px" color="#374151" line-height="26px" />
     </mj-attributes>
+    <mj-style>
+      .badge-revision {
+        display: inline-block;
+        background: #fef3c7;
+        color: #b45309;
+        padding: 4px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+    </mj-style>
   </mj-head>
-  <mj-body background-color="#f9fafb">
-    <mj-section background-color="#ffffff" padding="40px 20px" border-radius="12px">
+
+  <mj-body background-color="#f3f4f6">
+
+    <!-- HEADER BRAND -->
+    <mj-section background-color="#0f172a" padding="24px 40px" border-radius="12px 12px 0 0">
       <mj-column>
-        <mj-text align="center" font-size="24px" font-weight="800" color="#111827">Des ajustements sont nécessaires</mj-text>
-        <mj-text>Bonjour <strong>{{ student_name }}</strong>,</mj-text>
-        <mj-text>Votre projet <strong>"{{ project_title }}"</strong> a été évalué et nécessite encore quelques ajustements pour atteindre le niveau de certification.</mj-text>
-        <mj-text>Ne vous découragez pas ! C'est dans l'itération que l'on apprend le plus. L'évaluateur vous a laissé des conseils détaillés pour vous guider dans vos corrections.</mj-text>
-        <mj-button background-color="#4f46e5" color="white" border-radius="8px" href="{{ review_url }}">Consulter les conseils</mj-button>
-        <mj-text font-size="14px" color="#6b7280" align="center" padding-top="30px">Nous croyons en vous ! Soumettez une nouvelle version dès que vous êtes prêt.</mj-text>
+        <mj-text align="center" font-size="22px" font-weight="800" color="#ffffff" letter-spacing="2px">
+          ML<span style="color:#f59e0b;">Academy</span>
+        </mj-text>
+        <mj-text align="center" font-size="11px" color="#94a3b8" letter-spacing="3px" padding-top="0px">
+          RAPPORT D'ÉVALUATION
+        </mj-text>
       </mj-column>
     </mj-section>
+
+    <!-- HERO -->
+    <mj-section background-color="#ffffff" padding="48px 40px 32px">
+      <mj-column>
+
+        <!-- Icône -->
+        <mj-text align="center" font-size="52px" padding-bottom="8px">🔄</mj-text>
+
+        <!-- Badge -->
+        <mj-text align="center" padding-bottom="16px">
+          <span class="badge-revision">✦ Révision Requise</span>
+        </mj-text>
+
+        <!-- Titre -->
+        <mj-text align="center" font-size="26px" font-weight="800" color="#0f172a" line-height="34px" padding-bottom="8px">
+          Presque là, {{ student_name }} !
+        </mj-text>
+
+        <mj-divider border-color="#f59e0b" border-width="2px" width="60px" padding="8px 0 24px" />
+
+        <!-- Message -->
+        <mj-text align="center" color="#4b5563" font-size="15px" line-height="28px" padding-bottom="24px">
+          Votre projet <strong style="color:#0f172a;">"{{ project_title }}"</strong><br/>
+          du programme <strong style="color:#0f172a;">{{ course_name }}</strong><br/>
+          a été évalué et nécessite quelques ajustements<br/>
+          avant d'atteindre le niveau de certification.
+        </mj-text>
+
+        <!-- Score card -->
+        <mj-section padding="0" border-radius="12px" background-color="#fff7ed">
+          <mj-column>
+            <mj-text align="center" padding="20px">
+              <span style="display:block; font-size:11px; font-weight:700; color:#6b7280; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;">Score Obtenu</span>
+              <span style="display:block; font-size:48px; font-weight:900; color:#f59e0b; line-height:1;">{{ final_score }}%</span>
+              <span style="display:block; font-size:13px; color:#6b7280; margin-top:6px;">
+                Seuil de certification : <strong style="color:#0f172a;">{{ passing_score }}%</strong>
+              </span>
+              <span style="display:block; font-size:13px; color:#6b7280; margin-top:2px;">
+                Évalué par {{ reviewer_count }} pairs · {{ review_date }}
+              </span>
+            </mj-text>
+          </mj-column>
+        </mj-section>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- DÉTAIL DES CRITÈRES -->
+    <mj-section background-color="#ffffff" padding="0 40px 32px">
+      <mj-column>
+
+        <mj-text font-size="12px" font-weight="700" color="#6b7280" letter-spacing="2px" padding-bottom="12px">
+          DÉTAIL DE L'ÉVALUATION
+        </mj-text>
+
+        <!-- Critère 1 -->
+        <mj-text padding="6px 0">
+          <span style="display:flex; justify-content:space-between;">
+            <span style="color:#374151;">📐 Structure & Organisation</span>
+            <strong style="color:#0f172a;">{{ score_structure }}/5</strong>
+          </span>
+        </mj-text>
+        <mj-divider border-color="#f3f4f6" border-width="1px" padding="0" />
+
+        <!-- Critère 2 -->
+        <mj-text padding="6px 0">
+          <span style="display:flex; justify-content:space-between;">
+            <span style="color:#374151;">💡 Clarté & Communication</span>
+            <strong style="color:#0f172a;">{{ score_clarte }}/5</strong>
+          </span>
+        </mj-text>
+        <mj-divider border-color="#f3f4f6" border-width="1px" padding="0" />
+
+        <!-- Critère 3 -->
+        <mj-text padding="6px 0">
+          <span style="display:flex; justify-content:space-between;">
+            <span style="color:#374151;">⚙️ Exactitude Technique</span>
+            <strong style="color:#0f172a;">{{ score_technique }}/5</strong>
+          </span>
+        </mj-text>
+        <mj-divider border-color="#f3f4f6" border-width="1px" padding="0" />
+
+        <!-- Critère 4 -->
+        <mj-text padding="6px 0">
+          <span style="display:flex; justify-content:space-between;">
+            <span style="color:#374151;">✨ Originalité & Créativité</span>
+            <strong style="color:#0f172a;">{{ score_originalite }}/5</strong>
+          </span>
+        </mj-text>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- FEEDBACK PAIRS -->
+    <mj-section background-color="#f8fafc" padding="24px 40px" border-radius="0">
+      <mj-column>
+
+        <mj-text font-size="12px" font-weight="700" color="#6b7280" letter-spacing="2px" padding-bottom="16px">
+          RETOURS DE VOS PAIRS
+        </mj-text>
+
+        <!-- Feedback 1 -->
+        <mj-text font-size="14px" color="#374151" line-height="22px" padding="12px 16px" border-radius="8px" background-color="#ffffff">
+          <span style="font-size:11px; color:#9ca3af; display:block; margin-bottom:4px;">Pair #1</span>
+          "{{ feedback_peer_1 }}"
+        </mj-text>
+
+        <!-- Feedback 2 -->
+        <mj-text font-size="14px" color="#374151" line-height="22px" padding="12px 16px" border-radius="8px" background-color="#ffffff">
+          <span style="font-size:11px; color:#9ca3af; display:block; margin-bottom:4px;">Pair #2</span>
+          "{{ feedback_peer_2 }}"
+        </mj-text>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- POINTS À AMÉLIORER -->
+    <mj-section background-color="#ffffff" padding="24px 40px 32px">
+      <mj-column>
+
+        <mj-text font-size="12px" font-weight="700" color="#6b7280" letter-spacing="2px" padding-bottom="12px">
+          POINTS CLÉS À AMÉLIORER
+        </mj-text>
+
+        <mj-text font-size="14px" color="#374151" line-height="24px" padding="16px" border-radius="8px" background-color="#fef2f2">
+          ❶ {{ improvement_point_1 }}<br/><br/>
+          ❷ {{ improvement_point_2 }}<br/><br/>
+          ❸ {{ improvement_point_3 }}
+        </mj-text>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- CTA -->
+    <mj-section background-color="#ffffff" padding="0 40px 48px">
+      <mj-column>
+
+        <mj-divider border-color="#e5e7eb" border-width="1px" padding-bottom="24px" />
+
+        <mj-text align="center" font-size="14px" color="#6b7280" padding-bottom="20px">
+          Vous pouvez soumettre une nouvelle version à tout moment.<br/>
+          <strong style="color:#0f172a;">Il n'y a pas de limite de tentatives.</strong>
+        </mj-text>
+
+        <!-- CTA Principal -->
+        <mj-button
+          background-color="#4f46e5"
+          color="#ffffff"
+          border-radius="10px"
+          font-size="15px"
+          font-weight="700"
+          href="{{ review_url }}"
+          inner-padding="14px 32px">
+          📋 Voir l'évaluation complète
+        </mj-button>
+
+        <!-- CTA Secondaire -->
+        <mj-button
+          background-color="#f0fdf4"
+          color="#16a34a"
+          border-radius="10px"
+          font-size="15px"
+          font-weight="700"
+          href="{{ resubmit_url }}"
+          inner-padding="14px 32px">
+          🔄 Soumettre une nouvelle version
+        </mj-button>
+
+      </mj-column>
+    </mj-section>
+
+    <!-- MESSAGE INSTRUCTEUR -->
+    <mj-section background-color="#fafafa" padding="28px 40px">
+      <mj-column>
+        <mj-text font-size="14px" color="#374151" line-height="24px" font-style="italic">
+          "{{ instructor_message }}"
+        </mj-text>
+        <mj-text font-size="13px" color="#9ca3af" padding-top="8px">
+          — {{ instructor_name }}, Instructeur · MLAcademy
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- RESSOURCES D'AIDE -->
+    <mj-section background-color="#0f172a" padding="32px 40px" border-radius="0 0 12px 12px">
+      <mj-column>
+        <mj-text align="center" font-size="13px" color="#94a3b8" padding-bottom="8px">
+          BESOIN D'AIDE POUR PROGRESSER ?
+        </mj-text>
+        <mj-text align="center" font-size="15px" font-weight="700" color="#ffffff" padding-bottom="16px">
+          Consultez les ressources recommandées par votre instructeur
+        </mj-text>
+        <mj-button
+          background-color="#f59e0b"
+          color="#0f172a"
+          border-radius="8px"
+          font-size="14px"
+          font-weight="800"
+          href="{{ resources_url }}"
+          inner-padding="12px 28px">
+          📚 Accéder aux ressources →
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- FOOTER -->
+    <mj-section padding="24px 40px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#9ca3af" line-height="20px">
+          MLAcademy · Cet email a été envoyé à {{ student_email }}<br/>
+          <a href="{{ unsubscribe_url }}" style="color:#9ca3af;">Se désabonner</a> ·
+          <a href="{{ privacy_url }}" style="color:#9ca3af;">Politique de confidentialité</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
   </mj-body>
 </mjml>
