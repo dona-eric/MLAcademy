@@ -39,6 +39,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     "daphne",
     "jazzmin",
+    "phonenumber_field",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -113,6 +114,8 @@ CHANNEL_LAYERS = {
 #         "BACKEND": "channels_redis.core.RedisChannelLayer",
 #         "CONFIG": {
 #             "hosts": [("localhost", 6379)],
+#             "expiry":10,
+#             "capacity":1500
 #         },
 #     }
 # }
@@ -129,18 +132,67 @@ DATABASES = {
 }
 
 JAZZMIN_SETTINGS = {
-    # Titre de la page
-    "site_title": "MLAcademy",
+    # --- Titres et Branding ---
+    "site_title": "MLAcademy Admin",
     "site_header": "MLAcademy",
     "site_brand": "MLAcademy",
-        
-    # Mode sombre par défaut
-    "theme": "dark", 
-    
-    # Personnalisation du menu
+    # Optionnel : Ajoutez un logo (à placer dans vos fichiers statiques)
+    # "site_logo": "images/logo_mlacademy.png", 
+    "login_logo": None,
+    "welcome_sign": "Bienvenue sur la plateforme d'administration de MLAcademy",
+    "copyright": "MLAcademy. All rights reserved.",
+
+    # --- Ergonomie et Navigation ---
+    "search_model": ["auth.User"], # Permet une barre de recherche globale (ex: chercher un utilisateur)
     "show_sidebar": True,
     "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    
+    # Personnalisation des Icônes (FontAwesome)
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        # Exemples si vous avez ces applications/modèles :
+        # "courses.Course": "fas fa-graduation-cap",
+        # "models.MLModel": "fas fa-brain",
+        # "predictions.Prediction": "fas fa-chart-line",
+    },
+    # Icônes par défaut pour les applications et modèles si non spécifiés
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    # --- Liens et Raccourcis Rapides ---
+    "topmenu_links": [
+        {"name": "Accueil", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Voir le site", "url": "/", "new_window": True},
+        # model admin to link to (Permissions checked against model)
+        {"model": "auth.User"},
+        {"app": "MLAcademy"},
+    ],
+    
+    # Menu Utilisateur 
+    "usermenu_links": [
+        {"name": "Support MLAcademy", "url": "https://mlacademy.com", "new_window": True},
+    ],
+
+    "language_chooser": True,
+    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
+
+    # Style et Thème
+    "theme": "dark",  # Votre choix initial
+    # "dark_mode_theme": "darkly", # Vous pouvez tester d'autres variantes de thèmes sombres Boootstrap (ex: slate, cyborg, darkly)
+    
+    # Options d'interface
+    "show_ui_builder": False, # Mettez True pendant le développement pour tester les couleurs en direct, puis False en production
+    "changeform_format": "horizontal_tabs", # Organise les formulaires d'édition longs en onglets (très propre !)
 }
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "sketchy",
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
