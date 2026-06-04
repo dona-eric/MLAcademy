@@ -1,25 +1,27 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Geist, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import "./globals.css";
-import {
-  ConditionalHeader,
-  ConditionalFooter,
-  MainWrapper,
-} from "../components/layout/ConditionalLayoutHelpers";
+import {ConditionalHeader,ConditionalFooter,MainWrapper,} from "../components/layout/ConditionalLayoutHelpers";
 
-const inter = Inter({
-  variable: "--font-inter",
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
 });
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
+  subsets: ["latin"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "MLAcademy - Apprenez la Data Science et le Machine Learning",
+  title: "MLAcademy: Apprenez la Data Science et le Machine Learning",
   description:
     "La plateforme de référence francophone pour se former en Machine Learning, Data Science et IA. Cours, notebooks interactifs et certifications.",
 };
@@ -30,16 +32,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="fr"
-      data-scroll-behavior="smooth"
-      className={`${inter.variable} ${outfit.variable}`}
-    >
-      <body>
+    <html lang="fr" className={"${geist.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} antialiased"}>
+      <body className="bg-[var(--bg-base)] text-[var(--text-primary)] min-h-screen flex flex-col">
         <AuthProvider>
-          <ConditionalHeader />
-          <MainWrapper>{children}</MainWrapper>
-          <ConditionalFooter />
+          <NotificationProvider>
+            <ConditionalHeader />
+            <MainWrapper>{children}</MainWrapper>
+            <ConditionalFooter />
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>
