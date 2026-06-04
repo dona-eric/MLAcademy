@@ -38,8 +38,8 @@ dev-sandbox: ## Lancer la sandbox FastAPI
 dev: ## Lancer tout l'écosystème (nécessite plusieurs terminaux ou mode background)
 	@echo "Utilisez 'make dev-backend', 'make dev-frontend', 'make dev-sandbox' dans des terminaux séparés."
 
-migrate: ## Appliquer les migrations Django
-	cd MLBackend && source .venv/bin/activate && $(PYTHON) manage.py migrate
+makemigrations: ## Appliquer les migrations Django
+	cd MLBackend && source .venv/bin/activate && $(PYTHON) manage.py makemigrations && $(PYTHON) manage.py migrate	
 
 seed: ## Charger les données initiales Django
 	@echo "Utilisez un script personnalisé ou django-admin loaddata"
