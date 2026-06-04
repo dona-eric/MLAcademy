@@ -1,7 +1,7 @@
 import os
 import django
 
-# Assurez-vous que l'environnement Django est chargé si vous exécutez ce script via `python manage.py shell < script.py`
+# Assurez-vous que l'environnement Django est chargé si vous exécutez ce script via "python manage.py shell < script.py"
 from django.contrib.auth import get_user_model
 from courses.models import (
     Category, Module, Lesson, Project, LearningPath, 
