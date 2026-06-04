@@ -1,210 +1,362 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import {
-  ArrowUpRight,
-  BookOpen,
-  Clock,
-  Filter,
-  Search,
-  Sparkles,
-  Star,
-  Zap,
+  Search, Star, Clock, Users, BookOpen,
+  Award, Filter, X, SlidersHorizontal, ChevronDown, Loader2
 } from "lucide-react";
+import { Category, CourseSummary, LearningPathSummary } from "@/types/course";
+import { LEVEL_LABELS, ORDERING_OPTIONS } from "@/types/constant";
 
-interface CourseSummary {
-  id: number;
-  title: string;
-  slug: string;
-  short_description: string;
-  thumbnail: string;
-  level: string;
-  duration_hours: number;
-  is_free: boolean;
-  avg_rating: string;
-  category?: { name: string };
+
+// ─── Utilities ────────────────────────────────────
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState<T>(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
 }
 
-const LEVEL_LABELS: Record<string, string> = {
-  beginner: "Débutant",
-  intermediate: "Intermédiaire",
-  advanced: "Avancé",
-};
-
-export default function ParcoursPage() {
-  const [courses, setCourses] = useState<CourseSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeLevel, setActiveLevel] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    async function loadCourses() {
-      try {
-        const data = await fetchApi("/api/courses/");
-        setCourses(data.results ?? data);
-      } catch (error) {
-        console.error("Erreur de chargement des cours:", error);
-      } finally {
-        setLoading(false);
-      }
+function buildParams(params: Record<string, string | boolean | undefined>) {
+  const sp = new URLSearchParams();
+  for (const [key, val] of Object.entries(params)) {
+    if (val !== undefined && val !== "" && val !== "all") {
+      sp.set(key, String(val));
     }
-    loadCourses();
-  }, []);
+  }
+  return sp.toString() ? `?${sp.toString()}` : "";
+}
 
-  const filtered = courses.filter((course) => {
-    const matchesLevel = activeLevel === "all" || course.level === activeLevel;
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      course.title.toLowerCase().includes(q) ||
-      course.short_description.toLowerCase().includes(q);
-    return matchesLevel && matchesSearch;
-  });
+// ─── Sub-components ───────────────────────────────
+
+function ResultCard({ item, type }: { item: CourseSummary | LearningPathSummary; type: "course" | "path" }) {
+  const href = type === "path" ? `/parcours/${item.slug}` : `/learning/${item.slug}`;
+  const rating = parseFloat(item.avg_rating || "0");
 
   return (
-    <div className="relative min-h-screen pt-24 pb-20">
-      <div className="mesh-gradient" />
-      
-      <section className="relative px-6 pb-16 lg:px-8">
-        <div className="relative mx-auto max-w-7xl text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-card border-indigo-500/20 text-indigo-400 text-sm font-medium animate-reveal">
-            <Sparkles className="h-4 w-4" />
-            <span>Propulsez votre carrière</span>
-          </div>
-          
-          <h1 className="mx-auto max-w-4xl text-5xl md:text-7xl font-black tracking-tight text-white leading-tight">
-            Maîtrisez les technologies <br />
-            <span className="text-gradient">du futur</span>
-          </h1>
-          
-          <p className="mx-auto max-w-2xl text-lg text-slate-400 leading-relaxed">
-            Des parcours structurés pour passer de zéro à expert en Machine Learning, 
-            Data Engineering et Intelligence Artificielle.
-          </p>
+    <Link href={href} className="group bg-white border border-slate-200 rounded-lg overflow-hidden hover:border-slate-300 hover:shadow-md transition-all flex flex-col">
 
-          <div className="mx-auto mt-12 max-w-3xl space-y-6">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-cyan-500 rounded-3xl blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
-              <div className="relative">
-                <Search className="absolute left-6 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Quelle compétence voulez-vous acquérir aujourd'hui ?"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-2xl border border-white/5 bg-slate-900/60 px-16 py-5 text-lg text-white outline-none backdrop-blur-xl transition focus:border-indigo-500/50"
-                />
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {(["all", "beginner", "intermediate", "advanced"] as const).map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setActiveLevel(level)}
-                  className={`px-6 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    activeLevel === level 
-                      ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/20 scale-105" 
-                      : "glass-card bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  {level === "all" ? "Tous les niveaux" : LEVEL_LABELS[level]}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="flex items-center gap-4 mb-12">
-           <h2 className="text-xl font-bold text-white whitespace-nowrap">
-             {filtered.length} Formations disponibles
-           </h2>
-           <div className="h-px w-full bg-white/5" />
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-[450px] glass-card animate-pulse" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="glass-card border-dashed border-slate-700 p-20 text-center">
-            <Search className="mx-auto h-16 w-16 text-slate-700 mb-6" />
-            <h3 className="text-2xl font-bold text-white mb-2">Aucun résultat trouvé</h3>
-            <p className="text-slate-500">Essayez d'autres mots-clés ou filtres.</p>
-          </div>
+      {/* Thumbnail */}
+      <div className="relative aspect-video bg-slate-100 overflow-hidden shrink-0">
+        {item.thumbnail ? (
+          <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((course) => (
-              <Link
-                key={course.id}
-                href={`/parcours/${course.slug}`}
-                className="group glass-card overflow-hidden hover:bg-white/[0.04]"
-              >
-                <div className="relative aspect-video overflow-hidden bg-slate-900">
-                  {course.thumbnail ? (
-                    <img
-                      src={course.thumbnail}
-                      alt={course.title}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-slate-900 text-slate-800">
-                      <Zap className="h-12 w-12" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                  <div className="absolute left-4 top-4 flex flex-col gap-2">
-                    <span className="px-3 py-1 rounded-lg bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg">
-                      {LEVEL_LABELS[course.level]}
-                    </span>
-                    {course.is_free && (
-                      <span className="px-3 py-1 rounded-lg bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg">
-                        Offert
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-8 flex flex-col gap-6">
-                  <div className="space-y-4">
-                    {course.category && (
-                      <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">
-                        {course.category.name}
-                      </span>
-                    )}
-                    <h3 className="text-2xl font-bold text-white group-hover:text-indigo-400 transition-colors leading-snug">
-                      {course.title}
-                    </h3>
-                    <p className="text-slate-400 text-sm leading-relaxed line-clamp-3">
-                      {course.short_description}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-6 border-t border-white/5">
-                    <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
-                      <span className="flex items-center gap-1.5">
-                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />{" "}
-                        {parseFloat(course.avg_rating).toFixed(1)}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="h-3 w-3" /> {course.duration_hours}h
-                      </span>
-                    </div>
-                    <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                      <ArrowUpRight className="h-5 w-5" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
+          <div className="flex items-center justify-center h-full bg-slate-50">
+            <BookOpen className="w-8 h-8 text-slate-300" />
           </div>
         )}
-      </section>
+        <div className="absolute top-3 left-3 flex gap-2">
+          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide ${
+            item.level === "beginner" ? "bg-green-100 text-green-700" :
+          item.level === "intermediate" ? "bg-amber-100 text-amber-700" :
+          "bg-red-100 text-red-700"
+          }`}>
+          {LEVEL_LABELS[item.level] || item.level}
+        </span>
+        {item.is_free && (
+          <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[10px] font-semibold uppercase">Gratuit</span>
+        )}
+        {type === "path" && (item as LearningPathSummary).is_certifying && (
+          <span className="px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-semibold uppercase">Certifiant</span>
+        )}
+      </div>
     </div>
+
+      {/* Body */ }
+  <div className="p-5 flex flex-col flex-1 gap-3">
+    {item.category && (
+      <span className="text-[10px] font-semibold text-indigo-600 uppercase tracking-wider">{item.category.name}</span>
+    )}
+    <h3 className="text-sm font-semibold text-slate-900 line-clamp-2 group-hover:text-indigo-600 transition-colors leading-snug">
+      {item.title}
+    </h3>
+    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed flex-1">{item.short_description}</p>
+
+    <div className="flex items-center gap-4 text-[11px] text-slate-500 pt-3 border-t border-slate-100">
+      {rating > 0 && (
+        <span className="flex items-center gap-1">
+          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+          {rating.toFixed(1)}
+        </span>
+      )}
+      <span className="flex items-center gap-1">
+        <Users className="w-3 h-3" />
+        {item.enrolled_count}
+      </span>
+      {type === "course" ? (
+        <span className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          {(item as CourseSummary).duration_hours}h
+        </span>
+      ) : (
+        <span className="flex items-center gap-1">
+          <Award className="w-3 h-3" />
+          {(item as LearningPathSummary).courses_count} cours
+        </span>
+      )}
+      <span className="ml-auto text-[10px] text-slate-400 font-medium">
+        {type === "path" ? "par " + (item as LearningPathSummary).creator_name : "par " + (item as CourseSummary).instructor_name}
+      </span>
+    </div>
+  </div>
+    </Link >
   );
 }
+
+// ─── Main Page ────────────────────────────────────
+
+function ParcoursContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "paths" ? "paths" : searchParams.get("tab") === "courses" ? "courses" : "paths";
+
+  // Filters State
+  const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"paths" | "courses">(initialTab);
+  const [level, setLevel] = useState("all");
+  const [categorySlug, setCategorySlug] = useState("all");
+  const [isFree, setIsFree] = useState<boolean | undefined>(undefined);
+  const [ordering, setOrdering] = useState("-created_at");
+
+  // Data State
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [results, setResults] = useState<(CourseSummary | LearningPathSummary)[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const debouncedQuery = useDebounce(query, 350);
+
+  // Load categories once
+  useEffect(() => {
+    fetchApi("/api/public/courses/categories/")
+      .then(setCategories)
+      .catch(console.error);
+  }, []);
+
+  // Run search on any filter change
+  const runSearch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const endpoint = activeTab === "paths" ? "/api/public/courses/paths/" : "/api/public/courses/";
+      const params = buildParams({
+        search: debouncedQuery || undefined,
+        level: level !== "all" ? level : undefined,
+        category_slug: categorySlug !== "all" ? categorySlug : undefined,
+        is_free: isFree !== undefined ? isFree : undefined,
+        ordering,
+      });
+
+      const data = await fetchApi(`${endpoint}${params}`);
+      const items = data.results ?? data;
+      setResults(items);
+      setTotalCount(data.count ?? items.length);
+    } catch (err) {
+      console.error("Erreur de recherche:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedQuery, activeTab, level, categorySlug, isFree, ordering]);
+
+  useEffect(() => {
+    runSearch();
+  }, [runSearch]);
+
+  const hasActiveFilters = level !== "all" || categorySlug !== "all" || isFree !== undefined;
+
+  const resetFilters = () => {
+    setLevel("all");
+    setCategorySlug("all");
+    setIsFree(undefined);
+    setOrdering("-created_at");
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+
+      {/* ── HEADER / SEARCH ── */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+
+            {/* Search Bar */}
+            <div className="relative flex-1 max-w-xl">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Rechercher un cours, un parcours, une compétence..."
+                className="w-full bg-slate-50 border border-slate-300 rounded-md py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+              {query && (
+                <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center bg-slate-100 rounded-md p-1 gap-1 self-start md:self-auto">
+              <button
+                onClick={() => setActiveTab("paths")}
+                className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${activeTab === "paths" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              >
+              Parcours
+            </button>
+            <button
+              onClick={() => setActiveTab("courses")}
+              className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${activeTab === "courses" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              >
+            Cours
+          </button>
+        </div>
+
+        {/* Filters Toggle */}
+        <button
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-md text-sm font-medium transition-colors ${filtersOpen || hasActiveFilters ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"}`}
+            >
+        <SlidersHorizontal className="w-4 h-4" />
+        Filtres
+        {hasActiveFilters && <span className="w-2 h-2 bg-indigo-600 rounded-full" />}
+      </button>
+    </div>
+
+          {/* Expanded Filters */ }
+  {
+    filtersOpen && (
+      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-4">
+
+        {/* Level */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Niveau</span>
+          <div className="flex gap-1.5">
+            {["all", "beginner", "intermediate", "advanced"].map((l) => (
+              <button
+                key={l}
+                onClick={() => setLevel(l)}
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${level === l ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                    >
+            {l === "all" ? "Tous" : LEVEL_LABELS[l]}
+          </button>
+                  ))}
+        </div>
+      </div>
+
+              {/* Category */ }
+    {
+      categories.length > 0 && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">Catégorie</span>
+          <select
+            value={categorySlug}
+            onChange={(e) => setCategorySlug(e.target.value)}
+            className="bg-white border border-slate-300 rounded text-xs font-medium text-slate-700 py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+          >
+            <option value="all">Toutes les catégories</option>
+            {categories.map((c) => (
+              <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>
+            ))}
+          </select>
+        </div>
+      )
+    }
+
+    {/* Free only */ }
+    <label className="flex items-center gap-2 cursor-pointer">
+      <input
+        type="checkbox"
+        checked={isFree === true}
+        onChange={(e) => setIsFree(e.target.checked ? true : undefined)}
+        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+      />
+      <span className="text-xs font-medium text-slate-700">Gratuit uniquement</span>
+    </label>
+
+    {/* Ordering */ }
+    <div className="flex items-center gap-2 ml-auto">
+      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Trier par</span>
+      <select
+        value={ordering}
+        onChange={(e) => setOrdering(e.target.value)}
+        className="bg-white border border-slate-300 rounded text-xs font-medium text-slate-700 py-1.5 px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+      >
+        {ORDERING_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
+
+    {
+      hasActiveFilters && (
+        <button
+          onClick={resetFilters}
+          className="text-xs font-medium text-red-600 hover:text-red-700 flex items-center gap-1"
+        >
+          <X className="w-3 h-3" /> Réinitialiser
+        </button>
+      )
+    }
+            </div >
+          )
+  }
+        </div >
+      </div >
+
+    {/* ── RESULTS AREA ── */ }
+    < div className = "max-w-7xl mx-auto px-4 md:px-8 py-8" >
+
+      {/* Result count */ }
+      < div className = "flex items-center justify-between mb-6" >
+        <p className="text-sm font-medium text-slate-600">
+          {loading ? (
+            <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Recherche en cours...</span>
+          ) : (
+            <><span className="font-semibold text-slate-900">{totalCount}</span> {activeTab === "paths" ? "parcours" : "cours"} {debouncedQuery ? `pour "${debouncedQuery}"` : "disponibles"}</>
+          )}
+        </p>
+        </div >
+
+    {/* Grid */ }
+  {
+    !loading && results.length === 0 ? (
+      <div className="bg-white border border-dashed border-slate-200 rounded-lg p-16 text-center">
+        <Search className="w-10 h-10 text-slate-300 mx-auto mb-4" />
+        <h3 className="text-base font-semibold text-slate-900 mb-2">Aucun résultat</h3>
+        <p className="text-sm text-slate-500 mb-4">
+          Aucun {activeTab === "paths" ? "parcours" : "cours"} ne correspond à votre recherche.
+        </p>
+        {hasActiveFilters && (
+          <button onClick={resetFilters} className="text-sm font-medium text-indigo-600 hover:underline">
+            Réinitialiser les filtres
+          </button>
+        )}
+      </div>
+    ) : (
+    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 ${loading ? "opacity-50 pointer-events-none" : ""}`}>
+  {
+    results.map((item) => (
+      <ResultCard key={item.id} item={item} type={activeTab === "paths" ? "path" : "course"} />
+    ))
+  }
+          </div >
+        )
+}
+      </div >
+    </div >
+  );
+}
+
+export default function ParcoursPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center"><Loader2 className="w-8 h-8 text-indigo-500 animate-spin" /></div>}>
+      <ParcoursContent />
+    </Suspense>
+  );
+}
+
