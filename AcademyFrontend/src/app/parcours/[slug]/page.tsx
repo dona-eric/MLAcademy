@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
-import { 
-  Play, 
-  Clock, 
-  Star, 
-  CheckCircle2, 
-  BookOpen, 
-  Users, 
+import {
+  Play,
+  Clock,
+  Star,
+  CheckCircle2,
+  BookOpen,
+  Users,
   ArrowLeft,
   ChevronRight,
   Sparkles,
@@ -23,7 +23,7 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const slug = params.slug as string;
   const { user, loading: authLoading } = useAuth();
-  
+
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
@@ -32,7 +32,7 @@ export default function CourseDetailPage() {
   useEffect(() => {
     async function loadCourse() {
       try {
-        const data = await fetchApi(`/api/courses/${slug}/`);
+        const data = await fetchApi("/api/courses/${slug}/");
         setCourse(data);
       } catch (err) {
         console.error(err);
@@ -51,8 +51,8 @@ export default function CourseDetailPage() {
     setEnrolling(true);
     setError('');
     try {
-      await fetchApi(`/api/courses/${course.id}/enroll/`, { method: 'POST' });
-      const updated = await fetchApi(`/api/courses/${slug}/`);
+      await fetchApi("/api/courses/${course.id}/enroll/", { method: 'POST' });
+      const updated = await fetchApi("/api/courses/${slug}/");
       setCourse(updated);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'inscription.');
@@ -90,7 +90,7 @@ export default function CourseDetailPage() {
       <section className="relative pt-32 pb-24 overflow-hidden bg-[#0A192F]">
         <div className="absolute top-0 right-0 w-full h-full bg-[radial-gradient(circle_at_top_right,_#00D1FF_0%,_transparent_50%)] opacity-20"></div>
         <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(circle_at_bottom_left,_#FFB800_0%,_transparent_50%)] opacity-10"></div>
-        
+
         <div className="container mx-auto px-6 relative z-10">
           <Link href="/parcours" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 group text-[10px] font-black uppercase tracking-widest">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
@@ -104,15 +104,15 @@ export default function CourseDetailPage() {
                   <span className="text-[10px] font-black text-[#00D1FF] uppercase tracking-widest">{course.category.name}</span>
                 </div>
               )}
-              
+
               <h1 className="text-5xl lg:text-7xl font-bold text-white tracking-tight font-georgia leading-tight">
                 {course.title}
               </h1>
-              
+
               <p className="text-xl text-white/70 font-medium leading-relaxed max-w-xl">
                 {course.short_description}
               </p>
-              
+
               <div className="flex flex-wrap items-center gap-6 pt-4">
                 <div className="flex items-center gap-2 text-white/90">
                   <Star className="w-5 h-5 text-[#FFB800] fill-[#FFB800]" />
@@ -146,7 +146,7 @@ export default function CourseDetailPage() {
       {/* Main Content & Sticky Sidebar */}
       <section className="container mx-auto px-6 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
-          
+
           <div className="lg:col-span-2 space-y-16">
             {/* Description */}
             <div className="space-y-6">
@@ -180,7 +180,7 @@ export default function CourseDetailPage() {
                           <p className="text-sm font-medium text-gray-500">{mod.lessons?.length || 0} leçons</p>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-3 pl-20">
                         {mod.lessons?.map((lesson: any) => (
                           <div key={lesson.id} className="flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 transition-colors group">
@@ -228,12 +228,12 @@ export default function CourseDetailPage() {
               </div>
 
               {isEnrolled ? (
-                <Link href={`/learning/${course.slug}/lesson/${course.modules?.[0]?.lessons?.[0]?.id || ''}`} className="btn btn-primary w-full py-5 text-base shadow-xl shadow-cyan-100 block text-center">
+                <Link href={"/learning/${course.slug}/lesson/${course.modules?.[0]?.lessons?.[0]?.id || ''}"} className="btn btn-primary w-full py-5 text-base shadow-xl shadow-cyan-100 block text-center">
                   Continuer l'apprentissage
                 </Link>
               ) : (
-                <button 
-                  onClick={handleEnroll} 
+                <button
+                  onClick={handleEnroll}
                   disabled={enrolling || authLoading}
                   className="btn btn-primary w-full py-5 text-base shadow-xl shadow-cyan-100 group"
                 >
