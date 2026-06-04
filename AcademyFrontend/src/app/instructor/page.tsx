@@ -5,15 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
-import { 
-  Users, 
-  DollarSign, 
-  BookOpen, 
-  Star,
-  TrendingUp,
-  ArrowRight,
-  Sparkles,
-  BarChart3
+import {
+  Users, DollarSign, Star, TrendingUp,
+  ArrowRight, Plus, Clock, Award, Target,
+  AlertCircle, FileText, LayoutDashboard, MonitorPlay
 } from "lucide-react";
 
 export default function InstructorDashboard() {
@@ -22,29 +17,33 @@ export default function InstructorDashboard() {
 
   const [stats, setStats] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
+  const [peerReviews, setPeerReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || user.role !== 'instructor') {
+    if (!user || !user.is_instructor) {
       router.push('/dashboard');
       return;
     }
 
     async function loadData() {
       try {
-        // Fetch dashboard stats (fake data for now until API is ready)
-        setStats({
-          total_students: 1240,
-          total_revenue: "4,500 €",
-          active_courses: 5,
-          avg_rating: "4.8"
-        });
+        const statsData = await fetchApi('/api/instructor/stats/');
+        setStats(statsData);
 
-        const myCourses = await fetchApi('/api/courses/?instructor=me');
-        setCourses(myCourses.results || myCourses);
-      } catch (err) {
-        console.error(err);
+        // Appel direct sur l'API instructeur pour la gestion des cours
+        const myCourses = await fetchApi('/api/instructor/courses/');
+        setCourses(myCourses.results || myCourses || []);
+
+        // Appel direct pour récupérer uniquement les reviews en attente
+        const reviewsData = await fetchApi('/api/instructor/peer-reviews/to-review/');
+        setPeerReviews(reviewsData.results || reviewsData || []);
+
+      } catch (err: any) {
+        console.error("Erreur de chargement des données instructeur:", err);
+        setError("Impossible de charger les données. Veuillez réessayer.");
       } finally {
         setLoading(false);
       }
@@ -55,88 +54,121 @@ export default function InstructorDashboard() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-16 h-16 border-4 border-[#00D1FF] border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin"></div>
+        <p className="mt-4 text-xs font-medium text-slate-500">Chargement de votre espace...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto mt-10">
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md text-sm flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          <p>{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 relative">
-      <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#FFB800]/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+    <div className="p-6 lg:p-12 max-w-7xl mx-auto space-y-10">
 
-      {/* Welcome Section */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 relative z-10">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#0A192F]/5 rounded-full border border-[#0A192F]/5">
-            <Sparkles className="w-3 h-3 text-[#FFB800]" />
-            <span className="text-[10px] font-black text-[#0A192F] uppercase tracking-widest">Instructor Studio</span>
-          </div>
-          <h1 className="text-4xl font-bold text-[#0A192F] font-georgia tracking-tight">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
             Vue d'ensemble
           </h1>
-          <p className="text-gray-500 font-medium">Gérez vos formations et suivez vos performances.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Gérez vos formations et suivez les performances de vos étudiants.
+          </p>
         </div>
-        <Link href="/instructor/courses/create" className="btn btn-primary shadow-xl shadow-cyan-100">
-          Créer un nouveau parcours
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/instructor/courses/create"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-medium rounded-md hover:bg-slate-800 transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Nouveau parcours
+          </Link>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+      {/* KPI METRICS (Real Data Only) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: <Users className="w-6 h-6 text-[#00D1FF]" />, label: "Apprenants", value: stats?.total_students, bg: "bg-[#00D1FF]/10" },
-          { icon: <DollarSign className="w-6 h-6 text-green-500" />, label: "Revenus", value: stats?.total_revenue, bg: "bg-green-500/10" },
-          { icon: <BookOpen className="w-6 h-6 text-[#FFB800]" />, label: "Cours Actifs", value: stats?.active_courses, bg: "bg-[#FFB800]/10" },
-          { icon: <Star className="w-6 h-6 text-purple-500" />, label: "Note Globale", value: stats?.avg_rating, bg: "bg-purple-500/10" },
+          { label: "Apprenants actifs", value: stats?.total_students ?? 0, icon: Users },
+          { label: "Revenus totaux", value: stats?.total_revenue ?? "0 FCFA", icon: DollarSign },
+          { label: "Vues profil", value: stats?.views ?? 0, icon: TrendingUp },
+          { label: "Note moyenne", value: stats?.avg_rating ? "${stats.avg_rating}/5" : "-", icon: Star },
         ].map((kpi, i) => (
-          <div key={i} className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm space-y-4">
-            <div className={`w-12 h-12 rounded-2xl ${kpi.bg} flex items-center justify-center`}>
-              {kpi.icon}
+          <div key={i} className="bg-white p-5 rounded-lg border-b flex flex-col justify-between h-32">
+            <div className="flex items-start justify-between">
+              <p className="text-xs font-medium text-slate-500">{kpi.label}</p>
+              <kpi.icon className="w-4 h-4 text-slate-400" />
             </div>
             <div>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{kpi.label}</p>
-              <p className="text-3xl font-bold text-[#0A192F]">{kpi.value}</p>
+              <p className="text-2xl font-semibold text-slate-900 tracking-tight">{kpi.value}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 relative z-10">
-        {/* Course List */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+        {/* COURSES SECTION */}
+        <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-[#0A192F] font-georgia">Vos Parcours Récents</h2>
-            <Link href="/instructor/courses" className="text-sm font-bold text-[#00D1FF] hover:underline">Voir tout</Link>
+            <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Vos Formations ({courses.length})</h2>
+            {courses.length > 0 && (
+              <Link href="/instructor/courses" className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline">
+                Voir tout
+              </Link>
+            )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {courses.length === 0 ? (
-              <div className="bg-white rounded-[32px] border border-dashed border-gray-200 p-12 text-center">
-                <p className="text-gray-500 font-medium">Vous n'avez pas encore créé de parcours.</p>
-                <Link href="/instructor/courses/create" className="btn btn-secondary mt-4">Créer mon premier parcours</Link>
+              <div className="bg-slate-50  rounded-lg p-10 text-center">
+                <MonitorPlay className="w-8 h-8 text-slate-400 mx-auto mb-3" />
+                <h3 className="text-sm font-medium text-slate-900 mb-1">Aucun cours publié</h3>
+                <p className="text-xs text-slate-500 mb-4">Créez votre première formation pour commencer à enseigner.</p>
+                <Link href="/instructor/courses/create" className="inline-flex items-center justify-center px-4 py-2 bg-white text-slate-700 text-xs font-medium rounded-md hover:bg-slate-50 transition-colors">
+                  Créer un cours
+                </Link>
               </div>
             ) : (
-              courses.slice(0, 3).map((course: any) => (
-                <div key={course.id} className="bg-white rounded-[32px] border border-gray-100 p-6 flex items-center gap-6 hover:shadow-lg transition-all group">
-                  <div className="w-20 h-20 rounded-2xl bg-[#0A192F] overflow-hidden shrink-0 relative">
+              courses.slice(0, 5).map((course: any) => (
+                <div key={course.id} className="group bg-white rounded-lg p-4 flex items-center gap-4 hover:border-slate-300 transition-colors">
+                  <div className="w-16 h-16 rounded bg-slate-100 shrink-0 overflow-hidden border border-slate-100 flex items-center justify-center">
                     {course.thumbnail ? (
-                      <img src={course.thumbnail} alt="" className="w-full h-full object-cover" />
+                      <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover" />
                     ) : (
-                      <BarChart3 className="w-8 h-8 text-white/20 absolute inset-0 m-auto" />
+                      <LayoutDashboard className="w-6 h-6 text-slate-300" />
                     )}
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <h3 className="text-lg font-bold text-[#0A192F] group-hover:text-[#00D1FF] transition-colors">{course.title}</h3>
-                    <div className="flex items-center gap-3 text-xs font-bold text-gray-400 uppercase tracking-widest">
-                      <span>{course.level}</span>
-                      <span>•</span>
-                      <span className="text-[#FFB800]">{course.is_free ? 'Gratuit' : 'Premium'}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
+                      <Link href={"/instructor/courses/${course.id}"}>
+                        {course.title}
+                      </Link>
+                    </h3>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                      <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {course.enrolled_count ?? 0}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {course.duration_hours ?? 0}h</span>
+                      <span className="flex items-center gap-1">
+                        <Award className="w-3 h-3" />
+                        {course.level === 'beginner' ? 'Débutant' : course.level === 'intermediate' ? 'Interm.' : 'Avancé'}
+                      </span>
                     </div>
                   </div>
-                  <Link href={`/instructor/courses/${course.id}`} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-[#00D1FF] hover:text-white transition-all">
-                    <ArrowRight className="w-5 h-5" />
+                  <Link
+                    href={"/instructor/courses/${course.id}"}
+                    className="p-2 text-slate-400 hover:text-slate-900 transition-colors"
+                  >
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               ))
@@ -144,31 +176,68 @@ export default function InstructorDashboard() {
           </div>
         </div>
 
-        {/* Quick Actions / Notifications */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-[#0A192F] font-georgia">Actions Requises</h2>
-          <div className="bg-white rounded-[32px] border border-gray-100 p-8 space-y-6">
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-orange-50 border border-orange-100">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-[#0A192F]">12 Peer-Reviews en attente</p>
-                <p className="text-xs text-gray-500 mt-1">Vos étudiants attendent vos retours sur leurs projets finaux.</p>
-                <Link href="/instructor/peer-reviews" className="text-xs font-bold text-orange-600 mt-2 inline-block hover:underline">Évaluer maintenant</Link>
-              </div>
-            </div>
+        {/* TASKS & NOTIFICATIONS SECTION */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">Tâches en attente</h2>
+          </div>
 
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-gray-600" />
+          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+            {peerReviews.length === 0 ? (
+              <div className="p-8 text-center">
+                <Target className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+                <p className="text-sm font-medium text-slate-900">Aucune évaluation en attente</p>
+                <p className="text-xs text-slate-500 mt-1">Vos étudiants travaillent sur leurs projets.</p>
               </div>
-              <div>
-                <p className="text-sm font-bold text-[#0A192F]">Mise à jour suggérée</p>
-                <p className="text-xs text-gray-500 mt-1">Le module "Deep Learning" de votre parcours "Python IA" a besoin d'être actualisé.</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                <div className="p-4 bg-orange-50/50">
+                  <p className="text-xs font-semibold text-orange-800 mb-1">
+                    {peerReviews.length} évaluation{peerReviews.length > 1 ? 's' : ''} requise{peerReviews.length > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-[11px] text-orange-600">Projets finaux en attente de votre correction.</p>
+                </div>
+                {peerReviews.slice(0, 4).map((review: any) => (
+                  <Link
+                    key={review.id}
+                    href={"/instructor/peer-reviews/${review.id}"}
+                    className="flex flex-col gap-1 p-4 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-900 truncate pr-2">{review.student_name || review.student_username}</span>
+                      <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                        {new Date(review.submitted_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 line-clamp-1">{review.project_title}</span>
+                  </Link>
+                ))}
+                {peerReviews.length > 4 && (
+                  <div className="p-3 bg-slate-50 text-center">
+                    <Link href="/instructor/peer-reviews" className="text-xs font-medium text-indigo-600 hover:underline">
+                      Voir toutes les évaluations
+                    </Link>
+                  </div>
+                )}
               </div>
+            )}
+          </div>
+
+          {/* Outils Rapides */}
+          <div className="mt-8">
+            <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">Ressources</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/instructor/certifications" className="p-3 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-center gap-2">
+                <Award className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Certifications</span>
+              </Link>
+              <Link href="/instructor/tutos" className="p-3 border border-slate-200 rounded-md hover:bg-slate-50 transition-colors flex flex-col items-center justify-center text-center gap-2">
+                <FileText className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Tutoriels</span>
+              </Link>
             </div>
           </div>
+
         </div>
       </div>
     </div>
