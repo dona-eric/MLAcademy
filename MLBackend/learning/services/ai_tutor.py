@@ -39,7 +39,7 @@ def build_system_prompt(lesson):
     """
     code_context = ""
     if lesson.starter_code:
-        code_context += f"\nCode de démarrage fourni à l'étudiant :\n```python\n{lesson.starter_code}\n```\n"
+        code_context += f"\nCode de démarrage fourni à l'étudiant :\n"""python\n{lesson.starter_code}\n"""\n"
     
     return SYSTEM_PROMPT_TEMPLATE.format(
         module_title=lesson.module.title,
