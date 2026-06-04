@@ -57,13 +57,41 @@ def apply_and_commit(files_to_commit, branch, prefix="update"):
             os.system(f"git checkout {temp_commit} -- {quoted_file} >/dev/null 2>&1")
             os.system(f"git add {quoted_file} >/dev/null 2>&1")
             
-        commit_msg = f"{prefix}: update {os.path.basename(file)}"
+        def generate_message(filepath):
+            import os
+            basename = os.path.basename(filepath)
+            
+            # Handling new directories
+            if filepath.endswith('/'):
+                folder_name = os.path.basename(os.path.dirname(filepath))
+                return f"{prefix}: setup {folder_name} directory"
+
+            if "AcademyFrontend/src/app" in filepath:
+                parts = filepath.split("AcademyFrontend/src/app/")[-1].split("/")
+                if len(parts) > 1:
+                    route = "/".join(parts[:-1])
+                    return f"{prefix}: update {route} page"
+                return f"{prefix}: update {basename}"
+            
+            if "AcademyFrontend/src/components" in filepath:
+                comp = basename.replace(".tsx", "")
+                return f"{prefix}: update {comp} component"
+                
+            if "MLBackend" in filepath:
+                parts = filepath.split("MLBackend/")[-1].split("/")
+                if len(parts) > 1:
+                    app = parts[0]
+                    return f"{prefix}: update {basename} in {app} app"
+                
+            return f"{prefix}: update {basename}"
+            
+        commit_msg = generate_message(file)
         
         # Commit if there are changes
         diff_status = os.system("git diff --cached --quiet")
         if diff_status != 0: # non-zero means changes exist
             os.system(f"git commit -m '{commit_msg}' >/dev/null 2>&1")
-            print(f"Committed: {file}")
+            print(f"Committed: {commit_msg} ({file})")
 
 # 4. Split files according to user rules
 frontend_files = [c for c in changes if c[1].startswith("AcademyFrontend/")]
