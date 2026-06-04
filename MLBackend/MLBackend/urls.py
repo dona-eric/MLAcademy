@@ -6,7 +6,7 @@ from users.views import SocialView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    
+    path('i18n/', include('django.conf.urls.i18n')),
     # API PUBLIQUE
     path("api/public/users/", include("users.urls_public")),
     path("api/public/courses/", include("courses.urls")), # Catalogue public
