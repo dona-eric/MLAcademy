@@ -5,12 +5,12 @@ class IsAuthorizedReviewer(permissions.BasePermission):
     Vérifie que le user n'est pas l'auteur et qu'il est autorisé à évaluer (ou que le projet est en attente).
     """
     def has_object_permission(self, request, view, obj):
-        # La vue SubmitReviewView cible l'objet `Review` pour l'assignation, 
+        # La vue SubmitReviewView cible l'objet "Review" pour l'assignation, 
         # mais la permission est souvent appelée sur la soumission si on l'attache à la création de Review.
         # En fait, lors d'un POST (CreateAPIView), has_object_permission n'est pas appelé automatiquement.
         # Mais si l'on veut le vérifier manuellement, obj peut être le ProjectSubmission.
         
-        # Pour être sûr, cette méthode suppose que `obj` = ProjectSubmission.
+        # Pour être sûr, cette méthode suppose que "obj" = ProjectSubmission.
         
         if request.user == obj.user:
             return False
