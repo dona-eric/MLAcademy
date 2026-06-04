@@ -21,7 +21,7 @@ class JobOfferViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated()] # Devrait être IsRecruiter plus tard
-        return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     @action(detail=True, methods=['post'], url_path='apply')
     def apply(self, request, pk=None):
@@ -38,7 +38,7 @@ class TalentHubViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = User.objects.filter(is_public_profile=True).order_by('-date_joined')
     serializer_class = TalentProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
     filter_backends = [filters.SearchFilter]
     search_fields = ['first_name', 'last_name', 'bio', 'level']
 
@@ -65,7 +65,7 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     Classement des meilleurs talents basés sur les points XP.
     """
     serializer_class = TalentProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         from django.db.models import Count
@@ -101,7 +101,11 @@ class ChannelViewSet(viewsets.ModelViewSet):
     """
     queryset = Channel.objects.all().order_by('name')
     serializer_class = ChannelSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
     @action(detail=True, methods=['get', 'post'], url_path='messages')
     def messages(self, request, pk=None):
@@ -132,13 +136,17 @@ class ChannelViewSet(viewsets.ModelViewSet):
         except ChannelMessage.DoesNotExist:
             return Response({"error": "Message non trouvé"}, status=404)
 
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+class CategoryViewSet(viewsets.ModelViewSet):
     """
     Interface pour obtenir la structure des canaux groupés par catégorie.
     """
     queryset = Category.objects.all().prefetch_related('channels').order_by('order')
     serializer_class = CategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
 
 class RecruitmentDashboardViewSet(viewsets.ViewSet):
     """
