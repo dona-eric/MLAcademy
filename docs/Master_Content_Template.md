@@ -52,4 +52,4 @@
 
 ---
 
-*Note de versionning : N'effacez jamais le contenu des anciennes versions. Si vous mettez à jour un module, créez une version `v1.1` pour préserver l'historique de formation des anciens diplômés.*
+*Note de versionning : N'effacez jamais le contenu des anciennes versions. Si vous mettez à jour un module, créez une version "v1.1" pour préserver l'historique de formation des anciens diplômés.*
