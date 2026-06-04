@@ -93,9 +93,15 @@ class Channel(models.Model):
     """
     Canal de discussion par spécialité ou thématique.
     """
+    CHANNEL_TYPES = [
+        ('chat', 'Chat Classique'),
+        ('forum', 'Espace Forum / Annonces'),
+    ]
+
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="channels", null=True, blank=True)
     name = models.CharField(max_length=100, verbose_name="Nom du canal")
     description = models.TextField(blank=True)
+    channel_type = models.CharField(max_length=20, choices=CHANNEL_TYPES, default='chat')
     icon = models.CharField(max_length=50, default="hash")
     
     order = models.IntegerField(default=0)
@@ -114,6 +120,7 @@ class ChannelMessage(models.Model):
     """
     channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name="messages")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255, null=True, blank=True, verbose_name="Titre de la publication (Forum)")
     content = models.TextField()
     
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name="replies")
