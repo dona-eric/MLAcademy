@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import StudentProfile, InstructorApplication
+from phonenumber_field.serializerfields import PhoneNumberField
 
 User = get_user_model()
 
