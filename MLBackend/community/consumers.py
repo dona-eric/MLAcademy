@@ -31,13 +31,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         data = json.loads(text_data)
         message_content = data.get('message')
+        title = data.get('title')
+        parent_id = data.get('parent_id')
         user = self.scope['user']
 
         if not user.is_authenticated:
             return
 
         # Save message to database
-        saved_msg = await self.save_message(user, self.channel_id, message_content)
+        saved_msg = await self.save_message(user, self.channel_id, message_content, title, parent_id)
 
         # Detect mentions (@username)
         mentions = re.findall(r'@(\w+)', message_content)
@@ -49,7 +51,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'type': 'chat_message',
                 'message': {
                     'id': saved_msg.id,
+                    'user': user.id,
+                    'title': saved_msg.title,
                     'content': saved_msg.content,
+                    'parent': saved_msg.parent_id if saved_msg.parent else None,
                     'user_name': user.username,
                     'user_avatar': user.avatar.url if user.avatar else None,
                     'is_mentor': getattr(user, 'is_mentor', False),
@@ -69,10 +74,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }))
 
     @database_sync_to_async
-    def save_message(self, user, channel_id, content):
+    def save_message(self, user, channel_id, content, title=None, parent_id=None):
         channel = Channel.objects.get(id=channel_id)
+        parent_msg = None
+        if parent_id:
+            try:
+                parent_msg = ChannelMessage.objects.get(id=parent_id)
+            except ChannelMessage.DoesNotExist:
+                pass
+        
         return ChannelMessage.objects.create(
             user=user,
             channel=channel,
-            content=content
+            title=title,
+            content=content,
+            parent=parent_msg
         )
