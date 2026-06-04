@@ -44,6 +44,6 @@
 
 | Critère d'évaluation | ❌ Insuffisant (0-40) | ⚠️ En Cours d'Acquisition (40-70) | ✅ Compétent (70-90) | 🌟 Expert (90-100) |
 |---|---|---|---|---|
-| **Structure CPTF** | Le prompt est un simple paragraphe confus. | Certaines parties manquent (ex: pas de format). | Le Contexte, Persona, Tâche et Format sont clairs. | La structure est optimisée, utilisant des délimiteurs clairs (ex: `###` ou XML). |
+| **Structure CPTF** | Le prompt est un simple paragraphe confus. | Certaines parties manquent (ex: pas de format). | Le Contexte, Persona, Tâche et Format sont clairs. | La structure est optimisée, utilisant des délimiteurs clairs (ex: "###" ou XML). |
 | **Prévention des Hallucinations** | Aucune instruction sur ce qu'il faut faire en cas de doute. | Instructions basiques ("Ne mens pas"). | Instruction claire : "Si l'info manque, demande des précisions". | Prévention avancée avec des contraintes strictes. |
-| **Respect du Format (JSON)** | La sortie n'est pas en JSON. | Le JSON est mal formaté ou inclut du texte inutile. | Le JSON est valide et correspond à la demande. | Le JSON inclut une gestion d'erreur (ex: `{"error": "missing_order_id"}`). |
+| **Respect du Format (JSON)** | La sortie n'est pas en JSON. | Le JSON est mal formaté ou inclut du texte inutile. | Le JSON est valide et correspond à la demande. | Le JSON inclut une gestion d'erreur (ex: "{"error": "missing_order_id"}"). |
