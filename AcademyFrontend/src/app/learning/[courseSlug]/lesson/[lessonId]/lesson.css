@@ -1,4 +1,4 @@
-/* ── Page de Leçon ─────────────────────────────── */
+/* ── Page de Leçon  */
 .lesson-page {
   height: 100vh;
   display: flex;
@@ -88,7 +88,7 @@
   overflow: hidden;
 }
 
-/* ── Code Layout (Monaco) ────────────────────────── */
+/* ── Code Layout (Monaco) */
 .lesson-code-layout {
   display: grid;
   grid-template-columns: 380px 1fr;
@@ -167,7 +167,7 @@
   margin: 2rem 0 1rem;
 }
 
-/* ── Video Layout ────────────────────────────────── */
+/* ── Video Layout  */
 .lesson-video-layout {
   padding: 2rem;
   max-width: 1200px;
