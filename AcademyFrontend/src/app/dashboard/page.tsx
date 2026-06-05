@@ -117,7 +117,7 @@ export default function DashboardPage() {
                   <Link href="/dashboard/calendar" className="text-[10px] font-black text-indigo-400 uppercase tracking-widest hover:underline">Voir le calendrier</Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {upcomingDeadlines.map((deadline) => {
+                  {upcomingDeadlines.map((deadline: any) => {
                     const isUrgent = deadline.priority === "high";
                     return (
                       <div key={deadline.id} className={`p-5 rounded-[24px] border ${isUrgent ? 'bg-orange-500/10 border-orange-500/20' : 'bg-white/5 border-white/5'} flex items-start gap-4 group hover:scale-[1.02] transition-all`}>
@@ -166,10 +166,10 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {activePaths.map((pe) => (
+                  {activePaths.map((pe: any) => (
                     <CourseraItemCard key={`path-${pe.id}`} item={pe.learning_path} progress={pe.progress_percentage} enrolledAt={pe.enrolled_at} type="path" />
                   ))}
-                  {activeCourses.map((e) => (
+                  {activeCourses.map((e: any) => (
                     <CourseraItemCard key={`course-${e.id}`} item={e.course} progress={e.progress_percentage} enrolledAt={e.enrolled_at} type="course" />
                   ))}
                 </div>

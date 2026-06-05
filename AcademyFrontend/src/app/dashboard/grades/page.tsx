@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
-import { 
-  BarChart3, Award, CheckCircle2, 
-  XCircle, Clock, Loader2,
-  TrendingUp, BookOpen, ChevronRight
-} from "lucide-react";
+import {Award, Loader2, TrendingUp, BookOpen, ChevronRight} from "lucide-react";
 import Link from "next/link";
 
 export default function GradesPage() {
@@ -87,7 +83,7 @@ export default function GradesPage() {
          <h2 className="text-sm font-black text-slate-500 uppercase tracking-[0.3em]">Détail par formation</h2>
          
          <div className="grid grid-cols-1 gap-6">
-            {enrollments.map((enrollment) => (
+            {enrollments.map((enrollment: any) => (
                <div key={enrollment.id} className="glass-card p-8 rounded-[40px] border border-white/5 bg-white/5 hover:border-white/10 transition-all group">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                      <div className="flex items-center gap-6">

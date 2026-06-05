@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { 
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, 
   Clock, Zap, Target, BookOpen, Loader2
 } from "lucide-react";
+import { fetchApi } from "@/lib/api";
 
 export default function CalendarPage() {
   const [summary, setSummary] = useState<any>(null);
@@ -90,7 +91,7 @@ export default function CalendarPage() {
                 ))}
                 {Array.from({ length: 31 }).map((_, i) => {
                 const day = i + 1;
-                const event = events.find(e => 
+                const event = events.find((e: any) => 
                   e.day === day && 
                   e.month === currentDate.getMonth() && 
                   e.year === currentDate.getFullYear()
@@ -122,7 +123,7 @@ export default function CalendarPage() {
         <div className="space-y-10">
            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Événements à venir</h3>
            <div className="space-y-6">
-              {events.map(event => (
+              {events.map((event: any) => (
                 <div key={event.id} className="flex gap-6 items-start group">
                    <div className="text-center shrink-0">
                       <p className="text-2xl font-black text-white">{event.day}</p>

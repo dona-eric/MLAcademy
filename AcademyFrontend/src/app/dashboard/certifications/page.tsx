@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
-import { Award, Trophy, ChevronRight, Loader2, Star, Download, Target, Zap, CheckCircle2} from "lucide-react";
+import { Award, Trophy, Loader2, Star, Download, Target, Zap, CheckCircle2, ChevronRight } from "lucide-react";
 
 export default function MyCertificationsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -49,11 +49,18 @@ export default function MyCertificationsPage() {
   }
 
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-16 animate-in fade-in duration-700 text-white">
-      
-      <div className="space-y-2">
-        <h1 className="text-3xl font-black text-white tracking-tight">Mes Certifications</h1>
-      </div>
+    <div className="relative min-h-screen bg-[#090C14] overflow-hidden">
+      {/* Background Gradients */}
+      <div className="glow-extremity-top"></div>
+      <div className="glow-extremity-bottom"></div>
+
+      <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-16 animate-in fade-in duration-700 text-white relative z-10">
+        
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+            Mes <span className="italic-accent text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Certifications</span>
+          </h1>
+        </div>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -186,7 +193,9 @@ export default function MyCertificationsPage() {
 
           <div className="p-10 rounded-[40px] bg-gradient-to-br from-slate-900 to-black border border-white/5 text-white space-y-6 relative overflow-hidden group shadow-2xl">
              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-             <h4 className="text-2xl font-black leading-tight relative z-10">Partagez vos succès sur LinkedIn</h4>
+             <h4 className="text-2xl font-extrabold leading-tight relative z-10 font-sans">
+               Partagez vos <span className="italic-accent text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">succès</span> sur LinkedIn
+             </h4>
              <p className="text-sm text-slate-500 leading-relaxed relative z-10">MLAcademy vous permet d'ajouter vos certifications directement à votre profil professionnel en un clic.</p>
              <button className="w-full py-5 rounded-[20px] bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10">
                 Lier mon compte LinkedIn
@@ -196,6 +205,7 @@ export default function MyCertificationsPage() {
 
       </div>
 
+    </div>
     </div>
   );
 }
