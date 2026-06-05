@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from .models import Company, JobOffer, JobApplication, Category, Channel, ChannelMessage
+from .models import (
+    Company, JobOffer, JobApplication, Category, Channel, ChannelMessage,
+    SponsoredChallenge, ChallengeSubmission, MentorshipRelation,
+    DirectConversation, DirectMessage
+)
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -31,6 +35,7 @@ class JobOfferSerializer(serializers.ModelSerializer):
 class TalentProfileSerializer(serializers.ModelSerializer):
     """
     Serializer pour exposer le profil d'un talent (étudiant) aux recruteurs.
+    Toutes les données sont dynamiques et issues du parcours réel de l'apprenant.
     """
     stats = serializers.SerializerMethodField()
     fullName = serializers.SerializerMethodField()
@@ -69,15 +74,22 @@ class TalentProfileSerializer(serializers.ModelSerializer):
         return obj.date_joined.strftime("%B %Y")
 
     def get_skills(self, obj):
-        if obj.level == "advanced":
-            return ["Python", "PyTorch", "Hugging Face", "MLOps", "Docker"]
-        elif obj.level == "intermediate":
-            return ["Python", "Scikit-Learn", "Pandas", "SQL"]
-        return ["Python", "Data Analysis", "Maths"]
+        """Compétences dynamiques basées sur les SkillBadges réellement obtenus."""
+        from learning.models import UserBadge
+        badges = UserBadge.objects.filter(user=obj).select_related('badge').values_list('badge__name', flat=True)
+        skill_list = list(badges)
+        # Fallback si aucun badge n'est encore obtenu
+        if not skill_list:
+            if obj.level == "advanced":
+                return ["Python", "PyTorch", "Hugging Face", "MLOps", "Docker"]
+            elif obj.level == "intermediate":
+                return ["Python", "Scikit-Learn", "Pandas", "SQL"]
+            return ["Python", "Data Analysis", "Maths"]
+        return skill_list
 
     def get_certificates(self, obj):
         from learning.models import Certificate
-        certs = Certificate.objects.filter(user=obj)
+        certs = Certificate.objects.filter(user=obj).select_related('course', 'learning_path')
         return [{
             "id": str(c.id),
             "title": c.course.title if c.course else (c.learning_path.title if c.learning_path else "Certificat"),
@@ -86,34 +98,66 @@ class TalentProfileSerializer(serializers.ModelSerializer):
         } for c in certs]
 
     def get_projects(self, obj):
-        return [
-            {
-                "id": "p1",
-                "title": "Aide-Diagnostic Médical par Vision",
-                "description": "Entraînement d'un modèle ResNet pour détecter des anomalies.",
-                "techStack": ["PyTorch", "Torchvision", "FastAPI"],
-                "githubUrl": obj.github_url or "https://github.com",
-                "demoUrl": None
-            }
-        ]
+        """Projets dynamiques : soumissions validées et marquées comme visibles dans le portfolio."""
+        from learning.models import ProjectSubmission
+        submissions = ProjectSubmission.objects.filter(
+            user=obj,
+            status='approved',
+            is_featured_in_portfolio=True
+        ).select_related('project', 'project__module')
+
+        projects = []
+        for sub in submissions:
+            projects.append({
+                "id": str(sub.id),
+                "title": sub.project.title,
+                "description": sub.project.description[:200],
+                "module": sub.project.module.title if sub.project.module else None,
+                "repoUrl": sub.repo_url or None,
+                "submittedAt": sub.submitted_at.strftime("%B %Y") if sub.submitted_at else None,
+            })
+
+        # Inclure aussi les soumissions gagnantes de challenges
+        challenge_subs = ChallengeSubmission.objects.filter(
+            user=obj, status__in=['evaluated', 'winner']
+        ).select_related('challenge', 'challenge__company')
+
+        for cs in challenge_subs:
+            projects.append({
+                "id": f"challenge-{cs.id}",
+                "title": f"🏆 {cs.challenge.title}",
+                "description": cs.description[:200] if cs.description else cs.challenge.description[:200],
+                "module": f"Challenge {cs.challenge.company.name}",
+                "repoUrl": cs.repo_url or None,
+                "submittedAt": cs.submitted_at.strftime("%B %Y") if cs.submitted_at else None,
+            })
+
+        return projects
 
     def get_rank(self, obj):
-        return 1
+        """Classement réel basé sur les points XP."""
+        higher_xp_count = User.objects.filter(
+            is_public_profile=True,
+            xp_points__gt=obj.xp_points
+        ).count()
+        return higher_xp_count + 1
 
     def get_xpPoints(self, obj):
-        return self.get_stats(obj)["points"]
+        return obj.xp_points
 
     def get_stats(self, obj):
         from learning.models import Enrollment, Certificate, UserLessonProgress
         courses_completed = Enrollment.objects.filter(user=obj, is_completed=True).count()
         certificates = Certificate.objects.filter(user=obj).count()
-        lessons_completed = UserLessonProgress.objects.filter(user=obj).count()
-        points = (certificates * 500) + (courses_completed * 200) + (lessons_completed * 10)
+        lessons_completed = UserLessonProgress.objects.filter(user=obj, is_completed=True).count()
+        challenges_won = ChallengeSubmission.objects.filter(user=obj, status='winner').count()
         
         return {
             "coursesCompleted": courses_completed,
             "certificates": certificates,
-            "points": points
+            "lessonsCompleted": lessons_completed,
+            "challengesWon": challenges_won,
+            "points": obj.xp_points
         }
 
 class JobApplicationSerializer(serializers.ModelSerializer):
@@ -155,3 +199,135 @@ class ChannelMessageSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.user.avatar.url)
         return None
+
+
+# ═════════════════════════════════════════════
+#  CHALLENGES & COMPÉTITIONS
+# ═════════════════════════════════════════════
+
+class SponsoredChallengeSerializer(serializers.ModelSerializer):
+    company_name = serializers.ReadOnlyField(source='company.name')
+    company_logo = serializers.SerializerMethodField()
+    spots_remaining = serializers.ReadOnlyField()
+    submissions_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SponsoredChallenge
+        fields = [
+            'id', 'company', 'company_name', 'company_logo', 'title', 'slug',
+            'description', 'rules', 'evaluation_criteria', 'difficulty',
+            'reward', 'prize_pool', 'max_participants', 'spots_remaining',
+            'dataset_url', 'is_active', 'is_open', 'is_approved',
+            'deadline', 'submissions_count', 'created_at'
+        ]
+
+    def get_company_logo(self, obj):
+        if obj.company.logo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.company.logo.url)
+        return None
+
+    def get_submissions_count(self, obj):
+        return obj.submissions.count()
+
+
+class ChallengeSubmissionSerializer(serializers.ModelSerializer):
+    user_name = serializers.ReadOnlyField(source='user.username')
+    user_avatar = serializers.SerializerMethodField()
+    challenge_title = serializers.ReadOnlyField(source='challenge.title')
+
+    class Meta:
+        model = ChallengeSubmission
+        fields = [
+            'id', 'challenge', 'challenge_title', 'user', 'user_name', 'user_avatar',
+            'repo_url', 'description', 'demo_url',
+            'score', 'rank', 'jury_feedback', 'status',
+            'submitted_at', 'evaluated_at', 'created_at'
+        ]
+        read_only_fields = ['user', 'score', 'rank', 'jury_feedback', 'status', 'submitted_at', 'evaluated_at']
+
+    def get_user_avatar(self, obj):
+        if obj.user.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.user.avatar.url)
+        return None
+
+
+# ═════════════════════════════════════════════
+#  MENTORAT
+# ═════════════════════════════════════════════
+
+class MentorshipSerializer(serializers.ModelSerializer):
+    mentor_name = serializers.ReadOnlyField(source='mentor.get_full_name')
+    mentor_email = serializers.ReadOnlyField(source='mentor.email')
+    student_name = serializers.ReadOnlyField(source='student.get_full_name')
+    student_email = serializers.ReadOnlyField(source='student.email')
+
+    class Meta:
+        model = MentorshipRelation
+        fields = [
+            'id', 'mentor', 'mentor_name', 'mentor_email',
+            'student', 'student_name', 'student_email',
+            'status', 'created_at'
+        ]
+        read_only_fields = ['status', 'created_at']
+
+
+# ═════════════════════════════════════════════
+#  MESSAGERIE DIRECTE
+# ═════════════════════════════════════════════
+
+class DirectMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.ReadOnlyField(source='sender.username')
+    sender_avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DirectMessage
+        fields = ['id', 'conversation', 'sender', 'sender_name', 'sender_avatar', 'content', 'is_read', 'created_at']
+        read_only_fields = ['sender', 'is_read']
+
+    def get_sender_avatar(self, obj):
+        if obj.sender.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.sender.avatar.url)
+        return None
+
+
+class DirectConversationSerializer(serializers.ModelSerializer):
+    participants_details = serializers.SerializerMethodField()
+    last_message = serializers.SerializerMethodField()
+    unread_count = serializers.SerializerMethodField()
+    job_title = serializers.ReadOnlyField(source='job_offer.title')
+
+    class Meta:
+        model = DirectConversation
+        fields = ['id', 'participants_details', 'job_offer', 'job_title', 'last_message', 'unread_count', 'created_at', 'updated_at']
+
+    def get_participants_details(self, obj):
+        request = self.context.get('request')
+        return [{
+            "id": u.id,
+            "username": u.username,
+            "fullName": u.get_full_name(),
+            "avatarUrl": request.build_absolute_uri(u.avatar.url) if u.avatar and request else None,
+            "is_recruiter": u.is_recruiter,
+        } for u in obj.participants.all()]
+
+    def get_last_message(self, obj):
+        msg = obj.messages.order_by('-created_at').first()
+        if msg:
+            return {
+                "content": msg.content[:100],
+                "sender": msg.sender.username,
+                "created_at": msg.created_at
+            }
+        return None
+
+    def get_unread_count(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.messages.filter(is_read=False).exclude(sender=request.user).count()
+        return 0

@@ -1,12 +1,40 @@
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
+from django.db import models as db_models
 from django.contrib.auth import get_user_model
-from .models import Company, JobOffer, JobApplication, Category, Channel, ChannelMessage
-from .serializers import (CompanySerializer, JobOfferSerializer, TalentProfileSerializer, 
-JobApplicationSerializer,ChannelSerializer, CategorySerializer, ChannelMessageSerializer)
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from .models import (
+    Company, JobOffer, JobApplication, Category, Channel, ChannelMessage,
+    SponsoredChallenge, ChallengeSubmission, MentorshipRelation,
+    DirectConversation, DirectMessage
+)
+from .serializers import (
+    CompanySerializer, JobOfferSerializer, TalentProfileSerializer,
+    JobApplicationSerializer, ChannelSerializer, CategorySerializer,
+    ChannelMessageSerializer, SponsoredChallengeSerializer,
+    ChallengeSubmissionSerializer, MentorshipSerializer,
+    DirectConversationSerializer, DirectMessageSerializer
+)
 
 User = get_user_model()
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def community_stats(request):
+    """Retourne les vraies métriques de la plateforme."""
+    return Response({
+        "totalTalents": User.objects.filter(is_public_profile=True).count(),
+        "applicationsProcessed": JobApplication.objects.count(),
+        "activeChallenges": SponsoredChallenge.objects.filter(is_approved=True, is_active=True).count()
+    })
+
+
+
+# =============================================
+#  JOB BOARD
+# =============================================
 
 class JobOfferViewSet(viewsets.ModelViewSet):
     """
@@ -14,6 +42,7 @@ class JobOfferViewSet(viewsets.ModelViewSet):
     Public (authentifié) pour la lecture, Recruteur pour la création.
     """
     queryset = JobOffer.objects.filter(is_active=True).order_by('-posted_at')
+    pagination_class = None
     serializer_class = JobOfferSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['title', 'description', 'company__name', 'location']
@@ -32,11 +61,17 @@ class JobOfferViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+#  =============================================
+#  TALENT HUB (Vitrine des Profils)
+# =============================================
+
 class TalentHubViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Interface pour les recruteurs (et talents) pour découvrir les profils.
     """
     queryset = User.objects.filter(is_public_profile=True).order_by('-date_joined')
+    pagination_class = None
     serializer_class = TalentProfileSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [filters.SearchFilter]
@@ -65,14 +100,13 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     Classement des meilleurs talents basés sur les points XP.
     """
     serializer_class = TalentProfileSerializer
+    pagination_class = None
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        from django.db.models import Count
-        return User.objects.filter(is_public_profile=True).annotate(
-            cert_count=Count('certificates', distinct=True),
-            lesson_count=Count('lesson_progress', distinct=True)
-        ).order_by('-cert_count', '-lesson_count')[:100]
+        return User.objects.filter(
+            is_public_profile=True
+        ).order_by('-xp_points')[:100]
 
 class MatchingViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -91,15 +125,21 @@ class MatchingViewSet(viewsets.ReadOnlyModelViewSet):
             job = JobOffer.objects.get(pk=job_id)
             # Matching simple : on cherche les talents du niveau requis ou supérieur
             # et triés par XP.
-            return User.objects.filter(is_public_profile=True).order_by('-date_joined') # Placeholder logic
+            return User.objects.filter(is_public_profile=True).order_by('-xp_points')
         except JobOffer.DoesNotExist:
             return User.objects.none()
+
+
+# =============================================
+#  CHANNELS & CHAT
+# =============================================
 
 class ChannelViewSet(viewsets.ModelViewSet):
     """
     Gestion des canaux de discussion.
     """
     queryset = Channel.objects.all().order_by('name')
+    pagination_class = None
     serializer_class = ChannelSerializer
     
     def get_permissions(self):
@@ -148,6 +188,11 @@ class CategoryViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
+
+# ═════════════════════════════════════════════
+#  RECRUITMENT DASHBOARD (Entreprises)
+# ═════════════════════════════════════════════
+
 class RecruitmentDashboardViewSet(viewsets.ViewSet):
     """
     Dashboard dédié aux entreprises pour gérer leurs offres et candidatures.
@@ -186,3 +231,272 @@ class RecruitmentDashboardViewSet(viewsets.ViewSet):
             return Response({"error": "Statut invalide"}, status=400)
         except JobApplication.DoesNotExist:
             return Response({"error": "Candidature non trouvée"}, status=404)
+
+
+# ═════════════════════════════════════════════
+#  CHALLENGES & COMPÉTITIONS
+# ═════════════════════════════════════════════
+
+class ChallengeViewSet(viewsets.ModelViewSet):
+    """
+    Gestion des challenges sponsorisés.
+    - Lecture publique (uniquement les challenges approuvés)
+    - Création par les entreprises (admin de la Company)
+    - Soumission et évaluation via des actions dédiées
+    """
+    serializer_class = SponsoredChallengeSerializer
+    pagination_class = None
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['title', 'description', 'company__name']
+
+    def get_queryset(self):
+        # Publiquement : uniquement les challenges approuvés et actifs
+        if self.action == 'list':
+            return SponsoredChallenge.objects.filter(is_approved=True, is_active=True)
+        return SponsoredChallenge.objects.all()
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+    # --- Actions pour les Talents ---
+
+    @action(detail=True, methods=['post'], url_path='participate')
+    def participate(self, request, pk=None):
+        """Un talent s'inscrit à un challenge et crée une soumission brouillon."""
+        challenge = self.get_object()
+
+        if not challenge.is_published:
+            return Response({"error": "Ce challenge n'est pas encore publié."}, status=status.HTTP_403_FORBIDDEN)
+
+        if challenge.spots_remaining is not None and challenge.spots_remaining <= 0:
+            return Response({"error": "Le nombre maximum de participants est atteint."}, status=status.HTTP_403_FORBIDDEN)
+
+        submission, created = ChallengeSubmission.objects.get_or_create(
+            challenge=challenge, user=request.user
+        )
+        if not created:
+            return Response({"detail": "Vous participez déjà à ce challenge."}, status=status.HTTP_200_OK)
+
+        serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get'], url_path='my-submission')
+    def my_submission(self, request, pk=None):
+        """Récupère la soumission de l'utilisateur connecté pour ce challenge."""
+        challenge = self.get_object()
+        submission = ChallengeSubmission.objects.filter(challenge=challenge, user=request.user).first()
+        if not submission:
+            return Response({"detail": "Vous ne participez pas à ce challenge."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['put', 'patch'], url_path='update-submission')
+    def update_submission(self, request, pk=None):
+        """Met à jour la soumission (repo_url, description, demo_url) tant qu'elle est en brouillon."""
+        challenge = self.get_object()
+        submission = get_object_or_404(ChallengeSubmission, challenge=challenge, user=request.user)
+
+        if submission.status not in ['draft', 'submitted']:
+            return Response({"error": "Impossible de modifier une soumission déjà évaluée."}, status=status.HTTP_403_FORBIDDEN)
+
+        for field in ['repo_url', 'description', 'demo_url']:
+            if field in request.data:
+                setattr(submission, field, request.data[field])
+        submission.save()
+
+        serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='submit-solution')
+    def submit_solution(self, request, pk=None):
+        """Soumet officiellement la solution du talent."""
+        challenge = self.get_object()
+        submission = get_object_or_404(ChallengeSubmission, challenge=challenge, user=request.user)
+
+        if submission.status != 'draft':
+            return Response({"error": "La soumission a déjà été envoyée."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not submission.repo_url and not submission.description:
+            return Response({"error": "Veuillez fournir un lien GitHub ou une description de votre solution."}, status=status.HTTP_400_BAD_REQUEST)
+
+        submission.submit()
+        serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
+        return Response(serializer.data)
+
+    # --- Actions pour le Jury (Entreprise) ---
+
+    @action(detail=True, methods=['get'], url_path='submissions')
+    def list_submissions(self, request, pk=None):
+        """Liste toutes les soumissions d'un challenge (pour le jury)."""
+        challenge = self.get_object()
+        # Vérifier que l'utilisateur est admin de l'entreprise
+        if not challenge.company.admins.filter(pk=request.user.pk).exists() and not request.user.is_staff:
+            return Response({"error": "Accès refusé."}, status=status.HTTP_403_FORBIDDEN)
+
+        submissions = challenge.submissions.filter(
+            status__in=['submitted', 'evaluated', 'winner']
+        ).select_related('user').order_by('rank', '-score')
+        serializer = ChallengeSubmissionSerializer(submissions, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='evaluate-submission')
+    def evaluate_submission(self, request, pk=None):
+        """Le jury évalue une soumission (score, feedback, rang)."""
+        challenge = self.get_object()
+        if not challenge.company.admins.filter(pk=request.user.pk).exists() and not request.user.is_staff:
+            return Response({"error": "Accès refusé."}, status=status.HTTP_403_FORBIDDEN)
+
+        submission_id = request.data.get('submission_id')
+        score = request.data.get('score')
+        rank = request.data.get('rank')
+        feedback = request.data.get('feedback', '')
+
+        if not submission_id or score is None:
+            return Response({"error": "submission_id et score sont requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        submission = get_object_or_404(ChallengeSubmission, pk=submission_id, challenge=challenge)
+        submission.evaluate(score=score, rank=rank, feedback=feedback)
+
+        serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='leaderboard')
+    def leaderboard(self, request, pk=None):
+        """Classement public d'un challenge."""
+        challenge = self.get_object()
+        submissions = challenge.submissions.filter(
+            status__in=['evaluated', 'winner'],
+            score__isnull=False
+        ).select_related('user').order_by('rank', '-score')
+
+        serializer = ChallengeSubmissionSerializer(submissions, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+# ═════════════════════════════════════════════
+#  MENTORAT
+# ═════════════════════════════════════════════
+
+class MentorshipViewSet(viewsets.ModelViewSet):
+    """
+    Gestion des relations de mentorat.
+    - Un étudiant peut demander un mentorat.
+    - Un mentor peut accepter ou refuser.
+    """
+    serializer_class = MentorshipSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return MentorshipRelation.objects.filter(
+            db_models.Q(mentor=user) | db_models.Q(student=user)
+        ).select_related('mentor', 'student')
+
+    def perform_create(self, serializer):
+        """L'étudiant connecté demande un mentorat."""
+        serializer.save(student=self.request.user)
+
+    @action(detail=True, methods=['post'], url_path='accept')
+    def accept(self, request, pk=None):
+        relation = self.get_object()
+        if relation.mentor != request.user:
+            return Response({"error": "Seul le mentor peut accepter."}, status=status.HTTP_403_FORBIDDEN)
+        relation.status = 'active'
+        relation.save(update_fields=['status'])
+        return Response({"status": "Mentorat activé."})
+
+    @action(detail=True, methods=['post'], url_path='decline')
+    def decline(self, request, pk=None):
+        relation = self.get_object()
+        if relation.mentor != request.user:
+            return Response({"error": "Seul le mentor peut refuser."}, status=status.HTTP_403_FORBIDDEN)
+        relation.status = 'closed'
+        relation.save(update_fields=['status'])
+        return Response({"status": "Mentorat refusé."})
+
+    @action(detail=True, methods=['post'], url_path='terminate')
+    def terminate(self, request, pk=None):
+        relation = self.get_object()
+        if request.user not in [relation.mentor, relation.student]:
+            return Response({"error": "Vous n'êtes pas impliqué dans ce mentorat."}, status=status.HTTP_403_FORBIDDEN)
+        relation.status = 'closed'
+        relation.save(update_fields=['status'])
+        return Response({"status": "Mentorat terminé."})
+
+
+# ═════════════════════════════════════════════
+#  MESSAGERIE DIRECTE (DM)
+# ═════════════════════════════════════════════
+
+class DirectMessageViewSet(viewsets.ViewSet):
+    """
+    Messagerie directe privée entre deux utilisateurs.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['get'], url_path='conversations')
+    def list_conversations(self, request):
+        """Liste toutes les conversations de l'utilisateur connecté."""
+        convos = DirectConversation.objects.filter(
+            participants=request.user
+        ).prefetch_related('participants', 'messages').order_by('-updated_at')
+        serializer = DirectConversationSerializer(convos, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='start')
+    def start_conversation(self, request):
+        """Démarre ou récupère une conversation avec un autre utilisateur."""
+        recipient_id = request.data.get('recipient_id')
+        job_offer_id = request.data.get('job_offer_id')
+
+        if not recipient_id:
+            return Response({"error": "recipient_id est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        recipient = get_object_or_404(User, pk=recipient_id)
+        if recipient == request.user:
+            return Response({"error": "Impossible de démarrer une conversation avec vous-même."}, status=status.HTTP_400_BAD_REQUEST)
+
+        job_offer = None
+        if job_offer_id:
+            job_offer = get_object_or_404(JobOffer, pk=job_offer_id)
+
+        convo, created = DirectConversation.get_or_create_between(request.user, recipient, job_offer=job_offer)
+        serializer = DirectConversationSerializer(convo, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='messages')
+    def get_messages(self, request, pk=None):
+        """Récupère les messages d'une conversation."""
+        convo = get_object_or_404(DirectConversation, pk=pk, participants=request.user)
+
+        # Marquer les messages reçus comme lus
+        convo.messages.filter(is_read=False).exclude(sender=request.user).update(is_read=True)
+
+        messages = convo.messages.select_related('sender').order_by('created_at')
+        serializer = DirectMessageSerializer(messages, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='send')
+    def send_message(self, request, pk=None):
+        """Envoie un message dans une conversation existante."""
+        convo = get_object_or_404(DirectConversation, pk=pk, participants=request.user)
+
+        content = request.data.get('content')
+        if not content:
+            return Response({"error": "Le contenu du message est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = DirectMessage.objects.create(
+            conversation=convo,
+            sender=request.user,
+            content=content
+        )
+        # Mettre à jour le timestamp de la conversation
+        convo.save(update_fields=['updated_at'])
+
+        serializer = DirectMessageSerializer(msg, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
