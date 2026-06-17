@@ -1,9 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Playfair+Display:ital,wght@1,400;1,500;1,600;1,700&display=swap');
 
 @import "tailwindcss";
 
 :root {
-  
+  --font-sans: var(--font-plus-jakarta-sans), 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), 'JetBrains Mono', monospace;
+  --font-serif: 'Playfair Display', Georgia, serif;
+
   --bg-base: #090C14;
   --bg-surface: #0E1420;
   --bg-elevated: #141B2D;
@@ -38,36 +41,43 @@
   body {
     background-color: var(--bg-base);
     color: var(--text-primary);
-    font-family: 'Geist', sans-serif;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
+    font-family: var(--font-sans);
+    font-weight: 750;
     letter-spacing: -0.025em;
     color: var(--text-primary);
   }
   code, pre {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
+  }
+  
+  .italic-accent {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 500;
   }
 }
 
 @layer components {
   .btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 20px;
-    border-radius: var(--radius-md);
-    background-color: var(--brand-500);
-    color: #ffffff;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.2s;
-    cursor: pointer;
-    border: none;
-    text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  background-color: var(--brand-500);
+  color: var(--text-inverse);
+  font-weight: 600;
+  font-size: 13.5px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   }
   .btn-primary:hover {
     background-color: var(--brand-400);
@@ -131,6 +141,27 @@
   .input-field:focus {
     border-color: var(--brand-500);
     box-shadow: 0 0 0 3px var(--brand-glow);
+  }
+
+  .form-input-premium {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: var(--radius-lg);
+    background-color: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    outline: none;
+    backdrop-filter: blur(12px);
+  }
+  .form-input-premium::placeholder {
+    color: var(--text-tertiary);
+  }
+  .form-input-premium:focus {
+    border-color: rgba(99, 102, 241, 0.4);
+    background-color: rgba(15, 23, 42, 0.6);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.4), 0 0 16px rgba(99, 102, 241, 0.1);
   }
 
   .card {
@@ -234,5 +265,33 @@
 
   .glow-brand {
     box-shadow: 0 0 24px rgba(45,126,248,0.25), 0 0 8px rgba(45,126,248,0.15);
+  }
+
+  .glow-extremity-top {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+    filter: blur(120px);
+    border-radius: 9999px;
+    transform: translate(25%, -50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-extremity-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+    filter: blur(120px);
+    border-radius: 9999px;
+    transform: translate(-25%, 50%);
+    pointer-events: none;
+    z-index: 0;
   }
 }

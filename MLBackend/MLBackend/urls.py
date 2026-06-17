@@ -19,8 +19,9 @@ urlpatterns = [
     
     # AUTRES 
     path("api/admin/management/", include("management.urls")),
-    # API Instructeur (Privé par nature via IsInstructor)
-    path("api/instructor/", include("courses.instructor_urls")),
+    # API Studio (Privé par nature via IsInstructor)
+    path("api/studio/", include("courses.instructor_urls")),
+    path("api/private/studio/", include("courses.instructor_urls")),
     # OAuth Social Hybrid (Better-Auth Bridge)
     path("api/auth/social/", SocialView.as_view(), name="social-auth-exchange"),
     # OAuth Social Legacy/Allauth

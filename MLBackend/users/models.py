@@ -88,12 +88,14 @@ class InstructorApplication(models.Model):
 
     STATUS_PENDING = "pending"
     STATUS_REVIEWING = "reviewing"
+    STATUS_CHANGES_REQUESTED = "changes_requested"
     STATUS_APPROVED = "approved"
     STATUS_REJECTED = "rejected"
 
     STATUS_CHOICES = [
         (STATUS_PENDING, "En attente"),
         (STATUS_REVIEWING, "En cours d'examen"),
+        (STATUS_CHANGES_REQUESTED, "Modifications demandées"),
         (STATUS_APPROVED, "Approuvé"),
         (STATUS_REJECTED, "Refusé"),
     ]
@@ -289,4 +291,27 @@ class Message(models.Model):
 
     def __str__(self):
         return f"De: {self.sender.email} À: {self.recipient.email} - {self.subject}"
+
+
+class InstructorProfile(models.Model):
+    """
+    Profil de l'instructeur contenant ses informations publiques.
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="instructor_profile")
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True, verbose_name="Photo de profil")
+    banner = models.ImageField(upload_to="banners/", blank=True, null=True, verbose_name="Bannière de profil")
+    headline = models.CharField(max_length=150, blank=True, default="Machine Learning Engineer", verbose_name="Titre professionnel")
+    bio = models.TextField(blank=True, verbose_name="Biographie")
+    github_url = models.URLField(blank=True, verbose_name="Profil GitHub")
+    linkedin_url = models.URLField(blank=True, verbose_name="Profil LinkedIn")
+    portfolio_url = models.URLField(blank=True, verbose_name="Portfolio")
+    twitter_url = models.URLField(blank=True, verbose_name="Profil X/Twitter")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Profil Instructeur"
+        verbose_name_plural = "Profils Instructeurs"
+
+    def __str__(self):
+        return f"Profil Instructeur de {self.user.email}"
  

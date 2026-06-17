@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 type FetchOptions = RequestInit & {
   // Les cookies HttpOnly sont envoyés automatiquement avec credentials: include.
@@ -121,6 +121,23 @@ export async function fetchApi(endpoint: string, options: FetchOptions = {}) {
     });
 
     if (!response.ok) {
+      if (response.status === 401 && endpoint.includes("/api/public/") && headers.has("Authorization")) {
+        console.warn(`Request to public endpoint ${endpoint} failed with 401. Retrying without authorization...`);
+        headers.delete("Authorization");
+        const retryResponse = await fetch(url, {
+          headers,
+          credentials: "include",
+          ...restOptions,
+        });
+        if (retryResponse.ok) {
+          if (retryResponse.status === 204) return null;
+          const contentType = retryResponse.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            return await retryResponse.json();
+          }
+          return await retryResponse.text();
+        }
+      }
       const { message, data } = await parseErrorResponse(response);
       throw new ApiError(message, response, data);
     }

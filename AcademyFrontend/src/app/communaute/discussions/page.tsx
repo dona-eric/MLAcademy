@@ -24,12 +24,62 @@ export default function DiscussionsPage() {
     loadChannels();
   }, []);
 
+  const socketRef = useRef<WebSocket | null>(null);
+
   useEffect(() => {
-    if (selectedChannel) {
-      loadMessages(selectedChannel.id);
-      const interval = setInterval(() => loadMessages(selectedChannel.id, true), 3000); // Polling
-      return () => clearInterval(interval);
+    if (!selectedChannel) return;
+
+    loadMessages(selectedChannel.id);
+
+    const token = localStorage.getItem('access_token') || '';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    
+    let wsHost = 'localhost:8000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    try {
+      const parsedUrl = new URL(apiUrl);
+      wsHost = parsedUrl.host;
+    } catch (e) {
+      if (typeof window !== 'undefined') {
+        wsHost = window.location.host.split(':')[0] + ':8000';
+      }
     }
+    
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/chat/${selectedChannel.id}/?token=${token}`;
+    console.log("Connecting to WebSocket:", wsUrl);
+    
+    const socket = new WebSocket(wsUrl);
+    socketRef.current = socket;
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.message) {
+          setMessages(prev => {
+            if (prev.some(m => m.id === data.message.id)) {
+              return prev;
+            }
+            return [...prev, data.message];
+          });
+        }
+      } catch (err) {
+        console.error("Failed to parse WebSocket message", err);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    socket.onclose = (event) => {
+      console.log("WebSocket connection closed:", event);
+    };
+
+    return () => {
+      if (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
+    };
   }, [selectedChannel]);
 
   useEffect(() => {
@@ -64,15 +114,22 @@ export default function DiscussionsPage() {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChannel) return;
 
-    try {
-      await fetchApi(`/api/community/channels/${selectedChannel.id}/messages/`, {
-        method: 'POST',
-        body: JSON.stringify({ content: newMessage })
-      });
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({
+        message: newMessage
+      }));
       setNewMessage("");
-      loadMessages(selectedChannel.id);
-    } catch (err) {
-      console.error(err);
+    } else {
+      try {
+        await fetchApi(`/api/community/channels/${selectedChannel.id}/messages/`, {
+          method: 'POST',
+          body: JSON.stringify({ content: newMessage })
+        });
+        setNewMessage("");
+        loadMessages(selectedChannel.id);
+      } catch (err) {
+        console.error(err);
+      }
     }
   }
 

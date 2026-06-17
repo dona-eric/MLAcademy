@@ -12,7 +12,7 @@ const NAV_LINKS = [
 
 const getDashboardInfo = (user: any) => {
   if (user?.is_superuser || user?.is_staff) return { href: '/admin/dashboard', label: 'Administration' };
-  if (user?.is_instructor) return { href: '/instructor', label: 'Espace Formateur' };
+  if (user?.is_instructor) return { href: '/studio', label: 'Espace Formateur' };
   return { href: '/dashboard', label: 'Mon Espace' };
 };
 

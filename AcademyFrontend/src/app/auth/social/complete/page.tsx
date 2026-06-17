@@ -1,7 +1,7 @@
 // social auth completion page
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi } from "@/lib/api";
@@ -18,7 +18,7 @@ function sanitizeNextPath(value: string | null): string {
   return value;
 }
 
-export default function SocialAuthCompletePage() {
+function SocialAuthCompletePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -187,5 +187,19 @@ export default function SocialAuthCompletePage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function SocialAuthCompletePage() {
+  return (
+    <Suspense fallback={
+      <div className="auth-container" style={{ minHeight: "calc(100vh - 72px)" }}>
+        <div className="glass-panel" style={{ width: "100%", maxWidth: "520px", padding: "2.75rem", textAlign: "center" }}>
+          <h1 className="text-gradient" style={{ fontSize: "2rem", marginBottom: "1rem" }}>Chargement...</h1>
+        </div>
+      </div>
+    }>
+      <SocialAuthCompletePageContent />
+    </Suspense>
   );
 }

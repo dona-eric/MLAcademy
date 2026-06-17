@@ -35,4 +35,8 @@ Thumbs.db
 *.log
 .turbo/
 *.sqlite3
-media/
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
+*.sqlite3-shm
+*.pyc

@@ -8,7 +8,7 @@ import { Mail, Lock, ArrowRight,Zap,Loader2, Eye, EyeOff} from "lucide-react";
 import { FiGithub } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function LoginPage() {
   const router = useRouter();

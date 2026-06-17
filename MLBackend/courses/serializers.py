@@ -120,14 +120,22 @@ class CourseListSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     instructor_name = serializers.CharField(source="instructor.get_full_name", read_only=True)
+    is_enrolled = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
         fields = [
             "id", "title", "slug", "short_description", "category", "category_name", 
             "instructor_name", "level", "duration_hours", "thumbnail", "avg_rating", 
-            "enrolled_count", "is_published", "is_free", "is_standalone", "price"
+            "enrolled_count", "is_published", "is_free", "is_standalone", "price", "is_enrolled"
         ]
+
+    def get_is_enrolled(self, obj):
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            from learning.models import Enrollment
+            return Enrollment.objects.filter(user=request.user, course=obj).exists()
+        return False
 
 
 class CourseDetailSerializer(serializers.ModelSerializer):
@@ -138,6 +146,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     reviews = CourseReviewSerializer(many=True, read_only=True)
     prerequisites = CoursePrerequisiteSerializer(source="prerequisites_set", many=True, read_only=True)
     in_paths = serializers.SerializerMethodField()
+    is_enrolled = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -145,7 +154,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             "id", "title", "slug", "short_description", "description", "category", 
             "instructor_name", "level", "duration_hours", "thumbnail", "preview_url", 
             "prerequisites_text", "prerequisites", "syllabus", "avg_rating", "enrolled_count",
-            "is_free", "is_standalone", "price", "modules", "reviews", "in_paths", "created_at", "updated_at"
+            "is_free", "is_standalone", "price", "modules", "reviews", "in_paths", "is_enrolled", "created_at", "updated_at"
         ]
 
     def get_in_paths(self, obj):
@@ -160,6 +169,13 @@ class CourseDetailSerializer(serializers.ModelSerializer):
             }
             for pc in path_courses
         ]
+
+    def get_is_enrolled(self, obj):
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            from learning.models import Enrollment
+            return Enrollment.objects.filter(user=request.user, course=obj).exists()
+        return False
 
 
 # ═════════════════════════════════════════════

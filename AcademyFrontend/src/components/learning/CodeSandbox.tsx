@@ -42,16 +42,6 @@ export default function CodeSandbox({ lessonId, initialCode = "# Bienvenue dans 
     loadData();
   }, [lessonId]);
 
-  // Auto-save logic
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (code !== starterCode && code !== "") {
-        handleSave();
-      }
-    }, 30000); // 30s
-    return () => clearInterval(timer);
-  }, [code, starterCode]);
-
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
@@ -67,6 +57,16 @@ export default function CodeSandbox({ lessonId, initialCode = "# Bienvenue dans 
       setSaving(false);
     }
   };
+
+  // Auto-save logic
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (code !== starterCode && code !== "") {
+        handleSave();
+      }
+    }, 30000); // 30s
+    return () => clearInterval(timer);
+  }, [code, starterCode]);
 
   const handleRun = async () => {
     setExecuting(true);

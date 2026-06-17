@@ -1,5 +1,6 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from users.views import InstructorProfileView
 
 from .views_instructor import (
     InstructorCourseViewSet, InstructorLearningPathViewSet, InstructorLessonViewSet, 
@@ -18,5 +19,6 @@ router.register(r"peer-reviews", InstructorPeerReviewViewSet, basename="instruct
 urlpatterns = [
     # 💡 SÉCURITÉ : La route fixe est placée en premier pour garantir son exécution prioritaire
     path("stats/", InstructorStatsView.as_view(), name="instructor-stats"),
+    path("profile/", InstructorProfileView.as_view(), name="instructor-profile-detail"),
     path("", include(router.urls)),
 ]

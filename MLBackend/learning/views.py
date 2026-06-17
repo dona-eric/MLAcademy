@@ -390,7 +390,8 @@ class LessonCodeSubmissionView(APIView):
         execution_result = submission.last_result or {}
 
         if not save_only:
-            sandbox_url = os.getenv("SANDBOX_URL", "http://localhost:8001/execute")
+            from django.conf import settings
+            sandbox_url = getattr(settings, "SANDBOX_URL", "http://localhost:8000/execute")
             try:
                 with httpx.Client() as client:
                     response = client.post(
@@ -431,6 +432,13 @@ class ProjectSubmissionViewSet(viewsets.ModelViewSet):
         submission.status = 'pending'
         submission.submitted_at = timezone.now()
         submission.save(update_fields=['status', 'submitted_at'])
+        
+        # Déclenche l'auto-grading asynchrone via Celery si du code de test existe
+        if submission.project.solution_code:
+            from .tasks import auto_grade_project_submission
+            auto_grade_project_submission.delay(submission.id)
+            return Response({"status": "Projet soumis pour évaluation automatique."})
+            
         return Response({"status": "Projet soumis pour correction aux pairs."})
 
 

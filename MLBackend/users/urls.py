@@ -45,5 +45,5 @@ urlpatterns = [
     path("me/delete/", DeleteAccountView.as_view(), name="account-delete"),
     path("me/export/", ExportUserDataView.as_view(), name="account-export"),
     # Candidature Instructeur
-    path("apply-instructor/", ApplyInstructorView.as_view(), name="apply-instructor"),
+    path("apply-instructeur/", ApplyInstructorView.as_view(), name="apply-instructor"),
 ]

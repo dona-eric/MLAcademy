@@ -111,11 +111,11 @@ export default function SettingsPage() {
                       <p className="text-sm font-bold text-gray-400">Votre profil est actuellement taggé comme <span className="text-white uppercase">{user.is_instructor ? "Mentor / Instructeur" : "Apprenant Standard"}</span>.</p>
                     </div>
                     {user.is_instructor ? (
-                      <Link href="/instructor" className="bg-[#00D1FF] text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#00D1FF]/10 transition-transform hover:scale-105">
+                      <Link href="/studio" className="bg-[#00D1FF] text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#00D1FF]/10 transition-transform hover:scale-105">
                         Studio Mentor
                       </Link>
                     ) : (
-                      <Link href="/instructor/apply" className="bg-white text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-transform hover:scale-105">
+                      <Link href="/instructeur/apply" className="bg-white text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-transform hover:scale-105">
                         Devenir Instructeur
                       </Link>
                     )}

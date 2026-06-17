@@ -1,16 +1,84 @@
-"use client";
-
-import React from "react";
-import { Phone, MapPin } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Phone, MapPin, ChevronDown } from "lucide-react";
 import { OnboardingData } from "@/types/info";
+
+const AFRICAN_COUNTRIES = [
+  { code: "BJ", name: "Bénin", dialCode: "+229", flag: "🇧🇯" },
+  { code: "TG", name: "Togo", dialCode: "+228", flag: "🇹🇬" },
+  { code: "CI", name: "Côte d'Ivoire", dialCode: "+225", flag: "🇨🇮" },
+  { code: "SN", name: "Sénégal", dialCode: "+221", flag: "🇸🇳" },
+  { code: "NE", name: "Niger", dialCode: "+227", flag: "🇳🇪" },
+  { code: "BF", name: "Burkina Faso", dialCode: "+226", flag: "🇧🇫" },
+  { code: "ML", name: "Mali", dialCode: "+223", flag: "🇲🇱" },
+  { code: "NG", name: "Nigeria", dialCode: "+234", flag: "🇳🇬" },
+  { code: "CM", name: "Cameroun", dialCode: "+237", flag: "🇨🇲" },
+  { code: "GA", name: "Gabon", dialCode: "+241", flag: "🇬🇦" },
+  { code: "CG", name: "Congo", dialCode: "+242", flag: "🇨🇬" },
+  { code: "CD", name: "RDC", dialCode: "+243", flag: "🇨🇩" },
+  { code: "TD", name: "Tchad", dialCode: "+235", flag: "🇹🇩" },
+  { code: "CF", name: "Centrafrique", dialCode: "+236", flag: "🇨🇫" },
+  { code: "GN", name: "Guinée", dialCode: "+224", flag: "🇬🇳" },
+  { code: "MR", name: "Mauritanie", dialCode: "+222", flag: "🇲🇷" },
+  { code: "MG", name: "Madagascar", dialCode: "+261", flag: "🇲🇬" },
+  { code: "MA", name: "Maroc", dialCode: "+212", flag: "🇲🇦" },
+  { code: "DZ", name: "Algérie", dialCode: "+213", flag: "🇩🇿" },
+  { code: "TN", name: "Tunisie", dialCode: "+216", flag: "🇹🇳" },
+  { code: "EG", name: "Égypte", dialCode: "+20", flag: "🇪🇬" },
+  { code: "KE", name: "Kenya", dialCode: "+254", flag: "🇰🇪" },
+  { code: "RW", name: "Rwanda", dialCode: "+250", flag: "🇷🇼" },
+  { code: "BI", name: "Burundi", dialCode: "+257", flag: "🇧🇮" },
+  { code: "GH", name: "Ghana", dialCode: "+233", flag: "🇬🇭" },
+  { code: "ET", name: "Éthiopie", dialCode: "+251", flag: "🇪🇹" },
+  { code: "ZA", name: "Afrique du Sud", dialCode: "+27", flag: "🇿🇦" },
+];
 
 interface Step2Props {
   data: OnboardingData;
-  // Typage plus précis que 'any' pour la fonction de mise à jour React
   setData: React.Dispatch<React.SetStateAction<OnboardingData>> | ((data: OnboardingData) => void);
 }
 
 export default function Step2({ data, setData }: Step2Props) {
+  const [selectedCountry, setSelectedCountry] = useState(AFRICAN_COUNTRIES[0]);
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  useEffect(() => {
+    const matched = AFRICAN_COUNTRIES.find(c => data.phone.startsWith(c.dialCode));
+    if (matched) {
+      setSelectedCountry(matched);
+      setPhoneNumber(data.phone.substring(matched.dialCode.length).trim());
+    } else {
+      setPhoneNumber(data.phone);
+    }
+  }, []);
+
+  const handlePhoneChange = (num: string, country = selectedCountry) => {
+    const cleanNum = num.replace(/\s+/g, "");
+    setPhoneNumber(num);
+    const updatedPhone = `${country.dialCode} ${cleanNum}`;
+    if (typeof setData === 'function') {
+      setData({ ...data, phone: updatedPhone });
+    }
+  };
+
+  const handleCountryChange = (countryCode: string) => {
+    const country = AFRICAN_COUNTRIES.find(c => c.code === countryCode) || selectedCountry;
+    setSelectedCountry(country);
+    
+    const cleanNum = phoneNumber.replace(/\s+/g, "");
+    const updatedPhone = `${country.dialCode} ${cleanNum}`;
+    
+    if (typeof setData === 'function') {
+      setData({
+        ...data,
+        phone: updatedPhone,
+        address: {
+          ...data.address,
+          country: country.name
+        }
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* En-tête */}
@@ -29,15 +97,36 @@ export default function Step2({ data, setData }: Step2Props) {
           <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
             Numéro de téléphone
           </label>
-          <div className="relative group">
-            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-            <input 
-              type="tel" 
-              value={data.phone}
-              onChange={(e) => setData({...data, phone: e.target.value})}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-indigo-500 focus:bg-white/10 outline-none transition-all text-white"
-              placeholder="+229 00 00 00 00"
-            />
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Country Selector */}
+            <div className="relative shrink-0 sm:w-48">
+              <select
+                value={selectedCountry.code}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl py-4 pl-4 pr-10 text-sm outline-none focus:border-indigo-500 focus:bg-white/10 transition-all text-white font-bold"
+              >
+                {AFRICAN_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code} className="bg-[#0A0F1C] text-white">
+                    {c.flag} {c.dialCode} ({c.name})
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                <ChevronDown className="w-4 h-4" />
+              </div>
+            </div>
+
+            {/* Phone Input */}
+            <div className="relative flex-1 group">
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+              <input 
+                type="tel" 
+                value={phoneNumber}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-indigo-500 focus:bg-white/10 outline-none transition-all text-white font-bold"
+                placeholder="00 00 00 00"
+              />
+            </div>
           </div>
         </div>
 

@@ -31,6 +31,58 @@ def community_stats(request):
     })
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def community_chat(request):
+    """
+    Kibo AI Career Coach - Orientation et orientation professionnelle en ML.
+    """
+    import os
+    message = request.data.get('message')
+    chat_history = request.data.get('chatHistory', [])
+    
+    if not message:
+        return Response({"error": "Message is required"}, status=400)
+        
+    try:
+        from openai import OpenAI
+        api_key = os.environ.get("API_AFRI_KEY") or os.environ.get("OPENAI_API_KEY", "")
+        if not api_key:
+            raise ValueError("Neither API_AFRI_KEY nor OPENAI_API_KEY is set in the environment.")
+            
+        base_url = os.environ.get("LLM_BASE_URL", "https://build.lewisnote.com/v1/")
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        
+        system_prompt = """Tu es Kibo, un Conseiller IA d'Orientation et Coach de Carrière expert pour la communauté Machine Learning et Data Science en Afrique sur la plateforme MLAcademy.
+        
+        Ton objectif :
+        - Conseiller les apprenants sur leur choix de parcours, de technologies ou d'opportunités professionnelles.
+        - Les aider à préparer leurs entretiens, optimiser leur profil GitHub/LinkedIn, ou structurer leur recherche d'emploi.
+        - Être chaleureux, professionnel, encourageant et avoir une perspective ancrée dans l'écosystème tech africain.
+        - Répondre en français, de manière claire et bien formatée en Markdown.
+        """
+        
+        messages = [{"role": "system", "content": system_prompt}]
+        for h in chat_history:
+            messages.append({
+                "role": "user" if h.get("role") == "user" else "assistant",
+                "content": h.get("text", "")
+            })
+        messages.append({"role": "user", "content": message})
+        
+        response = client.chat.completions.create(
+            model="gpt-5.4-mini",
+            messages=messages,
+            max_tokens=1000,
+            temperature=0.7
+        )
+        reply = response.choices[0].message.content
+        return Response({"reply": reply})
+    except Exception as e:
+        fallback_reply = "Bonjour ! En tant que coach de carrière Kibo, je vous recommande de vous concentrer sur la maîtrise de Python, de SQL et des fondamentaux du Machine Learning. Explorez nos offres d'emploi et nos challenges pour acquérir de l'expérience pratique ! (Note: Le service de chat rencontre actuellement une difficulté technique de connexion. Veuillez réessayer dans quelques instants)."
+        return Response({"reply": fallback_reply})
+
+
 
 # =============================================
 #  JOB BOARD

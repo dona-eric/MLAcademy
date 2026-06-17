@@ -4,7 +4,7 @@ from .views import (
     JobOfferViewSet, TalentHubViewSet, MyApplicationsViewSet, 
     LeaderboardViewSet, MatchingViewSet, ChannelViewSet, CategoryViewSet,
     RecruitmentDashboardViewSet, ChallengeViewSet, MentorshipViewSet,
-    DirectMessageViewSet, community_stats
+    DirectMessageViewSet, community_stats, community_chat
 )
 
 router = DefaultRouter()
@@ -23,5 +23,6 @@ router.register(r'dm', DirectMessageViewSet, basename='direct-message')
 
 urlpatterns = [
     path('stats/', community_stats, name='community-stats'),
+    path('chat/', community_chat, name='community-chat'),
     path('', include(router.urls)),
 ]

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
 import {ArrowRight, Award, BarChart3, BookOpen, Clock, Flame, Play, ShieldEllipsis, Target, TrendingUp, Zap, ChevronRight, Loader2} from "lucide-react";
+import CourseImage from "@/components/learning/CourseImage";
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -266,13 +267,12 @@ function CourseraItemCard({ item, progress, enrolledAt, type }: { item: any, pro
   return (
     <div className="glass-card group flex flex-col md:flex-row overflow-hidden border border-white/5 hover:border-white/10 transition-all rounded-[40px] bg-white/[0.02]">
       <div className="relative w-full md:w-56 aspect-video md:aspect-square shrink-0 bg-slate-900 overflow-hidden">
-        {item.thumbnail || item.path_thumbnail ? (
-          <img src={item.thumbnail || item.path_thumbnail} alt={item.title || item.path_title} className="h-full w-full object-cover group-hover:scale-110 transition duration-1000" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-indigo-500/5">
-             <BarChart3 className="h-12 w-12 text-white/5" />
-          </div>
-        )}
+        <CourseImage
+          src={item.thumbnail || item.path_thumbnail}
+          title={item.title || item.path_title || ""}
+          isPath={type === 'path'}
+          className="h-full w-full object-cover group-hover:scale-110 transition duration-1000"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         <div className="absolute top-6 left-6">
            <span className={`px-3 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest backdrop-blur-md ${

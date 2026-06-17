@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import StudentProfile, InstructorApplication
+from .models import StudentProfile, InstructorApplication, InstructorProfile
 from phonenumber_field.serializerfields import PhoneNumberField
 
 User = get_user_model()
@@ -284,10 +284,11 @@ class InstructorApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstructorApplication
         fields = [
-            "first_name", "last_name", "email",
+            "id", "first_name", "last_name", "email",
             "cv_file", "cv_url", "linkedin_url", "portfolio_url", "website_url",
             "expertise", "expertise_detail", "motivation", "teaching_experience",
         ]
+        read_only_fields = ["id"]
  
     def validate_email(self, value):
         email = value.strip().lower()
@@ -382,8 +383,8 @@ class InstructorApplicationStatusSerializer(serializers.ModelSerializer):
  
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        # Ne pas exposer le motif de refus si pas refusé
-        if instance.status != InstructorApplication.STATUS_REJECTED:
+        # Ne pas exposer le motif si pas refusé ou modifications demandées
+        if instance.status not in [InstructorApplication.STATUS_REJECTED, InstructorApplication.STATUS_CHANGES_REQUESTED]:
             data.pop("rejection_reason", None)
         return data
  
@@ -463,4 +464,30 @@ class InstructorActivationSerializer(serializers.Serializer):
             )
  
         return value
+
+
+class InstructorProfileSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField(read_only=True)
+    banner_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = InstructorProfile
+        fields = [
+            "id", "headline", "bio", "avatar", "avatar_url", 
+            "banner", "banner_url", "github_url", "linkedin_url", 
+            "portfolio_url", "twitter_url", "updated_at"
+        ]
+        read_only_fields = ["id", "updated_at"]
+
+    def get_avatar_url(self, obj):
+        request = self.context.get("request")
+        if obj.avatar and request:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
+
+    def get_banner_url(self, obj):
+        request = self.context.get("request")
+        if obj.banner and request:
+            return request.build_absolute_uri(obj.banner.url)
+        return None
 

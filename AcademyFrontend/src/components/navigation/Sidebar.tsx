@@ -6,13 +6,13 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = {
   instructor: [
-    { name: "Espace Studio",   href: "/instructor",                  icon: LayoutDashboard },
-    { name: "Mes Formations",  href: "/instructor/courses",           icon: MonitorPlay },
-    { name: "Certifications",  href: "/instructor/certifications",    icon: Award },
-    { name: "Tutoriels & Live",href: "/instructor/tutos",             icon: Play },
-    { name: "Mes Étudiants",   href: "/instructor/students",          icon: Users },
-    { name: "Peer-Reviews",    href: "/instructor/peer-reviews",      icon: Sparkles },
-    { name: "Settings",        href: "/instructor/settings",          icon: Settings },
+    { name: "Espace Studio",   href: "/studio",                      icon: LayoutDashboard },
+    { name: "Mes Formations",  href: "/studio/courses",             icon: MonitorPlay },
+    { name: "Certifications",  href: "/studio/certifications",    icon: Award },
+    { name: "Tutoriels & Live",href: "/studio/tutos",             icon: Play },
+    { name: "Mes Étudiants",   href: "/studio/students",          icon: Users },
+    { name: "Peer-Reviews",    href: "/studio/peer-reviews",      icon: Sparkles },
+    { name: "Settings",        href: "/studio/settings",          icon: Settings },
   ],
   learner: [
     { name: "Dashboard",       href: "/dashboard",                    icon: Home },
@@ -54,7 +54,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
-  const isInstructorSpace = pathname.startsWith("/instructor");
+  const isInstructorSpace = pathname.startsWith("/studio");
   const items = NAV_ITEMS[isInstructorSpace ? "instructor" : "learner"];
 
   return (
@@ -85,7 +85,7 @@ export default function Sidebar() {
           <NavLink
             key={item.href}
             {...item}
-            isActive={pathname === item.href || (item.href !== "/instructor" && pathname.startsWith(item.href + "/"))}
+            isActive={pathname === item.href || (item.href !== "/studio" && pathname.startsWith(item.href + "/"))}
           />
         ))}
       </nav>
@@ -94,7 +94,7 @@ export default function Sidebar() {
       <div className="mt-auto pt-8 space-y-3 border-t border-white/5">
         {user?.is_instructor && (
           <Link
-            href={isInstructorSpace ? "/dashboard" : "/instructor"}
+            href={isInstructorSpace ? "/dashboard" : "/studio"}
             className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all border ${
               isInstructorSpace
                 ? "bg-white text-black border-white hover:bg-slate-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]"

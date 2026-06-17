@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
-import { 
-  Users, DollarSign, BookOpen, Star, TrendingUp, 
-  ArrowRight, Sparkles, BarChart3, Plus, Play,
-  Clock, Award, ChevronRight, Zap, Target
-} from "lucide-react";
+import {Users, DollarSign, BookOpen, Star, Plus, Play, Clock, Award, ChevronRight,Zap, Sparkles, UserPlus, MessageSquare, FileCheck, Loader2} from "lucide-react";
+import CourseImage from "@/components/learning/CourseImage";
 
 export default function InstructorDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -28,11 +25,12 @@ export default function InstructorDashboard() {
 
     async function loadData() {
       try {
-        const statsData = await fetchApi('/api/instructor/stats/');
-        setStats(statsData);
-
-        const myCourses = await fetchApi('/api/public/courses/?instructor=me');
-        setCourses(myCourses.results || myCourses);
+        const [statsData, myCourses] = await Promise.allSettled([
+          fetchApi('/api/studio/stats/'),
+          fetchApi('/api/studio/courses/')
+        ]);
+        if (statsData.status === 'fulfilled') setStats(statsData.value);
+        if (myCourses.status === 'fulfilled') setCourses(myCourses.value?.results || myCourses.value || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -46,195 +44,197 @@ export default function InstructorDashboard() {
   if (authLoading || loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6 min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-4 text-slate-500 font-bold animate-pulse">Chargement de votre Studio...</p>
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+        <p className="mt-3 text-[12px] font-bold text-slate-500 uppercase tracking-widest animate-pulse">Chargement du Studio</p>
       </div>
     );
   }
 
+  const kpis = [
+    { icon: Users, label: "Apprenants", value: stats?.total_students ?? courses.reduce((s: number, c: any) => s + (c.enrolled_count || 0), 0), trend: stats?.growth || "+12%", color: "indigo" },
+    { icon: BookOpen, label: "Cours publiés", value: courses.filter((c: any) => c.is_published).length, trend: `${courses.length} total`, color: "cyan" },
+    { icon: DollarSign, label: "Revenus", value: stats?.total_revenue ?? "0 FCFA", trend: "Ce mois", color: "emerald" },
+    { icon: Clock, label: "Temps d'étude", value: stats?.total_study_hours ?? "+0h", trend: "Cette semaine", color: "amber" },
+  ];
+
+  const recentActivity = stats?.recent_activity || [];
+
+  const activityIconMap: Record<string, any> = {
+    enrollment: UserPlus,
+    review: Star,
+    submission: FileCheck,
+    welcome: Sparkles,
+  };
+
+  const quickActions = [
+    { label: "Nouveau cours", icon: Plus, href: "/studio/courses/create", color: "indigo" },
+    { label: "Nouveau tutoriel", icon: Play, href: "/studio/tutos/create", color: "amber" },
+    { label: "Certification", icon: Award, href: "/studio/learning-paths/create", color: "emerald" },
+    { label: "Importer", icon: Zap, href: "/studio/resources?action=upload", color: "purple" },
+  ];
+
+  // Dynamic Chart Heights
+  const enrollmentCounts = stats?.daily_enrollments || Array(30).fill(0);
+  const maxEnrollments = Math.max(...enrollmentCounts, 1);
+
+  // Dynamic Date Labels
+  const formatDateLabel = (daysAgo: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
   return (
-    <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 relative">
-      
-      {/* Welcome & Action Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-        <div className="space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 rounded-full border border-indigo-500/20">
-            <Sparkles className="w-3 h-3 text-indigo-400" />
-            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">MLAcademy Studio • Mode Expert</span>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight">
-            Ravi de vous voir, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">
-              Prof. {user?.first_name || user?.username}
-            </span>
-          </h1>
-          <p className="text-slate-400 font-medium text-lg">Prêt à propulser la prochaine génération d'experts en IA ?</p>
-        </div>
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
 
-        <div className="flex flex-wrap gap-4">
-          <Link href="/instructor/courses/create" className="btn-primary px-8 py-4 rounded-2xl flex items-center gap-2 group shadow-xl shadow-indigo-500/20">
-            <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-            Nouveau Parcours
-          </Link>
-          <button className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold px-8 py-4 rounded-2xl transition-all flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-cyan-400" />
-            Rapports détaillés
-          </button>
-        </div>
+      {/* Welcome */}
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold text-white tracking-tight">
+          Bienvenue, {user?.first_name || user?.username}
+        </h1>
+        <p className="text-[13px] text-slate-500">Voici un aperçu de l'activité de votre chaîne.</p>
       </div>
 
-      {/* Studio Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { label: "Publier un Cours", desc: "Formations longues et structurées", icon: <BookOpen className="w-6 h-6" />, color: "indigo", href: "/instructor/courses/create" },
-          { label: "Créer une Certification", desc: "Validation officielle d'expertise", icon: <Award className="w-6 h-6" />, color: "emerald", href: "/instructor/certifications" },
-          { label: "Nouveau Tutoriel", desc: "Contenu court et focus technique", icon: <Play className="w-6 h-6" />, color: "amber", href: "/instructor/tutos" },
-        ].map((action, i) => (
-          <Link key={i} href={action.href} className={`glass-card p-6 rounded-[32px] border border-white/5 hover:border-${action.color}-500/30 hover:bg-${action.color}-500/5 transition-all group flex items-start gap-5`}>
-            <div className={`w-12 h-12 rounded-2xl bg-${action.color}-500/10 flex items-center justify-center text-${action.color}-400 group-hover:scale-110 transition-transform`}>
-              {action.icon}
-            </div>
-            <div>
-              <h4 className="text-lg font-bold text-white group-hover:text-white">{action.label}</h4>
-              <p className="text-xs text-slate-500 font-medium">{action.desc}</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { icon: <Users className="w-6 h-6 text-indigo-400" />, label: "Apprenants", value: stats?.total_students, trend: stats?.growth, color: "indigo" },
-          { icon: <DollarSign className="w-6 h-6 text-emerald-400" />, label: "Revenus", value: stats?.total_revenue, trend: "Stable", color: "emerald" },
-          { icon: <Zap className="w-6 h-6 text-amber-400" />, label: "Vues Profil", value: stats?.views, trend: "+24%", color: "amber" },
-          { icon: <Star className="w-6 h-6 text-rose-400" />, label: "Note Moyenne", value: stats?.avg_rating, trend: "Top 5%", color: "rose" },
-        ].map((kpi, i) => (
-          <div key={i} className="glass-card p-8 rounded-[32px] border border-white/5 space-y-4 hover:border-white/10 transition-all group">
-            <div className={`w-14 h-14 rounded-2xl bg-${kpi.color}-500/10 border border-${kpi.color}-500/20 flex items-center justify-center group-hover:scale-110 transition-transform`}>
-              {kpi.icon}
-            </div>
-            <div>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{kpi.label}</p>
-              <div className="flex items-baseline gap-3">
-                <p className="text-3xl font-black text-white">{kpi.value}</p>
-                <span className={`text-[10px] font-bold ${kpi.trend?.startsWith('+') ? 'text-emerald-400' : 'text-slate-500'}`}>{kpi.trend}</span>
+      {/* Row 1: KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((kpi, i) => (
+          <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 hover:border-white/[0.12] transition-all group">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-10 h-10 rounded-xl bg-${kpi.color}-500/10 flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                <kpi.icon className={`w-5 h-5 text-${kpi.color}-400`} />
               </div>
+              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">{kpi.trend}</span>
             </div>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{kpi.label}</p>
+            <p className="text-2xl font-black text-white">{kpi.value}</p>
           </div>
         ))}
       </div>
 
-      {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        
-        {/* Course List Section */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BookOpen className="w-6 h-6 text-indigo-400" />
-              <h2 className="text-2xl font-black text-white tracking-tight">Vos Formations</h2>
+      {/* Row 2: Analytics Chart */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-[15px] font-bold text-white">Performances des 30 derniers jours</h2>
+            <p className="text-[12px] text-slate-500 mt-0.5">Inscriptions et engagement</p>
+          </div>
+          <Link href="/studio/analytics" className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1">
+            Détails <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+        <div className="flex items-end justify-between gap-1.5 h-32">
+          {enrollmentCounts.map((count: number, i: number) => {
+            const h = Math.max((count / maxEnrollments) * 100, 2);
+            return (
+              <div
+                key={i}
+                className="flex-1 bg-gradient-to-t from-indigo-500/30 to-indigo-400/10 rounded-t transition-all hover:from-indigo-500/60 hover:to-indigo-400/30 cursor-pointer"
+                style={{ height: `${h}%` }}
+                title={`${count} inscription(s)`}
+              />
+            );
+          })}
+        </div>
+        <div className="flex justify-between mt-3 text-[10px] font-medium text-slate-600">
+          <span>{formatDateLabel(30)}</span>
+          <span>{formatDateLabel(15)}</span>
+          <span>{formatDateLabel(0)}</span>
+        </div>
+      </div>
+
+      {/* Row 3: Activity + Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Activity */}
+        <div className="lg:col-span-2 bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+          <h2 className="text-[15px] font-bold text-white mb-5">Activité récente</h2>
+          <div className="space-y-3">
+            {recentActivity.map((item: any, i: number) => {
+              const Icon = activityIconMap[item.type] || MessageSquare;
+              return (
+                <div key={i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-white/[0.03] transition-all">
+                  <div className={`w-9 h-9 rounded-xl bg-${item.color}-500/10 flex items-center justify-center shrink-0`}>
+                    <Icon className={`w-4 h-4 text-${item.color}-400`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] text-slate-300 truncate">{item.text}</p>
+                  </div>
+                  <span className="text-[11px] text-slate-600 font-medium shrink-0">{item.time}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+
+        {/* Quick Actions */}
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+          <h2 className="text-[15px] font-bold text-white mb-5">Actions rapides</h2>
+          <div className="space-y-2">
+            {quickActions.map((action, i) => (
+              <Link
+                key={i}
+                href={action.href}
+                className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.05] transition-all group"
+              >
+                <div className={`w-9 h-9 rounded-xl bg-${action.color}-500/10 flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                  <action.icon className={`w-4 h-4 text-${action.color}-400`} />
+                </div>
+                <span className="text-[13px] font-semibold text-slate-300 group-hover:text-white transition-colors">{action.label}</span>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-600 ml-auto group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4: Latest Content */}
+      <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-[15px] font-bold text-white">Vos derniers contenus</h2>
+          <Link href="/studio/courses" className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1">
+            Tout voir <ChevronRight className="w-3 h-3" />
+          </Link>
+        </div>
+
+        {courses.length === 0 ? (
+          <div className="text-center py-12 space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto">
+              <Play className="w-7 h-7 text-slate-700" />
             </div>
-            <Link href="/instructor/courses" className="text-sm font-bold text-slate-500 hover:text-white transition-colors flex items-center gap-1">
-              Tout voir <ChevronRight className="w-4 h-4" />
+            <div>
+              <p className="text-[14px] font-semibold text-white">Votre catalogue est vide</p>
+              <p className="text-[12px] text-slate-500 mt-1 max-w-sm mx-auto">Partagez votre expertise dès maintenant.</p>
+            </div>
+            <Link href="/studio/courses/create" className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-500 text-white rounded-xl text-[12px] font-bold hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20">
+              <Plus className="w-4 h-4" /> Créer ma première formation
             </Link>
           </div>
-
-          <div className="grid gap-6">
-            {courses.length === 0 ? (
-              <div className="glass-card rounded-[40px] border border-dashed border-white/10 p-16 text-center space-y-6">
-                <div className="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto">
-                  <Play className="w-8 h-8 text-indigo-400" />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {courses.slice(0, 3).map((course: any) => (
+              <Link
+                key={course.id}
+                href={`/studio/courses/${course.id}/edit`}
+                className="flex gap-4 p-3 rounded-xl hover:bg-white/[0.04] transition-all group"
+              >
+                <div className="w-28 h-16 rounded-lg bg-slate-800/50 overflow-hidden shrink-0">
+                  <CourseImage src={course.thumbnail} title={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-white text-xl font-bold">Votre catalogue est vide</p>
-                  <p className="text-slate-500 max-w-xs mx-auto text-sm font-medium">Commencez à partager votre savoir dès aujourd'hui en créant votre premier parcours.</p>
-                </div>
-                <Link href="/instructor/courses/create" className="btn-primary py-4 px-10 rounded-2xl inline-block">Créer ma première leçon</Link>
-              </div>
-            ) : (
-              courses.map((course: any) => (
-                <div key={course.id} className="glass-card rounded-[32px] border border-white/5 p-6 flex items-center gap-6 hover:border-indigo-500/30 hover:bg-white/5 transition-all group">
-                  <div className="w-24 h-24 rounded-2xl bg-slate-800 overflow-hidden shrink-0 relative">
-                    {course.thumbnail ? (
-                      <img src={course.thumbnail} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent flex items-center justify-center">
-                        <BarChart3 className="w-8 h-8 text-white/10" />
-                      </div>
-                    )}
-                    <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[8px] font-black text-white uppercase border border-white/10">
-                      {course.level}
-                    </div>
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <p className="text-[13px] font-semibold text-white truncate group-hover:text-indigo-400 transition-colors">{course.title}</p>
+                  <div className="flex items-center gap-3 text-[10px] font-medium text-slate-500">
+                    <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {course.enrolled_count || 0}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                      course.is_published ? "bg-emerald-500/10 text-emerald-400" : "bg-slate-500/10 text-slate-400"
+                    }`}>
+                      {course.is_published ? "Public" : "Brouillon"}
+                    </span>
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <h3 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors line-clamp-1">{course.title}</h3>
-                    <div className="flex flex-wrap items-center gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                      <div className="flex items-center gap-1.5"><Users className="w-3 h-3" /> 245 Apprenants</div>
-                      <div className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> 12h de contenu</div>
-                      <div className="flex items-center gap-1.5 text-emerald-400"><Award className="w-3 h-3" /> {course.is_free ? 'Gratuit' : 'Premium'}</div>
-                    </div>
-                  </div>
-                  <Link href={`/instructor/courses/${course.id}`} className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 hover:bg-indigo-500 hover:border-indigo-500 hover:text-white transition-all shadow-xl group-hover:translate-x-2">
-                    <ArrowRight className="w-6 h-6" />
-                  </Link>
                 </div>
-              ))
-            )}
+              </Link>
+            ))}
           </div>
-        </div>
-
-        {/* Sidebar Sections */}
-        <div className="space-y-10">
-          {/* Notifications / Actions */}
-          <section className="space-y-6">
-            <div className="flex items-center gap-3">
-              <Zap className="w-5 h-5 text-amber-400" />
-              <h2 className="text-xl font-black text-white tracking-tight">À faire d'urgence</h2>
-            </div>
-            <div className="glass-card rounded-[32px] border border-white/5 p-8 space-y-6">
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
-                  <Target className="w-5 h-5 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white">8 Peer-Reviews en attente</p>
-                  <p className="text-xs text-slate-500 mt-1">Vos étudiants attendent vos retours sur leurs projets finaux.</p>
-                  <Link href="/instructor/peer-reviews" className="text-xs font-black text-amber-400 mt-3 inline-block hover:underline uppercase tracking-wider">Évaluer maintenant</Link>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 grayscale hover:grayscale-0 transition-all cursor-not-allowed">
-                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0">
-                  <TrendingUp className="w-5 h-5 text-slate-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-400 italic">Mise à jour suggérée</p>
-                  <p className="text-xs text-slate-600 mt-1">Le module "Deep Learning" nécessite une mise à jour des librairies.</p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Activity / Progress */}
-          <section className="space-y-6">
-             <div className="flex items-center gap-3">
-              <TrendingUp className="w-5 h-5 text-cyan-400" />
-              <h2 className="text-xl font-black text-white tracking-tight">Performances</h2>
-            </div>
-            <div className="glass-card rounded-[32px] border border-white/5 p-8 relative overflow-hidden h-48 flex items-end justify-between">
-              {[40, 70, 45, 90, 65, 80, 55, 95].map((h, i) => (
-                <div key={i} className="w-4 bg-gradient-to-t from-indigo-500/40 to-cyan-400/40 rounded-t-lg transition-all hover:from-indigo-500 hover:to-cyan-400" style={{ height: `${h}%` }}></div>
-              ))}
-              <div className="absolute top-8 right-8 text-right">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Temps d'étude</p>
-                <p className="text-2xl font-black text-white">+145h</p>
-                <p className="text-[10px] font-bold text-emerald-400">cette semaine</p>
-              </div>
-            </div>
-          </section>
-        </div>
-
+        )}
       </div>
     </div>
   );

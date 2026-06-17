@@ -292,23 +292,27 @@ export default function AdminDashboardPage() {
                              <button className="text-xs font-semibold px-3 py-1 border border-slate-200 rounded hover:bg-slate-50">View all</button>
                           </div>
                           <div className="p-0">
-                             {/* Mock list for popular instructors based on the screenshot */}
-                             <div className="flex items-center gap-4 p-4 border-b border-slate-100 hover:bg-slate-50">
-                                <img src={`https://ui-avatars.com/api/?name=Jenny+Wilson&background=E0E7FF&color=4338CA`} alt="Avatar" className="w-10 h-10 rounded-full" />
-                                <div className="flex-1">
-                                   <p className="text-sm font-semibold text-slate-800">Jenny Wilson</p>
-                                   <div className="flex gap-3 text-xs text-slate-500 mt-1"><span>6 Courses</span><span>50,274 Students</span></div>
-                                </div>
-                                <MoreVertical className="h-4 w-4 text-slate-400" />
-                             </div>
-                             <div className="flex items-center gap-4 p-4 hover:bg-slate-50">
-                                <img src={`https://ui-avatars.com/api/?name=Dianna+Smiley&background=FDE68A&color=D97706`} alt="Avatar" className="w-10 h-10 rounded-full" />
-                                <div className="flex-1">
-                                   <p className="text-sm font-semibold text-slate-800">Dianna Smiley</p>
-                                   <div className="flex gap-3 text-xs text-slate-500 mt-1"><span>3 Courses</span><span>26,060 Students</span></div>
-                                </div>
-                                <MoreVertical className="h-4 w-4 text-slate-400" />
-                             </div>
+                             {(stats.popular_instructors && stats.popular_instructors.length > 0) ? (
+                                stats.popular_instructors.map((inst: any) => {
+                                   const name = inst.first_name || inst.last_name ? `${inst.first_name} ${inst.last_name}`.trim() : inst.email.split('@')[0];
+                                   const avatar = inst.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=E0E7FF&color=4338CA`;
+                                   return (
+                                      <div key={inst.id} className="flex items-center gap-4 p-4 border-b border-slate-100 hover:bg-slate-50">
+                                         <img src={avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
+                                         <div className="flex-1">
+                                            <p className="text-sm font-semibold text-slate-800">{name}</p>
+                                            <div className="flex gap-3 text-xs text-slate-500 mt-1">
+                                               <span>{inst.courses_count} {inst.courses_count > 1 ? 'Cours' : 'Cours'}</span>
+                                               <span>{inst.students_count} {inst.students_count > 1 ? 'Apprenants' : 'Apprenant'}</span>
+                                            </div>
+                                         </div>
+                                         <MoreVertical className="h-4 w-4 text-slate-400" />
+                                      </div>
+                                   );
+                                })
+                             ) : (
+                                <p className="text-sm text-slate-500 text-center py-8">Aucun instructeur populaire</p>
+                             )}
                           </div>
                        </div>
 

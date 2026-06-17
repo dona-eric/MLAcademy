@@ -95,6 +95,26 @@ class AdminStatsView(APIView):
             last_login__gte=now - timedelta(minutes=15)
         ).values('email', 'first_name', 'last_login')
 
+        # 7. Popular Instructors (Top 5 instructors by enrolled students count)
+        popular_instructors = CustomUser.objects.filter(is_instructor=True) \
+            .annotate(
+                courses_count_ann=Count('courses_taught', distinct=True),
+                students_count_ann=Count('courses_taught__enrollments', distinct=True)
+            ) \
+            .order_by('-students_count_ann')[:5]
+            
+        popular_instructors_data = []
+        for inst in popular_instructors:
+            popular_instructors_data.append({
+                "id": inst.id,
+                "first_name": inst.first_name,
+                "last_name": inst.last_name,
+                "email": inst.email,
+                "avatar_url": inst.avatar.url if inst.avatar else None,
+                "courses_count": inst.courses_count_ann,
+                "students_count": inst.students_count_ann
+            })
+
         return Response({
             "summary": {
                 "total_students": total_students,
@@ -111,7 +131,8 @@ class AdminStatsView(APIView):
                 "categories": list(category_stats),
             },
             "active_admins": list(active_admins),
-            "recent_activity": CustomUser.objects.order_by('-date_joined')[:5].values('email', 'first_name', 'date_joined')
+            "recent_activity": CustomUser.objects.order_by('-date_joined')[:5].values('email', 'first_name', 'date_joined'),
+            "popular_instructors": popular_instructors_data
         })
 
 class AdminInstructorApplicationViewSet(viewsets.ModelViewSet):

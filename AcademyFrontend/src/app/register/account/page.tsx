@@ -23,7 +23,7 @@ export default function UnifiedAuthPage() {
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const googleLoginUrl = `${API_BASE_URL}/api/auth/google/login/?process=login`;
   const githubLoginUrl = `${API_BASE_URL}/api/auth/github/login/?process=login`;
 

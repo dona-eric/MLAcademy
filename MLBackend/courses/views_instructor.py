@@ -1,5 +1,8 @@
+import datetime
+from django.utils import timezone
 from django.db import IntegrityError
-from django.db.models import Avg, Sum
+from django.db.models import Avg, Sum, Count
+from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, serializers, status, viewsets
 from rest_framework.decorators import action
@@ -7,14 +10,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 # Imports inter-applications (Learning & Management)
-from learning.models import Certificate, ProjectSubmission, Enrollment
+from learning.models import Certificate, ProjectSubmission, Enrollment, UserLessonProgress
 from learning.serializers import ReviewSerializer
 from management.models import Transaction
 
 # Imports locaux à l'application courses
 from .models import (
     Course, Module, Project, LearningPath, 
-    LearningPathCourse, Lesson, CourseModule
+    LearningPathCourse, Lesson, CourseModule, CourseReview
 )
 from .permissions import IsInstructor
 from .serializers import (
@@ -47,14 +50,107 @@ class InstructorStatsView(APIView):
         avg_rating_query = my_courses.exclude(avg_rating=0.00).aggregate(Avg('avg_rating'))['avg_rating__avg']
         avg_rating = round(float(avg_rating_query), 1) if avg_rating_query else 0.0
 
+        # Calcul réel du temps d'étude cumulé sur les cours de cet instructeur
+        total_study_minutes = UserLessonProgress.objects.filter(
+            lesson__module__course_modules__course__in=my_courses,
+            is_completed=True
+        ).aggregate(total=Sum('lesson__duration_minutes'))['total'] or 0
+        total_study_hours = f"+{round(total_study_minutes / 60, 1)}h"
+
+        # Calcul réel de l'activité récente (Inscriptions, Avis, Projets soumis)
+        recent_enrollments = Enrollment.objects.filter(course__in=my_courses).select_related('user', 'course').order_by('-enrolled_at')[:5]
+        recent_reviews = CourseReview.objects.filter(course__in=my_courses).select_related('user', 'course').order_by('-created_at')[:5]
+        recent_submissions = ProjectSubmission.objects.filter(project__module__course_modules__course__in=my_courses).select_related('user', 'project').order_by('-submitted_at')[:5]
+
+        activities = []
+        
+        def format_dt(dt):
+            diff = timezone.now() - dt
+            if diff.days > 0:
+                if diff.days == 1:
+                    return "Hier"
+                return f"Il y a {diff.days}j"
+            hours = diff.seconds // 3600
+            if hours > 0:
+                return f"Il y a {hours}h"
+            minutes = (diff.seconds % 3600) // 60
+            if minutes > 0:
+                return f"Il y a {minutes}m"
+            return "À l'instant"
+
+        for enr in recent_enrollments:
+            name = enr.user.get_full_name() or enr.user.username
+            activities.append({
+                "type": "enrollment",
+                "text": f"{name} s'est inscrit à '{enr.course.title}'",
+                "time": format_dt(enr.enrolled_at),
+                "timestamp": enr.enrolled_at,
+                "color": "indigo"
+            })
+
+        for rev in recent_reviews:
+            name = rev.user.get_full_name() or rev.user.username
+            stars = "★" * rev.rating
+            activities.append({
+                "type": "review",
+                "text": f"Nouvel avis {stars} ({rev.rating}/5) de {name} sur '{rev.course.title}'",
+                "time": format_dt(rev.created_at),
+                "timestamp": rev.created_at,
+                "color": "amber"
+            })
+
+        for sub in recent_submissions:
+            name = sub.user.get_full_name() or sub.user.username
+            activities.append({
+                "type": "submission",
+                "text": f"Projet '{sub.project.title}' soumis par {name}",
+                "time": format_dt(sub.submitted_at),
+                "timestamp": sub.submitted_at,
+                "color": "emerald"
+            })
+
+        activities.sort(key=lambda x: x['timestamp'], reverse=True)
+        recent_activity = activities[:5]
+        for act in recent_activity:
+            if 'timestamp' in act:
+                del act['timestamp']
+
+        if not recent_activity:
+            recent_activity.append({
+                "type": "welcome",
+                "text": "Bienvenue dans votre Studio ! Créez un nouveau cours pour commencer.",
+                "time": "À l'instant",
+                "color": "indigo"
+            })
+
+        # Données réelles pour le graphique sur 30 jours (Inscriptions par jour)
+        thirty_days_ago = timezone.now() - datetime.timedelta(days=30)
+        daily_enrollments = Enrollment.objects.filter(
+            course__in=my_courses,
+            enrolled_at__gte=thirty_days_ago
+        ).annotate(date=TruncDate('enrolled_at')) \
+         .values('date') \
+         .annotate(count=Count('id')) \
+         .order_by('date')
+
+        enrollments_dict = {item['date']: item['count'] for item in daily_enrollments}
+        chart_data = []
+        for i in range(29, -1, -1):
+            day = (timezone.now() - datetime.timedelta(days=i)).date()
+            chart_data.append(enrollments_dict.get(day, 0))
+
         return Response({
             "total_students": total_students,
-            "total_revenue": f"{total_revenue} FCFA",  # Aligné sur l'unité monétaire du modèle
+            "total_revenue": f"{total_revenue} FCFA",
             "active_courses": active_courses,
             "avg_rating": str(avg_rating),
-            "growth": "+15%",  # Statistique analytique stable
-            "views": total_students * 12
+            "total_study_hours": total_study_hours,
+            "growth": "+15%",
+            "views": total_students * 12,
+            "recent_activity": recent_activity,
+            "daily_enrollments": chart_data
         })
+
 
 
 class InstructorCourseViewSet(viewsets.ModelViewSet):

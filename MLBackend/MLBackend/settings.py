@@ -29,9 +29,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-l#g$%id**%kk5q-tdxw)&89jdx&gbi+#s!ny71^fd(27o82s+6"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = []
+allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
 
 
 # Application definition
@@ -69,11 +70,11 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",
@@ -102,27 +103,27 @@ TEMPLATES = [
 WSGI_APPLICATION = "MLBackend.wsgi.application"
 ASGI_APPLICATION = "MLBackend.asgi.application"
 
-# Channel Layers (Local Dev - No Redis Required)
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-    },
-}
-
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("localhost", 6379)],
-#             "expiry":10,
-#             "capacity":1500
-#         },
-#     }
-# }
+if os.getenv("REDIS_URL"):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [os.getenv("REDIS_URL")],
+            },
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+import dj_database_url
 
 DATABASES = {
     "default": {
@@ -131,19 +132,26 @@ DATABASES = {
     }
 }
 
+if os.getenv("DATABASE_URL"):
+    DATABASES["default"] = dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=True,
+    )
+
+
 JAZZMIN_SETTINGS = {
     # --- Titres et Branding ---
     "site_title": "MLAcademy Admin",
     "site_header": "MLAcademy",
     "site_brand": "MLAcademy",
-    # Optionnel : Ajoutez un logo (à placer dans vos fichiers statiques)
     # "site_logo": "images/logo_mlacademy.png", 
     "login_logo": None,
     "welcome_sign": "Bienvenue sur la plateforme d'administration de MLAcademy",
     "copyright": "MLAcademy. All rights reserved.",
 
     # --- Ergonomie et Navigation ---
-    "search_model": ["auth.User"], # Permet une barre de recherche globale (ex: chercher un utilisateur)
+    "search_model": ["users.CustomUser"], # Permet une barre de recherche globale (ex: chercher un utilisateur)
     "show_sidebar": True,
     "navigation_expanded": True,
     "hide_apps": [],
@@ -151,13 +159,10 @@ JAZZMIN_SETTINGS = {
     
     # Personnalisation des Icônes (FontAwesome)
     "icons": {
-        "auth": "fas fa-users-cog",
-        "auth.user": "fas fa-user",
-        "auth.Group": "fas fa-users",
-        # Exemples si vous avez ces applications/modèles :
-        # "courses.Course": "fas fa-graduation-cap",
-        # "models.MLModel": "fas fa-brain",
-        # "predictions.Prediction": "fas fa-chart-line",
+        "users.CustomUser": "fas fa-users-cog",
+        "users.CustomUser": "fas fa-user",
+        "users.CustomGroup": "fas fa-users",
+
     },
     # Icônes par défaut pour les applications et modèles si non spécifiés
     "default_icon_parents": "fas fa-chevron-circle-right",
@@ -165,11 +170,11 @@ JAZZMIN_SETTINGS = {
 
     # --- Liens et Raccourcis Rapides ---
     "topmenu_links": [
-        {"name": "Accueil", "url": "admin:index", "permissions": ["auth.view_user"]},
+        {"name": "Accueil", "url": "admin:index", "permissions": ["users.view_customuser"]},
         {"name": "Voir le site", "url": "/", "new_window": True},
         # model admin to link to (Permissions checked against model)
-        {"model": "auth.User"},
-        {"app": "MLAcademy"},
+        {"model": "users.CustomUser"},
+        {"app": "users"},
     ],
     
     # Menu Utilisateur 
@@ -178,7 +183,7 @@ JAZZMIN_SETTINGS = {
     ],
 
     "language_chooser": True,
-    "changeform_format_overrides": {"auth.user": "collapsible", "auth.group": "vertical_tabs"},
+    "changeform_format_overrides": {"users.CustomUser": "collapsible", "users.CustomGroup": "vertical_tabs"},
 
     # Style et Thème
     "theme": "dark",  # Votre choix initial
@@ -190,7 +195,7 @@ JAZZMIN_SETTINGS = {
 }
 
 JAZZMIN_UI_TWEAKS = {
-    "theme": "sketchy",
+    "theme": "slate",
 }
 
 
@@ -259,6 +264,8 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
 }
 
 # JWT Configuration (djangorestframework-simplejwt)
@@ -281,10 +288,8 @@ SIMPLE_JWT = {
 
 # CORS Configuration for development
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+cors_allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+CORS_ALLOWED_ORIGINS = [orig.strip() for orig in cors_allowed_origins_env.split(",") if orig.strip()]
 CORS_ALLOW_HEADERS = list(
     (
         "accept",
@@ -362,3 +367,6 @@ AUTH_PASSWORD_HASHERS = [
 # Media files (avatars, etc.)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Sandbox Configuration pour l'exécution de code
+SANDBOX_URL = os.getenv("SANDBOX_URL", "http://localhost:8000/execute")

@@ -30,7 +30,7 @@ export default function TwoFactorAuthPage() {
 
   // Memoize redirection logic
   const redirectUser = useCallback((userData: any) => {
-    if (userData?.is_instructor) return router.push("/instructor");
+    if (userData?.is_instructor) return router.push("/studio");
     if (userData?.student_profile?.onboarding_completed) return router.push("/dashboard");
     router.push("/onboarding");
   }, [router]);
@@ -61,13 +61,6 @@ export default function TwoFactorAuthPage() {
     }
   }, [user, authLoading, router, isSetup, qrCode]);
 
-  // Auto-submit when 6 digits are reached
-  useEffect(() => {
-    if (otpCode.length === 6 && !submitting) {
-      handleVerify();
-    }
-  }, [otpCode]);
-
   const handleVerify = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (otpCode.length !== 6) return;
@@ -93,6 +86,13 @@ export default function TwoFactorAuthPage() {
       setSubmitting(false);
     }
   };
+
+  // Auto-submit when 6 digits are reached
+  useEffect(() => {
+    if (otpCode.length === 6 && !submitting) {
+      handleVerify();
+    }
+  }, [otpCode]);
 
   if (loading || authLoading) {
     return (

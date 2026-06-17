@@ -4,10 +4,10 @@ import { FaGithub, FaLinkedin, FaYoutube, FaTwitter } from 'react-icons/fa';
 import { Mail } from 'lucide-react';
 
 const SOCIALS = [
-  { icon: FaLinkedin, href: '#', label: 'LinkedIn' },
-  { icon: FaTwitter,  href: '#', label: 'Twitter' },
-  { icon: FaYoutube,  href: '#', label: 'YouTube' },
-  { icon: FaGithub,   href: '#', label: 'GitHub' },
+  { icon: FaLinkedin, href: 'https://www.linkedin.com/in/donerick/', label: 'LinkedIn' },
+  { icon: FaTwitter,  href: 'https://twitter.com/dtech-africa', label: 'Twitter' },
+  { icon: FaYoutube,  href: 'https://www.youtube.com/channel/UCO_v6Qz3jH_Q-2Wp3rFm7aQ', label: 'YouTube' },
+  { icon: FaGithub,   href: 'https://github.com/donerick', label: 'GitHub' },
 ];
 
 const FOOTER_LINKS = [
@@ -17,13 +17,13 @@ const FOOTER_LINKS = [
       { href: '/parcours',         label: 'Parcours complets' },
       { href: '/projets',          label: 'Projets réels' },
       { href: '/certifications',   label: 'Certifications' },
-      { href: '/instructor/apply', label: 'Devenir Instructeur', highlight: true },
+      { href: '/instructeur/apply', label: 'Devenir Instructeur', highlight: true },
     ],
   },
   {
     title: 'Ressources',
     links: [
-      { href: '/forum',   label: 'Communauté' },
+      { href: '/commmunaute',   label: 'Communauté' },
       { href: '/discord', label: 'Serveur Discord' },
       { href: '/blog',    label: 'Blog Tech' },
       { href: '/faq',     label: 'Aide & FAQ' },

@@ -1,4 +1,7 @@
 import os
+import sys
+import base64
+import subprocess
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from schemas import CodeExecutionRequest, CodeExecutionResponse
@@ -24,8 +27,6 @@ JUDGE0_API_KEY = os.getenv("JUDGE0_API_KEY", "")  # Utile si hébergé sur Rapid
 JUDGE0_HOST = os.getenv("JUDGE0_HOST", "judge0-ce.p.rapidapi.com")
 MOCK_JUDGE0 = os.getenv("MOCK_JUDGE0", "true").lower() == "true"
 
-
-import base64
 
 def encode_base64(text: str | None) -> str | None:
     if text is None:
@@ -65,10 +66,29 @@ async def execute_code(request: CodeExecutionRequest):
         payload["expected_output"] = encode_base64(request.expected_output)
 
     if MOCK_JUDGE0:
-        return CodeExecutionResponse(
-            stdout=f"MOCK OUTPUT: {request.source_code[:50]}...",
-            status={"id": 3, "description": "Accepted (Mock)"}
-        )
+        try:
+            # Execute code safely inside a python subprocess for local development
+            res = subprocess.run(
+                [sys.executable, "-c", request.source_code],
+                capture_output=True,
+                text=True,
+                timeout=5.0
+            )
+            return CodeExecutionResponse(
+                stdout=res.stdout,
+                stderr=res.stderr,
+                status={"id": 3, "description": "Accepted (Local Dev Run)"}
+            )
+        except subprocess.TimeoutExpired:
+            return CodeExecutionResponse(
+                stderr="TimeoutError: Le code a dépassé le temps limite de 5 secondes.",
+                status={"id": 5, "description": "Time Limit Exceeded"}
+            )
+        except Exception as e:
+            return CodeExecutionResponse(
+                stderr=f"Erreur d'exécution locale : {str(e)}",
+                status={"id": 13, "description": f"Internal Error: {str(e)}"}
+            )
 
     try:
         async with httpx.AsyncClient() as client:

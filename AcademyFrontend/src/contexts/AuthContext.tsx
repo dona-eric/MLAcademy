@@ -62,8 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('refresh_token');
       sessionStorage.removeItem('2fa_verified');
       
-      // On ne log en "error" que ce qui n'est pas une simple absence de session
-      if (!error.message.includes("authentification") && !error.message.includes("401")) {
+      // On ne log en "error" que ce qui n'est pas une simple absence de session (401 Unauthorized)
+      if (error?.status !== 401 && !error?.message?.includes("authentification") && !error?.message?.includes("401") && !error?.message?.includes("jeton")) {
         console.error("Erreur d'authentification inattendue:", error);
       }
     } finally {

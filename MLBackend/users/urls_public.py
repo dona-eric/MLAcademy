@@ -25,8 +25,8 @@ urlpatterns = [
     path("password-reset/", PasswordResetRequestView.as_view(), name="password-reset-request"),
     path("password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     path("profile/<str:username>/", PublicProfileView.as_view(), name="profile-public"),
-    path("apply-instructor/", ApplyInstructorView.as_view(), name="apply-instructor"),
-    path("instructor-status/", PublicInstructorStatusView.as_view(), name="instructor-status-public"),
-    path("instructor-activate/", InstructorAccountActivateView.as_view(), name="instructor-activate"),
+    path("apply-instructeur/", ApplyInstructorView.as_view(), name="apply-instructor"),
+    path("instructeur-status/", PublicInstructorStatusView.as_view(), name="instructor-status-public"),
+    path("instructeur-activate/", InstructorAccountActivateView.as_view(), name="instructor-activate"),
     path("admin-activate/", AdminAccountActivateView.as_view(), name="admin-activate"),
 ]
