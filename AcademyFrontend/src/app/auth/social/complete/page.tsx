@@ -4,7 +4,8 @@
 import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, ApiError } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 type CompleteResponse = {
   message?: string;
@@ -21,6 +22,7 @@ function sanitizeNextPath(value: string | null): string {
 function SocialAuthCompletePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { checkAuth } = useAuth();
 
   const nextPath = useMemo(() => {
     return sanitizeNextPath(searchParams.get("next"));
@@ -35,6 +37,7 @@ function SocialAuthCompletePageContent() {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: number | undefined;
 
     async function completeSocialLogin() {
       try {
@@ -50,23 +53,42 @@ function SocialAuthCompletePageContent() {
         if (response.access) localStorage.setItem("access_token", response.access);
         if (response.refresh) localStorage.setItem("refresh_token", response.refresh);
 
+        // Synchroniser le contexte utilisateur global avant de rediriger
+        await checkAuth();
+
+        if (!isMounted) return;
+
+        // Sauvegarder la destination finale voulue pour après la validation 2FA
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("post_2fa_redirect", nextPath);
+        }
+
         setStatus("success");
         setMessage(response?.message || "Connexion sociale réussie. Redirection vers la sécurisation 2FA...");
 
-        // On ignore la destination voulue temporairement pour forcer le 2FA
-        window.setTimeout(() => {
+        timeoutId = window.setTimeout(() => {
           if (!isMounted) return;
           router.replace("/2fa");
         }, 900);
-      } catch (error) {
+      } catch (error: any) {
         if (!isMounted) return;
 
         setStatus("error");
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Impossible de finaliser la connexion sociale.",
-        );
+        if (error instanceof ApiError) {
+          if (error.status === 401) {
+            setMessage("Session d'authentification sociale invalide ou expirée.");
+          } else if (error.status === 403) {
+            setMessage("Accès refusé. Votre compte n'est pas autorisé.");
+          } else {
+            setMessage(error.message || "Erreur lors de la finalisation.");
+          }
+        } else {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "Impossible de finaliser la connexion sociale.",
+          );
+        }
       }
     }
 
@@ -74,8 +96,11 @@ function SocialAuthCompletePageContent() {
 
     return () => {
       isMounted = false;
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
     };
-  }, [nextPath, router]);
+  }, [nextPath, router, checkAuth]);
 
   return (
     <div
