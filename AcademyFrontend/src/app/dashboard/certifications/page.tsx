@@ -42,109 +42,114 @@ export default function MyCertificationsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#090C14]">
-        <Loader2 className="h-10 w-10 animate-spin text-indigo-500" />
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-secondary)]">
+        <Loader2 className="h-10 w-10 animate-spin text-[var(--brand-500)]" />
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen bg-[#090C14] overflow-hidden">
+    <div className="relative min-h-screen bg-[var(--bg-secondary)] overflow-hidden">
       {/* Background Gradients */}
-      <div className="glow-extremity-top"></div>
-      <div className="glow-extremity-bottom"></div>
-
-      <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-16 animate-in fade-in duration-700 text-white relative z-10">
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[var(--brand-50)] blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none opacity-60"></div>
+      
+      <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 relative z-10 text-[var(--text-primary)]">
         
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-            Mes <span className="italic-accent text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Certifications</span>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+            Mes <span className="text-[var(--brand-500)]">Certifications</span>
           </h1>
         </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-         <div className="p-5 rounded-[20px] bg-gradient-to-br from-indigo-600 to-indigo-800 text-white space-y-6 shadow-2xl shadow-indigo-500/20 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
-            <Trophy className="h-5 w-5 text-indigo-200 relative z-10" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="card p-8 bg-[var(--brand-500)] text-white space-y-6 shadow-md relative overflow-hidden group border-none">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
+            <Trophy className="h-6 w-6 text-[var(--brand-100)] relative z-10" />
             <div className="relative z-10">
                <p className="text-4xl font-black">{certificates.length}</p>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mt-2">Certificats obtenus</p>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--brand-100)] mt-2">Certificats obtenus</p>
             </div>
          </div>
-         <div className="p-10 rounded-[40px] bg-white/5 border border-white/10 space-y-6 hover:border-white/20 transition-all">
-            <Target className="h-10 w-10 text-slate-500" />
+         <div className="card p-8 space-y-6 hover:-translate-y-1 transition-transform">
+            <div className="h-12 w-12 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center border border-[var(--border-default)]">
+               <Target className="h-6 w-6 text-[var(--text-tertiary)]" />
+            </div>
             <div>
-               <p className="text-4xl font-black text-white">{pathEnrollments.filter(p => !p.is_completed).length}</p>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mt-2">En cours</p>
+               <p className="text-4xl font-black text-[var(--text-primary)]">{pathEnrollments.filter(p => !p.is_completed).length}</p>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mt-2">En cours</p>
             </div>
          </div>
-         <div className="p-10 rounded-[40px] bg-white/5 border border-white/10 space-y-6 hover:border-white/20 transition-all">
-            <Star className="h-10 w-10 text-amber-500 fill-amber-500/20" />
+         <div className="card p-8 space-y-6 hover:-translate-y-1 transition-transform">
+            <div className="h-12 w-12 rounded-xl bg-[var(--warning-light)] flex items-center justify-center border border-amber-200">
+               <Star className="h-6 w-6 text-[var(--warning)] fill-amber-100" />
+            </div>
             <div>
-               <p className="text-4xl font-black text-white">{pathEnrollments.length}</p>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mt-2">Cours Inscrits</p>
+               <p className="text-4xl font-black text-[var(--text-primary)]">{pathEnrollments.length}</p>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mt-2">Cours Inscrits</p>
             </div>
          </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-16">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-12">
         
         {/* Left: Active Paths */}
-        <div className="space-y-10">
-          <div className="flex items-center gap-3 border-b border-white/5 pb-6">
-             <Zap className="h-5 w-5 text-indigo-400" />
-             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Parcours Certifiants</h2>
+        <div className="space-y-8">
+          <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
+             <Zap className="h-5 w-5 text-[var(--brand-500)]" />
+             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-secondary)]">Parcours Certifiants</h2>
           </div>
 
           {pathEnrollments.length === 0 ? (
-            <div className="p-20 rounded-[48px] bg-white/5 border-2 border-dashed border-white/10 text-center space-y-8">
-               <Award className="h-12 w-12 text-slate-800 mx-auto" />
-               <div className="space-y-3">
-                 <h3 className="text-xl font-bold text-white">Aucun parcours professionnel</h3>
-                 <p className="text-sm text-slate-500 max-w-xs mx-auto">Visez l'excellence en vous inscrivant à un parcours complet de certification.</p>
+            <div className="p-16 rounded-2xl bg-[var(--bg-primary)] border border-dashed border-[var(--border-default)] text-center space-y-6">
+               <div className="h-16 w-16 mx-auto rounded-full bg-[var(--bg-secondary)] flex items-center justify-center border border-[var(--border-subtle)]">
+                 <Award className="h-8 w-8 text-[var(--text-tertiary)]" />
                </div>
-               <Link href="/certifications" className="btn-secondary py-4 px-10 rounded-2xl text-[10px] font-black uppercase tracking-widest">Voir les certifications</Link>
+               <div className="space-y-2">
+                 <h3 className="text-lg font-bold text-[var(--text-primary)]">Aucun parcours professionnel</h3>
+                 <p className="text-sm text-[var(--text-secondary)] max-w-xs mx-auto">Visez l'excellence en vous inscrivant à un parcours complet de certification.</p>
+               </div>
+               <Link href="/certifications" className="btn-secondary py-3 px-8 text-xs inline-block">Voir les certifications</Link>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {pathEnrollments.map((enrollment) => (
-                <div key={enrollment.id} className="p-8 rounded-[40px] bg-white/5 border border-white/10 hover:border-indigo-500/30 transition-all group">
-                   <div className="flex flex-col md:flex-row gap-8">
-                      <div className="w-24 h-24 rounded-[24px] bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-500/20">
-                         <Trophy className="h-10 w-10 text-indigo-400" />
+                <div key={enrollment.id} className="card p-8 hover:border-[var(--brand-300)] transition-all group">
+                   <div className="flex flex-col md:flex-row gap-6">
+                      <div className="w-20 h-20 rounded-xl bg-[var(--brand-50)] flex items-center justify-center shrink-0 border border-[var(--brand-100)]">
+                         <Trophy className="h-8 w-8 text-[var(--brand-500)]" />
                       </div>
-                      <div className="flex-1 space-y-6">
-                         <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-white group-hover:text-indigo-400 transition-colors">{enrollment.path_title}</h3>
-                            <div className="flex items-center gap-4">
-                               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{enrollment.path_level }</span>
-                               <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                               <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">{enrollment.progress_percentage}% Complété</span>
+                      <div className="flex-1 space-y-5">
+                         <div className="space-y-1">
+                            <h3 className="text-xl font-black text-[var(--text-primary)] group-hover:text-[var(--brand-500)] transition-colors leading-tight">{enrollment.path_title}</h3>
+                            <div className="flex items-center gap-3 mt-1">
+                               <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">{enrollment.path_level || 'Niveau Standard'}</span>
+                               <span className="w-1 h-1 rounded-full bg-[var(--border-default)]"></span>
+                               <span className="text-[9px] font-black uppercase tracking-widest text-[var(--brand-500)]">{enrollment.progress_percentage}% Complété</span>
                             </div>
                          </div>
 
-                         <div className="space-y-4">
-                            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                         <div className="space-y-3">
+                            <div className="progress-bar-container">
                                <div 
-                                 className="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 rounded-full transition-all duration-1000"
+                                 className="progress-bar-fill"
                                  style={{ width: `${enrollment.progress_percentage}%` }}
                                />
                             </div>
                             <div className="flex items-center justify-between">
                                <div className="flex items-center gap-2">
                                   {enrollment.is_certified ? (
-                                    <span className="flex items-center gap-1.5 text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                                    <span className="flex items-center gap-1.5 text-[10px] font-black text-[var(--success)] uppercase tracking-widest">
                                        <CheckCircle2 className="h-3.5 w-3.5" /> Certifié
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                    <span className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">
                                        {enrollment.can_take_exam ? "Examen disponible" : "En cours d'apprentissage"}
                                     </span>
                                   )}
                                </div>
-                               <Link href={`/parcours/${enrollment.path_slug}`} className="text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:translate-x-2 transition-transform flex items-center gap-2">
-                                  Continuer <ChevronRight className="h-4 w-4" />
+                               <Link href={`/parcours/${enrollment.path_slug}`} className="text-[10px] font-black uppercase tracking-widest text-[var(--brand-500)] hover:underline flex items-center gap-1">
+                                  Continuer <ChevronRight className="h-3 w-3" />
                                 </Link>
                             </div>
                          </div>
@@ -157,33 +162,33 @@ export default function MyCertificationsPage() {
         </div>
 
         {/* Right: Certificates List */}
-        <div className="space-y-10">
-          <div className="flex items-center gap-3 border-b border-white/5 pb-6">
-             <Star className="h-5 w-5 text-amber-500" />
-             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Diplômes Obtenus</h2>
+        <div className="space-y-8">
+          <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
+             <Star className="h-5 w-5 text-[var(--warning)]" />
+             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-secondary)]">Diplômes Obtenus</h2>
           </div>
 
           {certificates.length === 0 ? (
-            <div className="p-12 rounded-[40px] bg-white/5 border border-white/5 text-center space-y-4">
-               <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Aucun certificat pour le moment</p>
-               <p className="text-xs text-slate-500 leading-relaxed">Terminez un cours ou une certification pour voir vos succès ici.</p>
+            <div className="card-flat p-10 text-center space-y-3">
+               <p className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest">Aucun certificat pour le moment</p>
+               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">Terminez un cours ou une certification pour voir vos succès ici.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {certificates.map((cert) => (
-                <div key={cert.id} className="p-6 rounded-[32px] bg-white/5 border border-white/5 flex items-center gap-6 group hover:border-emerald-500/30 transition-all shadow-sm">
-                   <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0 border border-emerald-500/20">
-                      <Award className="h-6 w-6" />
+                <div key={cert.id} className="card p-5 flex items-center gap-5 group hover:border-[var(--success-300)] transition-all">
+                   <div className="h-10 w-10 rounded-lg bg-[var(--success-light)] flex items-center justify-center text-[var(--success)] shrink-0 border border-emerald-200">
+                      <Award className="h-5 w-5" />
                    </div>
                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-black text-white truncate">{cert.target_name}</h4>
-                      <div className="flex items-center gap-3 mt-1">
-                         <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{cert.certificate_id}</span>
-                         <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                         <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Score: {cert.final_score}%</span>
+                      <h4 className="text-sm font-bold text-[var(--text-primary)] truncate">{cert.target_name}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                         <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">{cert.certificate_id}</span>
+                         <span className="w-1 h-1 rounded-full bg-[var(--border-default)]"></span>
+                         <span className="text-[9px] font-black uppercase tracking-widest text-[var(--success)]">Score: {cert.final_score}%</span>
                       </div>
                    </div>
-                   <button className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-500 hover:text-white hover:bg-white/10 transition-all border border-white/10">
+                   <button className="h-9 w-9 rounded-lg bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all border border-[var(--border-default)]">
                       <Download className="h-4 w-4" />
                    </button>
                 </div>
@@ -191,13 +196,13 @@ export default function MyCertificationsPage() {
             </div>
           )}
 
-          <div className="p-10 rounded-[40px] bg-gradient-to-br from-slate-900 to-black border border-white/5 text-white space-y-6 relative overflow-hidden group shadow-2xl">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-             <h4 className="text-2xl font-extrabold leading-tight relative z-10 font-sans">
-               Partagez vos <span className="italic-accent text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">succès</span> sur LinkedIn
+          <div className="p-8 rounded-2xl bg-[var(--brand-50)] border border-[var(--brand-100)] text-[var(--text-primary)] space-y-5 relative overflow-hidden group">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+             <h4 className="text-xl font-black leading-tight relative z-10 text-[var(--text-primary)]">
+               Partagez vos succès sur LinkedIn
              </h4>
-             <p className="text-sm text-slate-500 leading-relaxed relative z-10">MLAcademy vous permet d'ajouter vos certifications directement à votre profil professionnel en un clic.</p>
-             <button className="w-full py-5 rounded-[20px] bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10">
+             <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed relative z-10">MLAcademy vous permet d'ajouter vos certifications directement à votre profil professionnel en un clic.</p>
+             <button className="w-full py-4 rounded-xl bg-white hover:bg-slate-50 border border-[var(--border-default)] text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10 shadow-sm text-[var(--text-primary)] hover:text-[#0A66C2]">
                 Lier mon compte LinkedIn
              </button>
           </div>
