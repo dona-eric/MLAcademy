@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import CustomUser, InstructorApplication
+from .models import CustomUser, InstructorApplication,BetaTesteur
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -121,3 +121,32 @@ class InstructorApplicationAdmin(admin.ModelAdmin):
             app.reject(reviewed_by=request.user, reason="Profil non retenu pour le moment.")
             count += 1
         self.message_user(request, f"{count} candidatures refusées.")
+
+
+
+@admin.register(BetaTesteur)
+class BetaTesterAdmin(admin.ModelAdmin):
+    # Colonnes affichées dans la liste
+    list_display = ('get_username', 'get_email', 'applied_at', 'is_approved')
+    # Filtres latéraux
+    list_filter = ('is_approved', 'applied_at')
+    # Barre de recherche
+    search_fields = ('user__username', 'user__email')
+    
+    # Action personnalisée pour approuver en masse
+    actions = ['approve_testers']
+
+    def get_username(self, obj):
+        return obj.user.username
+    get_username.short_description = "Nom d'utilisateur"
+
+    def get_email(self, obj):
+        return obj.user.email
+    get_email.short_description = "Email"
+
+    # Fonction de l'action de groupe
+    @admin.action(description="Approuver les bêta-testeurs sélectionnés")
+    def approve_testers(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        # Ici, tu pourras plus tard déclencher un signal pour envoyer un email de félicitations automatique !
+        self.message_user(request, f"{updated} testeur(s) ont été approuvés avec succès et ont accès aux cours.")

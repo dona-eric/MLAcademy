@@ -1,19 +1,17 @@
 "use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, Suspense } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchApi } from '@/lib/api';
-import { Mail, Lock, User, ArrowRight, Zap, Loader2, Sparkles, ShieldCheck, ChevronLeft, X, Eye, EyeOff, Info } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { FiGithub, FiFacebook } from "react-icons/fi";
+import { Mail, Lock, User, ArrowRight, Zap, Loader2, ShieldCheck, ChevronLeft, Eye, EyeOff, Info } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { FiGithub } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
 
-
-
-export default function UnifiedAuthPage() {
+function UnifiedAuthPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, register } = useAuth();
   
   // Step: 1 (Email), 2 (Login or Register), 3 (Success)
@@ -73,10 +71,13 @@ export default function UnifiedAuthPage() {
     setLoading(true);
     
     try {
+      const redirect = searchParams?.get("redirect");
+      if (redirect) {
+        sessionStorage.setItem("post_2fa_redirect", redirect);
+      }
       await login(formData.email, formData.password);
-      // Le routage est maintenant géré dynamiquement par AuthContext (Dashboard ou 2FA)
     } catch (err: any) {
-      setError(err.message );
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -126,10 +127,18 @@ export default function UnifiedAuthPage() {
       });
       setForgotPasswordSuccess(true);
     } catch (err: any) {
-      setError(err.message );
+      setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSocialClick = (providerUrl: string) => {
+    const redirect = searchParams?.get("redirect");
+    if (redirect) {
+      sessionStorage.setItem("post_2fa_redirect", redirect);
+    }
+    window.location.href = providerUrl;
   };
 
   const goBack = () => {
@@ -139,27 +148,23 @@ export default function UnifiedAuthPage() {
     setShowPassword(false);
   };
 
-  // -------------------------------------------------------------
-  // RENDER HELPERS
-  // -------------------------------------------------------------
-
   if (step === 3) {
     return (
-      <div className="min-h-screen bg-[#090C14] flex items-center justify-center p-6">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4"></div>
-        <div className="glass-card rounded-[32px] p-10 text-center space-y-8 animate-reveal max-w-md w-full relative z-10">
-          <div className="mx-auto w-24 h-24 rounded-full bg-slate-900/50 border border-white/5 flex items-center justify-center shadow-xl">
-            <Mail className="w-10 h-10 text-indigo-400" />
+      <div className="min-h-screen bg-[var(--bg-secondary)] flex items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--brand-50)] blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4"></div>
+        <div className="card rounded-3xl p-10 text-center space-y-8 max-w-md w-full relative z-10 shadow-xl border-[var(--border-default)] bg-white">
+          <div className="mx-auto w-24 h-24 rounded-full bg-[var(--brand-50)] border border-[var(--brand-100)] flex items-center justify-center shadow-sm">
+            <Mail className="w-10 h-10 text-[var(--brand-500)]" />
           </div>
           <div className="space-y-3">
-            <h2 className="text-3xl font-black text-white tracking-tight">Vérifiez votre email</h2>
-            <p className="text-slate-400 font-medium leading-relaxed">
-              Un email de confirmation a été envoyé à <span className="text-white font-bold">{formData.email}</span>. 
+            <h2 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight uppercase">Vérifiez votre email</h2>
+            <p className="text-[var(--text-secondary)] font-medium leading-relaxed">
+              Un email de confirmation a été envoyé à <span className="text-[var(--text-primary)] font-bold">{formData.email}</span>. 
               Veuillez cliquer sur le lien pour activer votre compte.
             </p>
           </div>
           <div className="pt-4">
-            <button onClick={() => { setStep(1); setIsLoginMode(true); }} className="btn-secondary w-full py-4 rounded-xl text-lg flex items-center justify-center gap-2">
+            <button onClick={() => { setStep(1); setIsLoginMode(true); }} className="btn-secondary w-full py-3">
               Retour à la connexion
             </button>
           </div>
@@ -169,46 +174,46 @@ export default function UnifiedAuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090C14] flex items-stretch overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-secondary)] flex items-stretch overflow-hidden">
       {/* LEFT COLUMN: Main Auth Form */}
-      <div className={`w-full lg:w-1/2 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden transition-all duration-500 ${isForgotPasswordOpen ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+      <div className={`w-full lg:w-1/2 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden transition-opacity duration-500 ${isForgotPasswordOpen ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
         {/* Orbs */}
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] rounded-full -translate-y-1/2 -translate-x-1/4"></div>
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[var(--brand-50)] blur-[120px] rounded-full -translate-y-1/2 -translate-x-1/4"></div>
 
-        <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <div className="w-full max-w-md relative z-10">
           
-          <div className="mb-10">
+          <div className="mb-8">
             {step === 1 && (
               <>
-                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-3">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-2 uppercase">
                   Commencez votre dossier
                 </h1>
-                <p className="text-slate-400 font-medium">Connexion ou création de compte en 1 minute.</p>
+                <p className="text-[var(--text-secondary)] font-medium text-sm md:text-base">Connexion ou création de compte en 1 minute.</p>
               </>
             )}
 
             {step === 2 && isLoginMode && (
               <>
-                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-3">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-2 uppercase">
                   Connectez-vous
                 </h1>
-                <p className="text-slate-400 font-medium">Bon retour parmi nous !</p>
+                <p className="text-[var(--text-secondary)] font-medium text-sm md:text-base">Bon retour parmi nous !</p>
               </>
             )}
 
             {step === 2 && !isLoginMode && (
               <>
-                <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-3">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-2 uppercase">
                   Créez votre compte
                 </h1>
-                <p className="text-slate-400 font-medium">Dernière étape avant de commencer.</p>
+                <p className="text-[var(--text-secondary)] font-medium text-sm md:text-base">Dernière étape avant de commencer.</p>
               </>
             )}
           </div>
 
-          <div className="glass-card rounded-[32px] p-8 space-y-6 shadow-2xl shadow-black/50">
+          <div className="card rounded-3xl p-8 space-y-6 shadow-xl border-[var(--border-default)] bg-white">
             {error && !isForgotPasswordOpen && (
-              <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-2xl text-xs font-bold flex items-center gap-3">
+              <div className="p-4 bg-[var(--error-light)] border border-[var(--error)] text-[var(--error)] rounded-xl text-xs font-bold flex items-center gap-3 shadow-sm">
                 <Zap className="w-4 h-4 flex-shrink-0" /> {error}
               </div>
             )}
@@ -217,13 +222,13 @@ export default function UnifiedAuthPage() {
             {step === 1 && (
               <form onSubmit={handleEmailSubmit} className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">E-mail</label>
+                  <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest ml-1">E-mail</label>
                   <div className="relative group">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-tertiary)] group-focus-within:text-[var(--brand-500)] transition-colors" />
                     <input 
                       id="email" type="email" required autoFocus
                       value={formData.email} onChange={handleChange}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all placeholder:text-slate-600"
+                      className="input-field pl-12"
                       placeholder="nom@exemple.com"
                     />
                   </div>
@@ -231,12 +236,12 @@ export default function UnifiedAuthPage() {
 
                 <button 
                   type="submit" disabled={loading || !formData.email}
-                  className="btn-primary w-full py-4 text-base shadow-xl shadow-indigo-500/20 mt-4 rounded-2xl flex items-center justify-center gap-2 group"
+                  className="btn-primary w-full py-3.5 text-sm uppercase tracking-widest mt-4 rounded-xl flex items-center justify-center gap-2 group shadow-md"
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <>Continuer <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>
+                    <>Continuer <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
                   )}
                 </button>
               </form>
@@ -244,32 +249,32 @@ export default function UnifiedAuthPage() {
 
             {/* STEP 2: LOGIN OR REGISTER */}
             {step === 2 && (
-              <form onSubmit={isLoginMode ? handleLoginSubmit : handleRegisterSubmit} className="space-y-6">
+              <form onSubmit={isLoginMode ? handleLoginSubmit : handleRegisterSubmit} className="space-y-5">
                 
                 {/* Email Readonly display */}
-                <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-default)] flex items-center justify-between">
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center shrink-0">
-                      <User className="w-5 h-5 text-indigo-400" />
+                    <div className="w-8 h-8 rounded-full bg-[var(--brand-50)] flex items-center justify-center shrink-0">
+                      <User className="w-4 h-4 text-[var(--brand-500)]" />
                     </div>
                     <div className="truncate">
-                      <p className="text-sm font-bold text-white truncate">{formData.email}</p>
+                      <p className="text-sm font-bold text-[var(--text-primary)] truncate">{formData.email}</p>
                     </div>
                   </div>
-                  <button type="button" onClick={goBack} className="text-xs font-bold text-indigo-400 hover:text-indigo-300 ml-2 shrink-0">
+                  <button type="button" onClick={goBack} className="text-xs font-bold text-[var(--brand-500)] hover:text-[var(--brand-400)] ml-2 shrink-0">
                     Changer
                   </button>
                 </div>
 
                 {!isLoginMode && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Pseudo</label>
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest ml-1">Pseudo</label>
                     <div className="relative group">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-tertiary)] group-focus-within:text-[var(--brand-500)] transition-colors" />
                       <input 
                         id="username" type="text" required autoFocus
                         value={formData.username} onChange={handleChange}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all placeholder:text-slate-600"
+                        className="input-field pl-12"
                         placeholder="johndoe"
                       />
                     </div>
@@ -278,26 +283,26 @@ export default function UnifiedAuthPage() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center ml-1">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mot de passe</label>
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">Mot de passe</label>
                     {isLoginMode && (
-                      <button type="button" onClick={() => setIsForgotPasswordOpen(true)} className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300">
+                      <button type="button" onClick={() => setIsForgotPasswordOpen(true)} className="text-[10px] font-bold text-[var(--brand-500)] hover:text-[var(--brand-400)]">
                         Oublié ?
                       </button>
                     )}
                   </div>
                   <div className="relative group">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-tertiary)] group-focus-within:text-[var(--brand-500)] transition-colors" />
                     <input id="password" type={showPassword ? "text" : "password"} required autoFocus={isLoginMode}
                       value={formData.password} onChange={handleChange}
-                      className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all placeholder:text-slate-600"
+                      className="input-field pl-12 pr-12"
                       placeholder="••••••••"
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors">
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
                   {!isLoginMode && (
-                    <p className="text-[10px] text-slate-500 flex items-center gap-1.5 ml-1">
+                    <p className="text-[10px] text-[var(--text-tertiary)] flex items-center gap-1.5 ml-1">
                       <Info className="w-3 h-3" /> Minimum 8 caractères, mélange de lettres et chiffres.
                     </p>
                   )}
@@ -305,36 +310,29 @@ export default function UnifiedAuthPage() {
 
                 {!isLoginMode && (
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Confirmer le mot de passe</label>
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest ml-1">Confirmer le mot de passe</label>
                     <div className="relative group">
-                      <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                      <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-tertiary)] group-focus-within:text-[var(--brand-500)] transition-colors" />
                       <input 
                         id="passwordConfirm" type={showPassword ? "text" : "password"} required 
                         value={formData.passwordConfirm} onChange={handleChange}
-                        className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 focus:bg-slate-900 transition-all placeholder:text-slate-600"
+                        className="input-field pl-12 pr-4"
                         placeholder="••••••••"
                       />
                     </div>
                   </div>
                 )}
 
-                {isLoginMode && (
-                  <div className="flex items-center gap-2 ml-1">
-                    <input type="checkbox" id="remember" className="rounded border-slate-700 bg-slate-900 text-indigo-500 focus:ring-indigo-500" />
-                    <label htmlFor="remember" className="text-xs text-slate-400 font-medium">Se souvenir de moi</label>
-                  </div>
-                )}
-
                 <button 
                   type="submit" disabled={loading}
-                  className="btn-primary w-full py-4 text-base shadow-xl shadow-indigo-500/20 mt-4 rounded-2xl flex items-center justify-center gap-2 group"
+                  className="btn-primary w-full py-3.5 text-sm uppercase tracking-widest shadow-md mt-6 rounded-xl flex items-center justify-center gap-2 group"
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
                       {isLoginMode ? 'Se connecter' : 'Créer mon compte'}
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </>
                   )}
                 </button>
@@ -342,19 +340,27 @@ export default function UnifiedAuthPage() {
             )}
 
             {/* Social Logins */}
-            <div className="pt-6">
-              <p className="text-center text-xs font-bold text-slate-500 mb-6 uppercase tracking-widest">
+            <div className="pt-6 border-t border-[var(--border-subtle)] mt-2">
+              <p className="text-center text-[10px] font-bold text-[var(--text-tertiary)] mb-5 uppercase tracking-widest">
                 Ou continuer avec
               </p>
               <div className="grid grid-cols-2 gap-4">
-                <a href={googleLoginUrl} className="flex items-center justify-center gap-3 py-4 border border-white/20 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm text-white">
-                  <FcGoogle/>
+                <button
+                  type="button"
+                  onClick={() => handleSocialClick(googleLoginUrl)}
+                  className="flex items-center justify-center gap-3 py-3 border border-[var(--border-default)] bg-white hover:bg-[var(--bg-secondary)] shadow-sm rounded-xl transition-colors font-bold text-sm text-[var(--text-primary)] cursor-pointer"
+                >
+                  <FcGoogle className="w-5 h-5"/>
                   Google
-                </a>
-                <a href={githubLoginUrl} className="flex items-center justify-center gap-3 py-4 border border-white/20 rounded-2xl hover:bg-slate-800 transition-all font-bold text-sm text-white">
-                  <FiGithub />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSocialClick(githubLoginUrl)}
+                  className="flex items-center justify-center gap-3 py-3 border border-[var(--border-default)] bg-white hover:bg-[var(--bg-secondary)] shadow-sm rounded-xl transition-colors font-bold text-sm text-[var(--text-primary)] cursor-pointer"
+                >
+                  <FiGithub className="w-5 h-5"/>
                   GitHub
-                </a>
+                </button>
               </div>
             </div>
 
@@ -363,24 +369,34 @@ export default function UnifiedAuthPage() {
       </div>
 
       {/* RIGHT COLUMN: Testimonial OR Forgot Password Form */}
-      <div className="hidden lg:flex w-1/2 relative bg-indigo-900/20 items-center justify-center p-12 overflow-hidden transition-all duration-700">
-        <div className="absolute inset-0 bg-gradient-to-r from-[#090C14] via-[#090C14]/30 to-transparent z-10"></div>        
+      <div className="hidden lg:flex w-1/2 relative bg-[var(--brand-50)] items-center justify-center p-12 overflow-hidden transition-all duration-700 border-l border-[var(--border-default)]">
         {/* Testimonial Display (when Forgot Password is closed) */}
         {!isForgotPasswordOpen && (
           <>
-            <div className="relative z-20 max-w-lg mt-auto mb-20 animate-in fade-in slide-in-from-right-8 duration-1000 delay-300">
-              <blockquote className="text-3xl font-bold text-white leading-relaxed mb-8 italic drop-shadow-lg">
-                « J'ai validé ma formation en Machine Learning en étant étudiante et entrepreneuse. C'était intense... mais je l'ai fait ! »
-              </blockquote>
+            <div className="relative z-20 max-w-lg mt-auto mb-20">
+              <div className="bg-white/80 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-[var(--border-default)]">
+                <blockquote className="text-xl font-bold text-[var(--text-primary)] leading-relaxed mb-6 italic">
+                  « J'ai validé ma formation en Machine Learning en étant étudiante et entrepreneuse. C'était intense... mais je l'ai fait ! »
+                </blockquote>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[var(--brand-100)] flex items-center justify-center font-bold text-[var(--brand-500)] border border-[var(--brand-200)]">
+                    A
+                  </div>
+                  <div>
+                     <p className="text-sm font-bold text-[var(--text-primary)]">Amina D.</p>
+                     <p className="text-xs font-semibold text-[var(--text-secondary)]">Alumni Data Science</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 opacity-90">
               <Image
                 src="/images/femme_africaine_tech_mlacademy_2.png"
                 alt="Témoignage MLAcademy"
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover object-top"       
+                className="object-cover object-top opacity-50 mix-blend-multiply"       
               />
             </div>
           </>
@@ -388,40 +404,40 @@ export default function UnifiedAuthPage() {
 
         {/* Forgot Password Pane (when open) */}
         {isForgotPasswordOpen && (
-          <div className="relative z-30 w-full max-w-md animate-in slide-in-from-right-full duration-700">
+          <div className="relative z-30 w-full max-w-md">
             <button 
               onClick={() => { setIsForgotPasswordOpen(false); setForgotPasswordSuccess(false); setError(''); }}
-              className="absolute -top-16 -left-8 lg:-left-12 flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-bold group"
+              className="absolute -top-16 -left-8 lg:-left-12 flex items-center gap-2 text-[var(--brand-500)] hover:text-[var(--brand-600)] font-bold group cursor-pointer"
             >
               <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Retour
             </button>
 
-            <div className="mb-10 space-y-4">
-              <h2 className="text-3xl font-black text-white tracking-tight">Mot de passe oublié ?</h2>
-              <p className="text-slate-400 font-medium leading-relaxed">
+            <div className="mb-10 space-y-3">
+              <h2 className="text-3xl font-extrabold text-[var(--text-primary)] tracking-tight uppercase">Mot de passe oublié ?</h2>
+              <p className="text-[var(--text-secondary)] font-medium leading-relaxed">
                 Pas d'inquiétude ! Entrez votre e-mail pour recevoir un lien de réinitialisation sécurisé.
               </p>
             </div>
 
-            <div className="glass-card rounded-[32px] p-8 border border-indigo-500/30 bg-indigo-500/5 shadow-2xl space-y-8">
+            <div className="card rounded-3xl p-8 border-[var(--brand-200)] shadow-xl bg-white space-y-6">
               {error && isForgotPasswordOpen && (
-                <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-2xl text-xs font-bold flex items-center gap-3">
+                <div className="p-4 bg-[var(--error-light)] border border-[var(--error)] text-[var(--error)] rounded-xl text-xs font-bold flex items-center gap-3 shadow-sm">
                   <Zap className="w-4 h-4 flex-shrink-0" /> {error}
                 </div>
               )}
 
               {forgotPasswordSuccess ? (
-                <div className="text-center space-y-6 py-6">
-                  <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                    <Mail className="w-8 h-8 text-emerald-400" />
+                <div className="text-center space-y-6 py-4">
+                  <div className="mx-auto w-16 h-16 rounded-full bg-[var(--success-light)] border border-[var(--success)] flex items-center justify-center shadow-sm">
+                    <Mail className="w-8 h-8 text-[var(--success)]" />
                   </div>
                   <div className="space-y-2">
-                    <p className="text-white font-bold text-lg">E-mail envoyé !</p>
-                    <p className="text-slate-400 text-sm">Vérifiez votre boîte mail ({formData.email}) pour réinitialiser votre mot de passe.</p>
+                    <p className="text-[var(--text-primary)] font-bold text-lg">E-mail envoyé !</p>
+                    <p className="text-[var(--text-secondary)] text-sm leading-relaxed">Vérifiez votre boîte mail ({formData.email}) pour réinitialiser votre mot de passe.</p>
                   </div>
                   <button 
                     onClick={() => { setIsForgotPasswordOpen(false); setForgotPasswordSuccess(false); }}
-                    className="btn-secondary w-full py-4 rounded-xl font-bold"
+                    className="btn-secondary w-full py-3 mt-2"
                   >
                     Retour à la connexion
                   </button>
@@ -429,13 +445,13 @@ export default function UnifiedAuthPage() {
               ) : (
                 <form onSubmit={handleForgotPasswordSubmit} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">E-mail</label>
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest ml-1">E-mail</label>
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-tertiary)] group-focus-within:text-[var(--brand-500)] transition-colors" />
                       <input 
                         id="forgot-email" type="email" required autoFocus
                         value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className="w-full bg-slate-900/80 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-indigo-500/50 transition-all"
+                        className="input-field pl-12"
                         placeholder="votre-email@exemple.com"
                       />
                     </div>
@@ -443,7 +459,7 @@ export default function UnifiedAuthPage() {
 
                   <button 
                     type="submit" disabled={loading}
-                    className="btn-primary w-full py-4 text-base shadow-xl shadow-indigo-500/20 rounded-2xl flex items-center justify-center gap-2"
+                    className="btn-primary w-full py-3.5 text-sm uppercase tracking-widest shadow-md flex items-center justify-center gap-2"
                   >
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Envoyer le lien'}
                   </button>
@@ -454,5 +470,13 @@ export default function UnifiedAuthPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function UnifiedAuthPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[var(--bg-secondary)] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[var(--brand-500)]" /></div>}>
+      <UnifiedAuthPageContent />
+    </Suspense>
   );
 }

@@ -7,7 +7,7 @@ django.setup()
 from users.models import CustomUser
 
 email = 'admin@mlacademy.com'
-password = 'AdminPassword123@'
+password = 'AdminPassword123@@'
 
 if not CustomUser.objects.filter(email=email).exists():
     CustomUser.objects.create_superuser(

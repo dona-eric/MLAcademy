@@ -84,9 +84,9 @@ export default function Step2({ data, setData }: Step2Props) {
       {/* En-tête */}
       <div className="space-y-2">
         <h2 className="text-3xl font-black tracking-tighter">
-          Vos <span className="text-indigo-400">informations</span> personnelles
+          Vos <span className="text-[var(--brand-500)]">informations</span> personnelles
         </h2>
-        <p className="text-slate-400 text-sm">Pour vous contacter et personnaliser votre expérience.</p>
+        <p className="text-[var(--text-secondary)] text-sm">Pour vous contacter et personnaliser votre expérience.</p>
       </div>
 
       {/* Carte de Formulaire */}
@@ -94,7 +94,7 @@ export default function Step2({ data, setData }: Step2Props) {
         
         {/* Numéro de téléphone */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-1">
             Numéro de téléphone
           </label>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -103,27 +103,27 @@ export default function Step2({ data, setData }: Step2Props) {
               <select
                 value={selectedCountry.code}
                 onChange={(e) => handleCountryChange(e.target.value)}
-                className="w-full appearance-none bg-white/5 border border-white/10 rounded-2xl py-4 pl-4 pr-10 text-sm outline-none focus:border-indigo-500 focus:bg-white/10 transition-all text-white font-bold"
+                className="w-full appearance-none bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-2xl py-4 pl-4 pr-10 text-sm outline-none focus:border-[var(--brand-500)] focus:bg-[var(--bg-tertiary)] transition-all text-[var(--text-primary)] font-bold"
               >
                 {AFRICAN_COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code} className="bg-[#0A0F1C] text-white">
+                  <option key={c.code} value={c.code} className="bg-[var(--bg-primary)] text-[var(--text-primary)]">
                     {c.flag} {c.dialCode} ({c.name})
                   </option>
                 ))}
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-secondary)]">
                 <ChevronDown className="w-4 h-4" />
               </div>
             </div>
 
             {/* Phone Input */}
             <div className="relative flex-1 group">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-500)] transition-colors" />
               <input 
                 type="tel" 
                 value={phoneNumber}
                 onChange={(e) => handlePhoneChange(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-indigo-500 focus:bg-white/10 outline-none transition-all text-white font-bold"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-[var(--brand-500)] focus:bg-[var(--bg-tertiary)] outline-none transition-all text-[var(--text-primary)] font-bold"
                 placeholder="00 00 00 00"
               />
             </div>
@@ -132,7 +132,7 @@ export default function Step2({ data, setData }: Step2Props) {
 
         {/* Sélection du Genre */}
         <div className="space-y-2">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+          <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-1">
             Genre
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -141,10 +141,10 @@ export default function Step2({ data, setData }: Step2Props) {
                 key={g}
                 type="button" // Important : Évite de soumettre le formulaire au clic
                 onClick={() => setData({...data, gender: g})}
-                className={`py-3 rounded-xl border text-xs font-bold transition-all outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                className={`py-3 rounded-xl border text-xs font-bold transition-all outline-none focus:ring-2 focus:ring-[var(--brand-500)] ${
                   data.gender === g 
-                    ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400' 
-                    : 'border-white/5 bg-white/5 hover:bg-white/10 text-slate-400'
+                    ? 'border-[var(--brand-500)] bg-[var(--brand-50)] text-[var(--brand-500)]' 
+                    : 'border-[var(--border-default)] bg-white/5 hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)]'
                 }`}
               >
                 {g}
@@ -157,15 +157,15 @@ export default function Step2({ data, setData }: Step2Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Rue / Adresse principale */}
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-1">
               Adresse
             </label>
             <div className="relative group">
-              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)] group-focus-within:text-[var(--brand-500)] transition-colors" />
               <input 
                 value={data.address.street}
                 onChange={(e) => setData({...data, address: {...data.address, street: e.target.value}})}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-indigo-500 focus:bg-white/10 outline-none transition-all text-white"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-2xl py-4 pl-12 pr-4 text-sm focus:border-[var(--brand-500)] focus:bg-[var(--bg-tertiary)] outline-none transition-all text-[var(--text-primary)]"
                 placeholder="Rue, Quartier"
               />
             </div>
@@ -174,25 +174,25 @@ export default function Step2({ data, setData }: Step2Props) {
           {/* Ville & Pays */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-1">
                 Ville
               </label>
               <input 
                 value={data.address.city}
                 onChange={(e) => setData({...data, address: {...data.address, city: e.target.value}})}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm focus:border-indigo-500 focus:bg-white/10 outline-none transition-all text-white"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-2xl py-4 px-4 text-sm focus:border-[var(--brand-500)] focus:bg-[var(--bg-tertiary)] outline-none transition-all text-[var(--text-primary)]"
                 placeholder="Cotonou"
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] ml-1">
                 Pays
               </label>
               <input 
                 value={data.address.country}
                 onChange={(e) => setData({...data, address: {...data.address, country: e.target.value}})}
-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-4 text-sm focus:border-indigo-500 focus:bg-white/10 outline-none transition-all text-white"
+                className="w-full bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-2xl py-4 px-4 text-sm focus:border-[var(--brand-500)] focus:bg-[var(--bg-tertiary)] outline-none transition-all text-[var(--text-primary)]"
                 placeholder="Bénin"
               />
             </div>

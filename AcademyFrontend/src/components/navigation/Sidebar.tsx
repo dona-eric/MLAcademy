@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, Compass, BookOpen, User, Settings, BarChart3, LogOut, LayoutDashboard, MonitorPlay, Users, Sparkles, ChevronRight, Play, Award, Box, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -30,21 +31,18 @@ function NavLink({ name, href, icon: Icon, isActive } : { name: string; href: st
   return (
     <Link
       href={href}
-      className={`flex items-center justify-between group rounded-xl px-4 py-3 transition-all duration-300 relative overflow-hidden ${
-        isActive ? "text-cyan-400 bg-cyan-500/5" : "text-slate-400 hover:text-white hover:bg-white/5"
+      className={`flex items-center justify-between group rounded-xl px-4 py-3 transition-all relative ${
+        isActive ? "text-[var(--brand-500)] bg-[var(--brand-50)]/50" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
       }`}
     >
-      <div className="flex items-center gap-3 relative z-10">
-        <Icon className={`h-5 w-5 transition-all duration-300 ${
-          isActive ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.8)]" : "text-slate-500 group-hover:text-slate-300"
-        }`} />
-        <span className={`text-sm tracking-wide ${isActive ? "font-bold" : "font-medium"}`}>{name}</span>
+      <div className="flex items-center gap-3.5 relative z-10">
+        <Icon className={`h-5 w-5 transition-colors ${
+          isActive ? "text-[var(--brand-500)]" : "text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]"
+        }`} strokeWidth={isActive ? 2.5 : 2} />
+        <span className={`text-sm tracking-tight ${isActive ? "font-bold" : "font-semibold"}`}>{name}</span>
       </div>
       {isActive && (
-        <>
-          <div className="absolute left-0 top-1/4 bottom-1/4 w-[2px] bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,1)]" />
-          <ChevronRight className="w-4 h-4 text-cyan-400/50 relative z-10" />
-        </>
+        <ChevronRight className="w-4 h-4 text-[var(--brand-400)] relative z-10" strokeWidth={3} />
       )}
     </Link>
   );
@@ -58,21 +56,18 @@ export default function Sidebar() {
   const items = NAV_ITEMS[isInstructorSpace ? "instructor" : "learner"];
 
   return (
-    <aside className="hidden md:flex w-72 flex-col px-6 py-10 z-20 bg-[#0a0c10] border-r border-white/5 shadow-[20px_0_40px_-20px_rgba(0,0,0,0.5)]">
+    <aside className="hidden md:flex w-72 flex-col px-5 py-8 z-20 bg-[var(--bg-primary)] border-r border-[var(--border-default)]">
 
       {/* Brand */}
-      <div className="mb-12 px-2">
+      <div className="mb-10 px-3">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative">
-            <div className="absolute inset-0 bg-cyan-500 blur-md opacity-20 group-hover:opacity-40 transition-opacity" />
-            <div className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-[#0f1218] border border-cyan-500/50 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.3)] group-hover:scale-105 transition-transform">
-              <Sparkles className="w-6 h-6" />
-            </div>
+          <div className="relative w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden bg-[var(--bg-secondary)] border border-[var(--border-default)] group-hover:border-[var(--brand-300)] transition-colors">
+            <Image src="/images/mlacademy_logo_final.png" alt="MLAcademy Logo" fill sizes="40px" className="object-cover" priority />
           </div>
           <div className="flex flex-col">
-            <span className="text-xl font-black tracking-tighter text-white">ML<span className="text-cyan-500">ACADEMY</span></span>
+            <span className="text-xl font-extrabold tracking-tight text-[var(--text-primary)]">ML<span className="text-[var(--brand-500)]">ACADEMY</span></span>
             {isInstructorSpace && (
-              <span className="text-[9px] font-black text-indigo-400 uppercase tracking-[0.3em] leading-none">Studio Space</span>
+              <span className="text-[9px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider leading-none mt-0.5">Studio Space</span>
             )}
           </div>
         </Link>
@@ -80,39 +75,41 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1.5 overflow-y-auto custom-scrollbar pr-2">
-        <p className="px-4 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500/60">Intelligence Menu</p>
-        {items.map((item) => (
-          <NavLink
-            key={item.href}
-            {...item}
-            isActive={pathname === item.href || (item.href !== "/studio" && pathname.startsWith(item.href + "/"))}
-          />
-        ))}
+        <p className="px-4 mb-3 text-xs font-bold uppercase tracking-wider text-[var(--text-tertiary)]">Menu {isInstructorSpace ? "Formateur" : "Apprenant"}</p>
+        {items.map((item) => {
+          const isRootItem = item.href === "/dashboard" || item.href === "/studio";
+          const isActive = isRootItem 
+            ? pathname === item.href 
+            : pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <NavLink
+              key={item.href}
+              {...item}
+              isActive={isActive}
+            />
+          );
+        })}
       </nav>
 
       {/* Bottom Actions */}
-      <div className="mt-auto pt-8 space-y-3 border-t border-white/5">
+      <div className="mt-auto pt-6 space-y-3 border-t border-[var(--border-subtle)] px-2">
         {user?.is_instructor && (
           <Link
             href={isInstructorSpace ? "/dashboard" : "/studio"}
-            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all border ${
-              isInstructorSpace
-                ? "bg-white text-black border-white hover:bg-slate-200 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                : "bg-[#0f1218] text-cyan-400 border-cyan-500/30 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(6,182,212,0.2)]"
-            }`}
+            className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors bg-[var(--bg-secondary)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-500)] hover:border-[var(--brand-200)]"
           >
             <Box className="h-4 w-4" />
-            {isInstructorSpace ? "Switch to Learner" : "Instructor Studio"}
+            {isInstructorSpace ? "Vue Apprenant" : "Espace Formateur"}
           </Link>
         )}
 
         {(user?.is_staff || user?.is_superuser) && (
-          <Link href="/admin/dashboard" className="flex items-center gap-3 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500/20">
+          <Link href="/admin/dashboard" className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-wider transition-colors bg-[var(--warning-light)] text-[var(--warning)] hover:bg-amber-100 border border-amber-200">
             <ShieldCheck className="h-4 w-4" /> System Admin
           </Link>
         )}
 
-        <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all text-slate-500 hover:bg-rose-500/10 hover:text-rose-500 group">
+        <button onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-colors text-[var(--text-secondary)] hover:bg-[var(--error-light)] hover:text-[var(--error)] group cursor-pointer">
           <LogOut className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
           Déconnexion
         </button>

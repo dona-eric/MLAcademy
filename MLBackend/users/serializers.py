@@ -3,7 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import StudentProfile, InstructorApplication, InstructorProfile
+from .models import StudentProfile, InstructorApplication, InstructorProfile, BetaTesteur
 from phonenumber_field.serializerfields import PhoneNumberField
 
 User = get_user_model()
@@ -43,10 +43,15 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             "blank": "La confirmation du mot de passe ne peut pas être vide.",
         },
     )
+    register_as_beta_tester = serializers.BooleanField(required=False, write_only=True)
+    motivation = serializers.CharField(required=False, allow_blank=True, write_only=True)
 
     class Meta:
         model = User
-        fields = ["email","username","first_name","last_name","password", "password_confirm"]
+        fields = [
+            "email", "username", "first_name", "last_name", "password", "password_confirm",
+            "register_as_beta_tester", "motivation"
+        ]
         extra_kwargs = {
             "first_name": {"required": False, "allow_blank": True},
             "last_name": {"required": False, "allow_blank": True},
@@ -76,6 +81,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        register_as_beta_tester = validated_data.pop("register_as_beta_tester", False)
+        motivation = validated_data.pop("motivation", "")
         validated_data.pop("password_confirm")
         password = validated_data.pop("password")
         user = User(**validated_data)
@@ -83,6 +90,14 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.is_active = True  # Actif mais email non vérifié
         user.email_verified = False
         user.save()
+
+        if register_as_beta_tester:
+            BetaTesteur.objects.create(
+                user=user,
+                motivation=motivation or "Inscription au programme bêta de MLAcademyHub.",
+                is_approved=False,
+            )
+
         return user
 
 
@@ -154,7 +169,7 @@ class StudentProfileSerializer(serializers.ModelSerializer):
         model = StudentProfile
         fields = [
             "phone", "gender", "address_street", "address_zip","address_city", "address_country", "french_level","english_level", "current_situation", 
-            "professional_experiences","work_permits", "specific_statuses", "diplomas", "hours_per_week","desired_start_date", "onboarding_completed","honor_declaration_accepted", "selected_training_slug","funding_method"
+            "professional_experiences","work_permits", "specific_statuses", "diplomas", "projects", "hours_per_week","desired_start_date", "onboarding_completed","honor_declaration_accepted", "selected_training_slug","funding_method"
         ]
 
 

@@ -13,8 +13,8 @@ export default function Step1({ data, toggleDomain }: { data: OnboardingData; to
         <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
           Votre domaine de <span className="text-indigo-400">formation</span>
         </h2>
-        <p className="text-slate-400 max-w-xl mx-auto">
-          Sélectionnez un ou plusieurs domaines qui vous intéressent. Nous vous proposerons les formations adaptées.
+        <p className="text-[var(--text-secondary)] max-w-xl mx-auto">
+          Sélectionnez le domaine qui correspond à votre objectif de carrière. Nous vous proposerons les formations adaptées.
         </p>
       </div>
 
@@ -41,8 +41,8 @@ export default function Step1({ data, toggleDomain }: { data: OnboardingData; to
       </div>
 
       {data.domains.length > 0 && (
-        <p className="text-xs text-slate-500">
-          <span className="text-indigo-400 font-bold">{data.domains.length}</span> {plural(data.domains.length, "domaine")}
+        <p className="text-xs text-[var(--text-secondary)]">
+          <span className="text-[var(--brand-500)] font-bold">{data.domains[0]}</span> sélectionné
         </p>
       )}
     </div>

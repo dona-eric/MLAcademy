@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     # Third-party
     "rest_framework",
+    "drf_spectacular",
     'rest_framework_simplejwt',
     "django_filters",
     "corsheaders",
@@ -127,10 +128,21 @@ import dj_database_url
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": BASE_DIR / "AcademyDB",
     }
 }
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": "postgres",
+#         "USER": "postgres.sspacdgyeuhlvtpsqfef",
+#         "PASSWORD": os.getenv("PASSWORD_DB"),
+#         "HOST": "aws-1-eu-central-1.pooler.supabase.com",
+#         "PORT": "6543",
+#     }
+# }
 
 if os.getenv("DATABASE_URL"):
     DATABASES["default"] = dj_database_url.config(
@@ -266,8 +278,19 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 
     "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
-}
 
+    # Indique à DRF d'utiliser drf-spectacular pour le schéma
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+# Configuration optionnelle pour personnaliser la doc
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'MLAcademy API',
+    'DESCRIPTION': 'Documentation automatique de mon application',
+    'VERSION': '1.1.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Optionnel : pour trier les opérations par tags
+    'COMPONENT_SPLIT_REQUEST': True, 
+}
 # JWT Configuration (djangorestframework-simplejwt)
 
 SIMPLE_JWT = {

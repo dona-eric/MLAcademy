@@ -55,7 +55,7 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
       id={`job-card-${job.id}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-8 rounded-[32px] bg-white/[0.03] border border-white/10 hover:border-indigo-500/30 transition-all duration-300 relative overflow-hidden backdrop-blur-xl"
+      className="card p-6 md:p-8"
     >
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
         <div className="flex items-start gap-5">
@@ -65,31 +65,31 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
               src={job.company_logo}
               alt={job.company_name}
               referrerPolicy="no-referrer"
-              className="w-16 h-16 rounded-2xl object-cover border border-white/10 bg-slate-900"
+              className="w-16 h-16 rounded-2xl object-cover border border-[var(--border-subtle)] bg-[var(--bg-secondary)]"
             />
           ) : (
-            <div className="w-16 h-16 rounded-2xl border border-white/10 bg-gradient-to-tr from-indigo-500/10 to-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold shrink-0">
+            <div className="w-16 h-16 rounded-2xl border border-[var(--border-subtle)] bg-[var(--brand-50)] flex items-center justify-center text-[var(--brand-500)] font-bold shrink-0">
               <Building className="w-6 h-6" />
             </div>
           )}
 
           <div id="job-info-block">
-            <h3 className="text-lg font-bold text-white tracking-tight">{job.title}</h3>
-            <div className="flex flex-wrap items-center gap-3 mt-1.5 text-slate-400 text-xs font-semibold">
-              <span className="flex items-center gap-1">
-                <Building className="w-3.5 h-3.5 text-slate-500" />
+            <h3 className="text-lg font-bold text-[var(--text-primary)] tracking-tight">{job.title}</h3>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-[var(--text-secondary)] text-sm font-medium">
+              <span className="flex items-center gap-1.5">
+                <Building className="w-4 h-4 text-[var(--text-tertiary)]" />
                 {job.company_name}
               </span>
-              <span className="text-white/10">•</span>
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+              <span className="text-[var(--border-default)]">•</span>
+              <span className="flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-[var(--text-tertiary)]" />
                 {job.location}
               </span>
               {job.salary_range && (
                 <>
-                  <span className="text-white/10">•</span>
-                  <span className="flex items-center gap-1 text-emerald-400">
-                    <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-[var(--border-default)]">•</span>
+                  <span className="flex items-center gap-1.5 text-[var(--success)]">
+                    <DollarSign className="w-4 h-4 text-[var(--success)]" />
                     {job.salary_range}
                   </span>
                 </>
@@ -101,36 +101,36 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
         {/* Action Button */}
         <div className="self-start md:self-center shrink-0">
           {applied ? (
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-xs font-black uppercase tracking-wider">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--success-light)] border border-[var(--success)] rounded-full text-[var(--success)] text-xs font-bold uppercase tracking-wider">
+              <CheckCircle2 className="w-4 h-4" />
               <span>Postulé !</span>
             </div>
           ) : (
             <button
               id={`apply-job-btn-${job.id}`}
               onClick={() => setShowApplyForm(!showApplyForm)}
-              className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-550 border border-indigo-500/30 text-white font-bold rounded-2xl transition-all cursor-pointer text-xs uppercase tracking-widest"
+              className="btn-primary py-2 px-5 text-sm uppercase tracking-wider"
             >
               <span>{showApplyForm ? "Fermer" : "Postuler"}</span>
-              <ArrowUpRight className="w-4 h-4" />
+              <ArrowUpRight className="w-4 h-4 ml-1" />
             </button>
           )}
         </div>
       </div>
 
       {/* Description */}
-      <p className="text-slate-400 text-xs font-normal mt-4 leading-relaxed max-w-4xl">
+      <p className="text-[var(--text-secondary)] text-sm font-normal mt-5 leading-relaxed max-w-4xl">
         {job.description}
       </p>
 
       {/* Requirements List */}
       {requirementsArray.length > 0 && (
-        <div className="mt-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.1em] text-indigo-400">Exigences clés :</p>
-          <ul className="mt-2 space-y-1.5 pl-1">
+        <div className="mt-5">
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--brand-500)]">Exigences clés :</p>
+          <ul className="mt-2.5 space-y-2 pl-1">
             {requirementsArray.map((req, index) => (
-              <li key={index} className="flex items-start gap-2 text-xs text-slate-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+              <li key={index} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-500)] mt-2 shrink-0" />
                 <span>{req}</span>
               </li>
             ))}
@@ -139,11 +139,11 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
       )}
 
       {/* Technical Tags */}
-      <div className="flex flex-wrap gap-2 mt-5">
+      <div className="flex flex-wrap gap-2 mt-6 pt-6 border-t border-[var(--border-subtle)]">
         {jobTags.map((tag, i) => (
           <span
             key={i}
-            className="px-2.5 py-1 text-[10px] font-bold text-indigo-300 bg-indigo-500/5 border border-indigo-500/10 rounded-full"
+            className="px-3 py-1 text-xs font-semibold text-[var(--text-secondary)] bg-[var(--bg-secondary)] border border-[var(--border-default)] rounded-md"
           >
             {tag}
           </span>
@@ -159,12 +159,12 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             onSubmit={handleApplySubmit}
-            className="mt-6 pt-6 border-t border-white/5 space-y-4 overflow-hidden"
+            className="mt-6 pt-6 border-t border-[var(--border-subtle)] space-y-5 overflow-hidden"
           >
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Candidature simplifiée</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <h4 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Candidature simplifiée</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
                   Nom Complet *
                 </label>
                 <input
@@ -174,12 +174,12 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Amina Diallo"
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 text-xs"
+                  className="input-field"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
                   Courriel de contact *
                 </label>
                 <input
@@ -188,14 +188,14 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="amina.diallo@mlmail.sn"
-                  className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-slate-650 focus:outline-none focus:border-indigo-500 text-xs"
+                  placeholder="amina@domaine.com"
+                  className="input-field"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
                 Lien Profil LinkedIn ou GitHub
               </label>
               <input
@@ -204,12 +204,12 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
                 value={linkedin}
                 onChange={(e) => setLinkedin(e.target.value)}
                 placeholder="https://linkedin.com/in/..."
-                className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-slate-650 focus:outline-none focus:border-indigo-500 text-xs"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+              <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
                 Lettre de motivation courte (Optionnel)
               </label>
               <textarea
@@ -218,7 +218,7 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
                 onChange={(e) => setComments(e.target.value)}
                 rows={3}
                 placeholder="Qu'est-ce qui vous passionne dans ce poste..."
-                className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-slate-650 focus:outline-none focus:border-indigo-500 text-xs resize-none"
+                className="w-full px-4 py-3 rounded-md bg-[var(--bg-primary)] border border-[var(--border-default)] text-[var(--text-primary)] focus:border-[var(--brand-500)] focus:ring-4 focus:ring-[var(--brand-glow)] outline-none transition-all text-sm resize-none"
               />
             </div>
 
@@ -226,11 +226,11 @@ export function JobCard({ job, onApplySuccess }: JobCardProps) {
               id={`apply-submit-btn-${job.id}`}
               type="submit"
               disabled={applying}
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-550 disabled:bg-indigo-800 text-white font-bold rounded-xl text-xs uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              className="btn-primary w-full py-3"
             >
               {applying ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
                   <span>Envoi en cours...</span>
                 </>
               ) : (

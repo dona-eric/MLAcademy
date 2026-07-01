@@ -225,8 +225,9 @@ class StudentProfile(models.Model):
     work_permits = models.JSONField(default=list, blank=True) # Liste de pays
     specific_statuses = models.JSONField(default=list, blank=True) # handicap, militaire, etc.
 
-    # --- Diplômes & Certifications ---
-    diplomas = models.JSONField(default=list, blank=True) # Liste d'objets {title, school, year}
+    # --- Diplômes & Certifications & Projets ---
+    diplomas = models.JSONField(default=list, blank=True) # Liste d'objets {title, school, year, mention}
+    projects = models.JSONField(default=list, blank=True) # Liste d'objets {title, description, link, year}
 
     # --- Formation & Disponibilité ---
     hours_per_week = models.IntegerField(default=20)
@@ -315,3 +316,27 @@ class InstructorProfile(models.Model):
     def __str__(self):
         return f"Profil Instructeur de {self.user.email}"
  
+class BetaTesteur(models.Model):
+    
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name="beta_testeur")
+    applied_at = models.DateTimeField(auto_now_add=True)
+    is_approved = models.BooleanField(
+        default=False, 
+        help_text="Indique si l'administrateur a validé ce profil comme bêta-testeur officiel."
+    )
+    courses = models.ManyToManyField(
+    "courses.Course", 
+    related_name="beta_testers",
+    blank=True,
+    help_text="Cours disponibles pour les bêta-testeurs (vide = accès à tout)"
+)
+    motivation = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+    class Meta:
+        verbose_name = "Bêta-testeur"
+        verbose_name_plural = "Bêta-testeurs"
+        ordering = ['-applied_at']
+    def __str__(self):
+        return f"Application Bêta Testeur par {self.user.email} - Statut: {self.is_approved}"

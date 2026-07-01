@@ -3,6 +3,14 @@ export interface StudentProfile {
   [key: string]: any;
 }
 
+export interface UserProfileStats {
+  coursesCompleted: number;
+  certificates: number;
+  learningHours: number;
+  points: number;
+  levelNumber: number;
+}
+
 export interface UserProfile {
   id: number;
   email: string;
@@ -18,6 +26,7 @@ export interface UserProfile {
   personal_goals: string;
   is_public_profile: boolean;
   email_verified: boolean;
+  otp_enabled: boolean;
   date_joined: string;
   last_login: string | null;
   is_instructor: boolean;
@@ -25,4 +34,6 @@ export interface UserProfile {
   is_superuser: boolean;
   instructor_status: "pending" | "approved" | "rejected";
   student_profile?: StudentProfile;
+  stats?: UserProfileStats;
+  xp_points?: number;
 }

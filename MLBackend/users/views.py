@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authentication import SessionAuthentication
-from .models import InstructorApplication, InstructorProfile
+from .models import BetaTesteur, InstructorApplication, InstructorProfile
 from .serializers import (
     CustomTokenObtainPairSerializer,
     PasswordResetConfirmSerializer,
@@ -72,8 +72,7 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Envoi email de confirmation
-        frontend_url = "http://localhost:3000"
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
         send_mail(
             subject="Bienvenue sur MLAcademy! Confirmez votre email",
@@ -91,6 +90,47 @@ class RegisterView(generics.CreateAPIView):
             {
                 "message": "Compte créé avec succès. Vérifiez votre email pour activer votre compte.",
                 "email": user.email,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class BetaTesterRegisterView(RegisterView):
+    """
+    POST /api/public/users/programme-testeurs/
+    Inscription directe au programme des bêta-testeurs.
+    """
+
+    def create(self, request, *args, **kwargs):
+        request_data = request.data.copy()
+        request_data["register_as_beta_tester"] = True
+        serializer = self.get_serializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
+        send_mail(
+            subject="Bienvenue dans le programme Bêta-Testeurs MLAcademyHub",
+            message=(
+                f"Bonjour {user.first_name or user.email},\n\n"
+                "Votre inscription en tant que bêta-testeur a bien été enregistrée. "
+                "Un administrateur va examiner votre candidature et valider votre statut.\n\n"
+                f"Pour finaliser votre compte, confirmez votre email ici :\n{verification_link}\n\n"
+                "La date de lancement du programme est encore en cours de définition. "
+                "Nous vous tiendrons informé dès qu'elle sera disponible.\n\n"
+                "L'équipe MLAcademy"
+            ),
+            from_email="noreply@mlacademy.io",
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+
+        return Response(
+            {
+                "message": "Votre demande de bêta-testeur a été enregistrée. Confirmez votre email pour activer votre compte.",
+                "email": user.email,
+                "betaTesterStatus": "pending",
             },
             status=status.HTTP_201_CREATED,
         )
@@ -128,11 +168,7 @@ class VerifyEmailView(APIView):
                 "message": "Email confirmé avec succès ! Vous pouvez maintenant vous connecter."
             }
         )
-
-
 #  CONNEXION JWT
-
-
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     POST /api/users/token/
@@ -208,9 +244,7 @@ class SocialJWTCompleteView(APIView):
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
-
         django_logout(request)
-
         response = Response(
             {
                 "message": "Connexion sociale réussie.",
@@ -220,7 +254,6 @@ class SocialJWTCompleteView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-
         return response
 
 
@@ -246,7 +279,7 @@ class PasswordResetRequestView(APIView):
             token = default_token_generator.make_token(user)
             reset_link = (
                 f"{settings.FRONTEND_URL}"
-                f"/password-reset/confirm/?uid={uid}&token={token}"
+                f"/password-reset/confirm/{uid}/{token}/"
             )
             send_mail(
                 subject="MLAcademy — Réinitialisation de votre mot de passe",
@@ -707,3 +740,54 @@ class InstructorProfileView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError
+
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+        new_password_confirm = request.data.get("new_password_confirm")
+
+        if not old_password or not new_password or not new_password_confirm:
+            return Response({"error": "Tous les champs sont obligatoires."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.check_password(old_password):
+            return Response({"error": "L'ancien mot de passe est incorrect."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if new_password != new_password_confirm:
+            return Response({"error": "Les nouveaux mots de passe ne correspondent pas."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_password(new_password, user=request.user)
+        except ValidationError as e:
+            return Response({"error": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({"message": "Mot de passe modifié avec succès."})
+
+
+from rest_framework import permissions
+
+class IsApprovedBetaTesterOrAdmin(permissions.BasePermission):
+    """
+    Permission qui n'autorise l'accès qu'aux admins ou aux bêta-testeurs validés.
+    """
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+            
+        # Si c'est un admin, il a tous les droits
+        if request.user.is_staff:
+            return True
+            
+        # Vérifie si l'utilisateur a un profil bêta ET s'il est approuvé
+        try:
+            return request.user.beta_profile.is_approved
+        except BetaTester.DoesNotExist:
+            return False

@@ -27,6 +27,7 @@ export default function OnboardingPage() {
     gender: "",
     address: { street: "", zip: "", city: "", country: "Bénin" },
     diplomes: [],
+    projects: [],
     languages: { french: "B2 - Avancé", english: "B1 - Intermédiaire" },
     professional: { situation: "", experience: [], workPermit: [], specificStatus: [] },
     availability: { hoursPerWeek: "20", startDate: "" },
@@ -36,6 +37,7 @@ export default function OnboardingPage() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -44,12 +46,36 @@ export default function OnboardingPage() {
     }
   }, [profile, authLoading, router]);
 
+  // Initialisation à partir du localStorage (au chargement côté client uniquement)
+  useEffect(() => {
+    const savedData = localStorage.getItem("onboardingData");
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        // On fusionne avec la structure par défaut pour éviter les bugs si la structure de données a changé
+        setData((prev) => ({
+          ...prev,
+          ...parsedData,
+        }));
+      } catch (e) {
+        console.error("Erreur de parsing du localStorage", e);
+      }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  // Sauvegarde automatique
+  useEffect(() => {
+    if (isLoaded) {
+      localStorage.setItem("onboardingData", JSON.stringify(data));
+    }
+  }, [data, isLoaded]);
+
   const toggleDomain = (id: string) => {
+    // Remplacer directement par l'ID cliqué (un seul domaine possible)
     setData(prev => ({
       ...prev,
-      domains: prev.domains.includes(id) 
-        ? prev.domains.filter(d => d !== id)
-        : [...prev.domains, id]
+      domains: [id]
     }));
   };
 
@@ -73,6 +99,7 @@ export default function OnboardingPage() {
              work_permits: data.professional.workPermit,
              specific_statuses: data.professional.specificStatus,
              diplomas: data.diplomes,
+             projects: data.projects,
              hours_per_week: parseInt(data.availability.hoursPerWeek) || 20,
              desired_start_date: data.availability.startDate || null,
              onboarding_completed: true,
@@ -83,6 +110,7 @@ export default function OnboardingPage() {
         })
       });
       await checkAuth();
+      localStorage.removeItem("onboardingData"); // Nettoyer après succès
       router.push("/dashboard");
     } catch (error) {
       console.error("Onboarding failed", error);
@@ -94,14 +122,14 @@ export default function OnboardingPage() {
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 8));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0A0F1C]"><Loader2 className="w-12 h-12 text-indigo-500 animate-spin" /></div>;
+  if (authLoading || !isLoaded) return <div className="min-h-screen flex items-center justify-center bg-[var(--bg-secondary)]"><Loader2 className="w-12 h-12 text-[var(--brand-500)] animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#0A0F1C] text-white selection:bg-indigo-500/30 overflow-x-hidden">
+    <div className="min-h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)] selection:bg-[var(--brand-100)] overflow-x-hidden">
       {/* Background Decorative Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-500/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/10 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--brand-50)] blur-[120px] rounded-full opacity-60" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[var(--info-light)] blur-[120px] rounded-full opacity-60" />
       </div>
 
       <main className="relative max-w-6xl mx-auto px-6 py-12 pt-20">
@@ -109,24 +137,24 @@ export default function OnboardingPage() {
         <header className="mb-12 flex flex-col md:flex-row md:items-center justify-between gap-8">
            <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Étape {currentStep} sur 8</span>
+                <div className="px-3 py-1 bg-[var(--brand-50)] border border-[var(--brand-100)] rounded-full">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--brand-500)]">Étape {currentStep} sur 8</span>
                 </div>
-                <div className="h-px w-8 bg-white/10" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                <div className="h-px w-8 bg-[var(--border-default)]" />
+                <span className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest">
                   {currentStep === 1 ? 'Objectifs' : currentStep === 8 ? 'Finalisation' : 'Configuration'}
                 </span>
               </div>
-              <h1 className="text-xl font-black tracking-tighter">Onboarding <span className="text-indigo-400">MLAcademy</span></h1>
+              <h1 className="text-2xl font-extrabold tracking-tight">Onboarding <span className="text-[var(--brand-500)]">MLAcademy</span></h1>
            </div>
 
            <div className="flex items-center gap-2">
               {[1, 2, 3, 4, 5, 6, 7, 8].map(step => (
                 <div 
                   key={step}
-                  className={`h-1.5 transition-all duration-500 rounded-full ${
-                    step === currentStep ? 'w-12 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 
-                    step < currentStep ? 'w-4 bg-indigo-500/40' : 'w-4 bg-white/5'
+                  className={`h-2 transition-all duration-500 rounded-full ${
+                    step === currentStep ? 'w-12 bg-[var(--brand-500)] shadow-sm' : 
+                    step < currentStep ? 'w-4 bg-[var(--brand-300)]' : 'w-4 bg-[var(--border-default)]'
                   }`}
                 />
               ))}
@@ -156,12 +184,12 @@ export default function OnboardingPage() {
         </div>
 
         {/* Navigation Footer */}
-        <footer className="mt-16 flex items-center justify-between border-t border-white/5 pt-8">
+        <footer className="mt-16 flex items-center justify-between border-t border-[var(--border-subtle)] pt-8">
           <button
             onClick={prevStep}
             disabled={currentStep === 1}
-            className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold transition-all ${
-              currentStep === 1 ? 'opacity-0 cursor-default' : 'text-slate-400 hover:text-white hover:bg-white/5'
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
+              currentStep === 1 ? 'opacity-0 cursor-default' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-primary)] border border-[var(--border-default)]'
             }`}
           >
             <ChevronLeft className="w-5 h-5" />
@@ -173,7 +201,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={nextStep}
                   disabled={currentStep === 1 && data.domains.length === 0}
-                  className="group relative flex items-center gap-3 bg-white text-black px-8 py-4 rounded-2xl font-black transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100"
+                  className="group relative flex items-center gap-3 bg-[var(--text-primary)] text-white px-8 py-3.5 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 shadow-md"
                 >
                   <span>Continuer</span>
                   <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -182,7 +210,7 @@ export default function OnboardingPage() {
                 <button
                   onClick={handleFinish}
                   disabled={submitting || !data.honorDeclaration || !data.selectedCourse || !data.funding}
-                  className="group relative flex items-center gap-3 bg-indigo-500 text-white px-10 py-4 rounded-2xl font-black transition-all hover:scale-105 active:scale-95 hover:shadow-[0_0_25px_rgba(99,102,241,0.4)] disabled:opacity-50 disabled:hover:scale-100"
+                  className="btn-primary group relative flex items-center gap-3 px-10 py-4 rounded-xl font-bold transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 shadow-lg"
                 >
                   {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Rocket className="w-5 h-5 group-hover:rotate-12 transition-transform" />}
                   <span>Terminer l'inscription</span>
@@ -193,14 +221,30 @@ export default function OnboardingPage() {
       </main>
 
       <style jsx global>{`
+        /* Override child components dark mode styles to light mode */
         .glass-card {
-          background: rgba(255, 255, 255, 0.03);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: #ffffff;
+          border: 1px solid var(--border-default);
+          box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .text-white {
+          color: var(--text-primary) !important;
+        }
+        .text-slate-400 {
+          color: var(--text-secondary) !important;
+        }
+        .text-slate-500 {
+          color: var(--text-tertiary) !important;
+        }
+        .bg-white\\/5 {
+          background-color: var(--bg-secondary) !important;
+        }
+        .border-white\\/10 {
+          border-color: var(--border-default) !important;
         }
         input::-webkit-calendar-picker-indicator {
-          filter: invert(1);
-          opacity: 0.5;
+          filter: invert(0);
+          opacity: 0.7;
         }
       `}</style>
     </div>

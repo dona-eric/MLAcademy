@@ -13,7 +13,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
+  checkAuth: () => Promise<UserProfile | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,13 +41,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const checkAuth = async () => {
+  const checkAuth = async (): Promise<UserProfile | null> => {
     // Éviter l'exécution côté serveur
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return null;
 
     try {
       setLoading(true);
-      const userData = await fetchApi('/api/private/users/me/');
+      const userData = (await fetchApi('/api/private/users/me/')) as UserProfile;
       setUser(userData);
       
       // Verification 2FA Obligatoire
@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!verified && !window.location.pathname.includes('/2fa')) {
           router.push('/2fa');
       }
+      return userData;
     } catch (error: any) {
       // On nettoie l'utilisateur si l'appel échoue (non connecté ou session expirée)
       setUser(null);
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error?.status !== 401 && !error?.message?.includes("authentification") && !error?.message?.includes("401") && !error?.message?.includes("jeton")) {
         console.error("Erreur d'authentification inattendue:", error);
       }
+      return null;
     } finally {
       setLoading(false);
     }

@@ -36,13 +36,13 @@ export function ChallengeCard({ challenge, onRegisterSuccess }: ChallengeCardPro
   const getDifficultyColor = (diff: string) => {
     switch (diff) {
       case "beginner":
-        return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+        return "badge-beginner";
       case "intermediate":
-        return "text-amber-400 bg-amber-500/10 border-amber-500/20";
+        return "badge-intermediate";
       case "advanced":
-        return "text-rose-400 bg-rose-500/10 border-rose-500/20";
+        return "badge-advanced";
       default:
-        return "text-slate-400 bg-slate-500/10 border-slate-500/20";
+        return "badge-neutral";
     }
   };
 
@@ -74,11 +74,10 @@ export function ChallengeCard({ challenge, onRegisterSuccess }: ChallengeCardPro
       id={`challenge-card-${challenge.id}`}
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ borderColor: "rgba(245,158,11,0.35)" }}
-      className="p-2 rounded-[36px] bg-white/[0.03] border border-white/10 hover:border-white/20 transition-all duration-300 overflow-hidden flex flex-col md:flex-row gap-6 backdrop-blur-xl"
+      className="card flex flex-col md:flex-row gap-0 overflow-hidden"
     >
       {/* Banner / Graphic Section */}
-      <div className="relative w-full md:w-72 h-48 md:h-full min-h-[200px] shrink-0 rounded-[28px] overflow-hidden border border-white/5 bg-slate-900">
+      <div className="relative w-full md:w-80 h-56 md:h-auto shrink-0 bg-[var(--bg-tertiary)] border-b md:border-b-0 md:border-r border-[var(--border-subtle)]">
         <img
           src={bannerUrl}
           alt={challenge.title}
@@ -86,104 +85,108 @@ export function ChallengeCard({ challenge, onRegisterSuccess }: ChallengeCardPro
           className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
         />
         {/* Organizer Float glass badge */}
-        <div className="absolute top-4 left-4 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider">
+        <div className="absolute top-4 left-4 px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-md border border-[var(--border-default)] text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider shadow-sm">
           {challenge.company_name}
         </div>
         {challenge.company_logo && (
-          <div className="absolute bottom-4 right-4 w-12 h-12 rounded-xl bg-slate-900 border border-white/10 p-1 flex items-center justify-center overflow-hidden">
+          <div className="absolute bottom-4 right-4 w-14 h-14 rounded-lg bg-white border border-[var(--border-default)] p-1.5 flex items-center justify-center overflow-hidden shadow-sm">
             <img src={challenge.company_logo} alt={challenge.company_name} className="w-full h-full object-contain" />
           </div>
         )}
       </div>
 
       {/* Main Content Section */}
-      <div className="flex-grow p-5 md:p-6 flex flex-col">
-        <div className="flex flex-wrap gap-2.5 items-center">
-          {/* Difficulty badge */}
-          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider ${getDifficultyColor(challenge.difficulty)}`}>
-            <Gauge className="w-3 h-3" />
-            {getDifficultyLabel(challenge.difficulty)}
-          </span>
-
-          {challengeTags.map((tag, idx) => (
-            <span
-              key={idx}
-              className="px-2.5 py-0.5 bg-white/[0.04] border border-white/5 text-slate-400 rounded-full text-[10px] font-normal"
-            >
-              {tag}
+      <div className="flex-grow p-6 md:p-8 flex flex-col justify-between">
+        <div>
+          <div className="flex flex-wrap gap-2.5 items-center mb-4">
+            {/* Difficulty badge */}
+            <span className={`badge ${getDifficultyColor(challenge.difficulty)}`}>
+              <Gauge className="w-3.5 h-3.5" />
+              <span>{getDifficultyLabel(challenge.difficulty)}</span>
             </span>
-          ))}
+
+            {challengeTags.map((tag, idx) => (
+              <span
+                key={idx}
+                className="badge badge-neutral"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <h3 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">{challenge.title}</h3>
+
+          <p className="text-[var(--text-secondary)] text-sm mt-3 leading-relaxed max-w-2xl">
+            {challenge.description}
+          </p>
         </div>
 
-        <h3 className="text-xl font-bold text-white tracking-tight mt-3">{challenge.title}</h3>
-
-        <p className="text-slate-400 text-xs mt-3 leading-relaxed max-w-2xl font-normal">
-          {challenge.description}
-        </p>
-
-        {/* Info Grid row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5">
-          {/* Prize Pool */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-              <Trophy className="w-4 h-4 text-amber-400" />
+        <div>
+          {/* Info Grid row */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8 pt-6 border-t border-[var(--border-subtle)]">
+            {/* Prize Pool */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                <Trophy className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider leading-none">Cagnotte</p>
+                <p className="text-sm font-bold text-[var(--text-primary)] mt-1">{formattedPrize}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-none">Cagnotte</p>
-              <p className="text-sm font-black text-amber-300 mt-1">{formattedPrize}</p>
+
+            {/* Deadline */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[var(--brand-50)] flex items-center justify-center shrink-0">
+                <Calendar className="w-5 h-5 text-[var(--brand-500)]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider leading-none">Date Limite</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)] mt-1">{formattedDeadline}</p>
+              </div>
+            </div>
+
+            {/* Participants count */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[var(--info-light)] flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 text-[var(--info)]" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider leading-none">Inscriptions</p>
+                <p className="text-sm font-bold text-[var(--text-primary)] mt-1">{participantsCount} Hackers</p>
+              </div>
             </div>
           </div>
 
-          {/* Deadline */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shrink-0">
-              <Calendar className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-none">Date Limite</p>
-              <p className="text-xs font-semibold text-slate-300 mt-1">{formattedDeadline}</p>
-            </div>
+          {/* Actions bar */}
+          <div id="challenge-action-row" className="mt-8 flex items-center gap-4">
+            {registered ? (
+              <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--success-light)] border border-[var(--success)] text-[var(--success)] text-xs font-bold uppercase tracking-wider rounded-md">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Inscrit · Commencer le Hack</span>
+              </div>
+            ) : (
+              <button
+                id={`register-challenge-btn-${challenge.id}`}
+                onClick={handleRegister}
+                disabled={registering}
+                className="btn-primary w-full sm:w-auto px-8 py-3 uppercase tracking-wider text-xs"
+              >
+                {registering ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <span>Traitement...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>S'inscrire au Challenge</span>
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </>
+                )}
+              </button>
+            )}
           </div>
-
-          {/* Participants count */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4 text-cyan-400" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-none">Inscriptions</p>
-              <p className="text-sm font-black text-cyan-300 mt-1">{participantsCount} Hackers</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions bar */}
-        <div id="challenge-action-row" className="mt-8 flex items-center gap-4">
-          {registered ? (
-            <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-black uppercase tracking-wider rounded-2xl">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Inscrit · Commencer le Hack</span>
-            </div>
-          ) : (
-            <button
-              id={`register-challenge-btn-${challenge.id}`}
-              onClick={handleRegister}
-              disabled={registering}
-              className="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-550 disabled:bg-indigo-800 text-white font-black text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer"
-            >
-              {registering ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Traitement...</span>
-                </>
-              ) : (
-                <>
-                  <span>S'inscrire au Challenge</span>
-                  <ChevronRight className="w-4 h-4 text-white/70" />
-                </>
-              )}
-            </button>
-          )}
         </div>
       </div>
     </motion.div>

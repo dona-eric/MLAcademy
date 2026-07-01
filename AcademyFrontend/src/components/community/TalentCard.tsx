@@ -29,33 +29,30 @@ export function TalentCard({ talent }: TalentCardProps) {
   return (
     <motion.div
       id={`talent-card-${talent.id}`}
-      whileHover={{ y: -6, borderColor: "rgba(99,102,241,0.35)" }}
-      className="relative flex flex-col p-8 rounded-[32px] bg-white/[0.03] border border-white/10 shadow-2xl overflow-hidden transition-all duration-300 backdrop-blur-xl animate-fade-in"
+      whileHover={{ y: -4 }}
+      className="card relative flex flex-col p-6 animate-fade-in group"
     >
-      {/* Glow Effect */}
-      <div className="absolute top-0 right-0 w-28 h-28 bg-indigo-500/5 blur-3xl rounded-full pointer-events-none" />
-
       {/* Header Info */}
       <div className="flex items-start gap-4">
-        <div className="relative">
+        <div className="relative shrink-0">
           <img
             src={avatar}
             alt={talent.fullName}
             referrerPolicy="no-referrer"
-            className="w-14 h-14 rounded-2xl object-cover border border-white/10"
+            className="w-14 h-14 rounded-full object-cover border border-[var(--border-subtle)]"
           />
-          <div className="absolute -bottom-1 -right-1 bg-indigo-600 border border-indigo-400 text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white">
-            #{talent.rank || 1}
+          <div className="absolute -bottom-1 -right-1 bg-[var(--brand-500)] border-2 border-white text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white shadow-sm">
+            #{talent.rank}
           </div>
         </div>
 
-        <div className="flex-grow">
-          <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5 font-display">
+        <div className="flex-grow min-w-0">
+          <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight truncate">
             {talent.fullName}
           </h3>
-          <p className="text-xs text-indigo-400 font-bold mt-0.5">{talent.headline}</p>
-          <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-1">
-            <MapPin className="w-3 h-3 text-slate-500" />
+          <p className="text-xs text-[var(--brand-500)] font-semibold mt-0.5 truncate">{talent.headline}</p>
+          <div className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] mt-1">
+            <MapPin className="w-3 h-3" />
             <span>{talent.country || "Afrique"}</span>
           </div>
         </div>
@@ -63,14 +60,14 @@ export function TalentCard({ talent }: TalentCardProps) {
 
       {/* Badge Award */}
       {talent.level && (
-        <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mt-4 self-start">
-          <Award className="w-3.5 h-3.5 text-indigo-400" />
-          <span className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest">{levelLabel}</span>
+        <div className="badge badge-brand mt-4 self-start">
+          <Award className="w-3.5 h-3.5" />
+          <span>{levelLabel}</span>
         </div>
       )}
 
       {/* Bio Copy */}
-      <p className="text-slate-450 text-xs font-normal mt-4 line-clamp-3 leading-relaxed">
+      <p className="text-[var(--text-secondary)] text-sm mt-4 line-clamp-3 leading-relaxed flex-grow">
         {talent.bio || "Aucune biographie fournie."}
       </p>
 
@@ -79,21 +76,23 @@ export function TalentCard({ talent }: TalentCardProps) {
         {talent.skills && talent.skills.map((skill, i) => (
           <span
             key={i}
-            className="px-2 py-1 text-[10px] font-mono font-medium text-slate-350 bg-white/[0.04] border border-white/5 rounded-lg flex items-center gap-1"
+            className="px-2 py-1 text-[10px] font-mono font-medium text-[var(--text-secondary)] bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded-md flex items-center gap-1"
           >
-            <Code className="w-2.5 h-2.5 text-indigo-400/70" />
+            <Code className="w-3 h-3 text-[var(--brand-400)]" />
             {skill}
           </span>
         ))}
       </div>
 
-      <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between">
+      <div className="mt-6 pt-5 border-t border-[var(--border-subtle)] flex items-center justify-between">
         {/* Score indicator */}
-        <div className="flex items-center gap-1.5">
-          <Zap className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
+            <Zap className="w-4 h-4 text-amber-500 fill-amber-500" />
+          </div>
           <div className="text-left">
-            <p className="text-xs font-bold text-white leading-none">{xp} XP</p>
-            <p className="text-[9px] text-slate-550 font-mono mt-0.5 uppercase tracking-wider">{projectsCount} projets</p>
+            <p className="text-sm font-bold text-[var(--text-primary)] leading-none">{xp} XP</p>
+            <p className="text-[10px] text-[var(--text-tertiary)] font-medium mt-1 uppercase tracking-wider">{projectsCount} projets</p>
           </div>
         </div>
 
@@ -104,10 +103,10 @@ export function TalentCard({ talent }: TalentCardProps) {
               href={talent.github_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] hover:text-white text-slate-400 transition-colors border border-white/5"
+              className="p-2 rounded-lg bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] text-[var(--text-secondary)] transition-colors"
               title="GitHub Profile"
             >
-              <FaGithub className="w-3.5 h-3.5" />
+              <FaGithub className="w-4 h-4" />
             </a>
           )}
           {talent.linkedin_url && (
@@ -115,19 +114,19 @@ export function TalentCard({ talent }: TalentCardProps) {
               href={talent.linkedin_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] hover:text-white text-slate-400 transition-colors border border-white/5"
+              className="p-2 rounded-lg bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] text-[var(--text-secondary)] transition-colors"
               title="LinkedIn Profile"
             >
-              <FaLinkedin className="w-3.5 h-3.5" />
+              <FaLinkedin className="w-4 h-4" />
             </a>
           )}
           {talent.email && (
             <button
               onClick={() => setShowEmail(!showEmail)}
-              className="p-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-555 border border-indigo-500/20 hover:border-indigo-400 text-indigo-300 transition-colors cursor-pointer"
+              className="p-2 rounded-lg bg-[var(--brand-50)] hover:bg-[var(--brand-100)] text-[var(--brand-500)] transition-colors cursor-pointer"
               title={showEmail ? talent.email : "Afficher l'e-mail de contact"}
             >
-              <Mail className="w-3.5 h-3.5" />
+              <Mail className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -135,11 +134,11 @@ export function TalentCard({ talent }: TalentCardProps) {
 
       {showEmail && talent.email && (
         <motion.div
-          initial={{ opacity: 0, y: 5 }}
+          initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-3 p-2 bg-indigo-950/40 border border-indigo-500/10 rounded-xl text-center"
+          className="mt-3 p-2 bg-[var(--bg-secondary)] border border-[var(--border-subtle)] rounded-lg text-center"
         >
-          <p className="text-[10px] text-indigo-300 font-mono select-all truncate">{talent.email}</p>
+          <p className="text-xs text-[var(--text-secondary)] font-mono select-all truncate">{talent.email}</p>
         </motion.div>
       )}
     </motion.div>

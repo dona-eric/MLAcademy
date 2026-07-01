@@ -3,6 +3,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from users.views import SocialView
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -28,6 +30,15 @@ urlpatterns = [
     path("api/auth/", include("allauth.urls")),
     # Talent Hub & Community
     path("api/community/", include("community.urls")),
+
+    # Téléchargement du schéma au format YAML/JSON
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    
+    # Interface Swagger UI (Interactive, permet de tester)
+    path('api/docs/swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    
+    # Interface ReDoc (Très propre et lisible, style 3 colonnes)
+    path('api/docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
 # Servir les fichiers media en développement (avatars, etc.)

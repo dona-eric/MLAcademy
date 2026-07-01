@@ -21,11 +21,12 @@ class AdminInstructorApplicationSerializer(serializers.ModelSerializer):
 
 class AdminEnrollmentSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_full_name = serializers.CharField(source='user.get_full_name', read_only=True)
     course_title = serializers.CharField(source='course.title', read_only=True)
     
     class Meta:
         model = Enrollment
-        fields = ['id', 'user', 'user_email', 'course', 'course_title', 'enrolled_at', 'progress_percentage', 'is_completed']
+        fields = ['id', 'user', 'user_email', 'user_full_name', 'course', 'course_title', 'enrolled_at', 'progress_percentage', 'is_completed']
 
 class PlatformSettingsSerializer(serializers.ModelSerializer):
     class Meta:

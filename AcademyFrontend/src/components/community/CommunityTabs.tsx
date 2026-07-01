@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Trophy, Briefcase, Stars } from "lucide-react";
+import { Users, Trophy, Briefcase } from "lucide-react";
 
 export type TabType = 'talents' | 'leaderboard' | 'jobs' | 'challenges';
 
@@ -26,20 +26,20 @@ export function CommunityTabs({ activeTab, setActiveTab }: CommunityTabsProps) {
             id={`tab-btn-${tab.id}`}
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`relative flex items-center gap-2.5 px-6 py-3.5 rounded-full text-xs font-black tracking-[0.16em] uppercase transition-all duration-300 pointer-events-auto cursor-pointer border font-display ${
+            className={`relative flex items-center gap-2.5 px-6 py-3.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-200 pointer-events-auto cursor-pointer border ${
               isActive
-                ? 'text-indigo-400 border-indigo-500/30 bg-indigo-500/[0.04] shadow-[0_4px_24px_rgba(99,102,241,0.08)]'
-                : 'text-slate-400 border-white/5 bg-white/[0.01] hover:text-white hover:bg-white/[0.03]'
+                ? 'text-[var(--text-inverse)] border-[var(--brand-500)] bg-[var(--brand-500)] shadow-md'
+                : 'text-[var(--text-secondary)] border-[var(--border-default)] bg-[var(--bg-primary)] hover:text-[var(--brand-500)] hover:border-[var(--brand-200)]'
             }`}
           >
             {isActive && (
               <motion.span
                 layoutId="active-tab-glow"
-                className="absolute inset-0 rounded-full border border-indigo-500/30 bg-indigo-500/[0.01] pointer-events-none"
+                className="absolute inset-0 rounded-full border border-[var(--brand-400)] pointer-events-none"
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
-            <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-400' : 'text-slate-500'}`} />
+            <Icon className={`w-4 h-4 ${isActive ? 'text-[var(--text-inverse)]' : 'text-[var(--text-tertiary)]'}`} />
             <span>{tab.label}</span>
           </button>
         );

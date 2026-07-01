@@ -18,24 +18,24 @@ export function Leaderboard({ talents }: LeaderboardProps) {
   const getPodiumBadgeColor = (rank: number) => {
     switch (rank) {
       case 1:
-        return "from-amber-400 to-yellow-600 border-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.2)]";
+        return "bg-amber-50 border-amber-200 shadow-sm";
       case 2:
-        return "from-slate-300 to-slate-500 border-slate-300 shadow-[0_0_20px_rgba(148,163,184,0.15)]";
+        return "bg-slate-50 border-slate-200 shadow-sm";
       case 3:
-        return "from-amber-600 to-amber-800 border-amber-700 shadow-[0_0_20px_rgba(180,83,9,0.15)]";
+        return "bg-orange-50 border-orange-200 shadow-sm";
       default:
-        return "from-slate-700 to-slate-900 border-slate-650 opacity-80";
+        return "bg-white border-slate-100";
     }
   };
 
   const getPodiumIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Trophy className="w-6 h-6 text-yellow-400 fill-yellow-400/20" />;
+        return <Trophy className="w-6 h-6 text-amber-500 fill-amber-100" />;
       case 2:
-        return <Medal className="w-6 h-6 text-slate-300" />;
+        return <Medal className="w-6 h-6 text-slate-400" />;
       case 3:
-        return <Medal className="w-6 h-6 text-amber-600" />;
+        return <Medal className="w-6 h-6 text-orange-500" />;
       default:
         return null;
     }
@@ -70,53 +70,53 @@ export function Leaderboard({ talents }: LeaderboardProps) {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.1 }}
-                className={`relative p-[1px] rounded-[32px] bg-gradient-to-b ${getPodiumBadgeColor(rank)}`}
+                className={`relative p-6 rounded-2xl border flex flex-col items-center text-center h-full ${getPodiumBadgeColor(rank)}`}
               >
-                <div className="p-6 rounded-[31px] bg-[#0c0f1b] flex flex-col items-center text-center h-full">
-                  {/* Floating Rank circle indicator */}
-                  <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 bg-white/[0.03] rounded-full border border-white/10 font-mono text-[9px] font-bold text-slate-400">
-                    {getPodiumIcon(rank)}
-                    <span>RANG {rank}</span>
+                {/* Floating Rank circle indicator */}
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 px-3 py-1 bg-white rounded-full border border-[var(--border-default)] text-[10px] font-bold text-[var(--text-secondary)] shadow-sm">
+                  {getPodiumIcon(rank)}
+                  <span>RANG {rank}</span>
+                </div>
+
+                {/* Avatar highlight container */}
+                <div className="relative mt-8">
+                  <img
+                    src={avatar}
+                    alt={talent.fullName}
+                    referrerPolicy="no-referrer"
+                    className="w-20 h-20 rounded-full object-cover ring-4 ring-white shadow-sm"
+                  />
+                  <div className={`absolute -bottom-2 -right-1 border-2 border-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-sm ${
+                    rank === 1 ? 'bg-amber-500' : rank === 2 ? 'bg-slate-400' : 'bg-orange-500'
+                  }`}>
+                    #{rank}
                   </div>
+                </div>
 
-                  {/* Avatar highlight container */}
-                  <div className="relative mt-4">
-                    <img
-                      src={avatar}
-                      alt={talent.fullName}
-                      referrerPolicy="no-referrer"
-                      className="w-20 h-20 rounded-full object-cover ring-4 ring-indigo-500/10 border border-white/20"
-                    />
-                    <div className="absolute -bottom-2 -right-1 bg-indigo-600 border border-indigo-400 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white">
-                      #{rank}
-                    </div>
+                <h3 className="text-lg font-bold text-[var(--text-primary)] mt-4 tracking-tight">{talent.fullName}</h3>
+                <p className="text-xs text-[var(--brand-500)] font-bold mt-1 uppercase tracking-widest">{talent.headline}</p>
+
+                <div className="flex items-center gap-1 text-[11px] text-[var(--text-secondary)] mt-2">
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>{talent.country || "Afrique"}</span>
+                </div>
+
+                {talent.level && (
+                  <div className="badge badge-brand mt-4">
+                    <Award className="w-3.5 h-3.5" />
+                    <span>{levelLabel}</span>
                   </div>
+                )}
 
-                  <h3 className="text-base font-black text-white mt-6 tracking-tight font-display">{talent.fullName}</h3>
-                  <p className="text-xs text-indigo-400 font-bold mt-1 uppercase tracking-widest">{talent.headline}</p>
-
-                  <div className="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
-                    <MapPin className="w-3.5 h-3.5 text-slate-500" />
-                    <span>{talent.country || "Afrique"}</span>
+                {/* Score */}
+                <div className="mt-6 pt-5 border-t border-[var(--border-subtle)] w-full flex items-center justify-between">
+                  <div className="text-left">
+                    <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Compteur Projets</p>
+                    <p className="text-xs font-bold text-[var(--text-primary)] mt-1">{projectsCount} Projets actifs</p>
                   </div>
-
-                  {talent.level && (
-                    <div className="mt-3.5 inline-flex items-center gap-1 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[10px] font-bold text-indigo-300 uppercase tracking-widest font-display">
-                      <Award className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                      <span>{levelLabel}</span>
-                    </div>
-                  )}
-
-                  {/* Score */}
-                  <div className="mt-6 pt-5 border-t border-white/10 w-full flex items-center justify-between">
-                    <div className="text-left">
-                      <p className="text-[9px] uppercase font-bold text-slate-500 tracking-wider">Compteur Projets</p>
-                      <p className="text-xs font-mono font-bold text-white mt-1">{projectsCount} Projets actifs</p>
-                    </div>
-                    <div className="text-right flex items-center gap-1.5 bg-white/[0.04] px-3 py-1.5 rounded-full border border-white/10">
-                      <Zap className="w-4 h-4 text-amber-400" />
-                      <span className="text-xs font-black text-white">{xp} XP</span>
-                    </div>
+                  <div className="text-right flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-[var(--border-default)] shadow-sm">
+                    <Zap className="w-4 h-4 text-amber-500 fill-amber-100" />
+                    <span className="text-xs font-bold text-[var(--text-primary)]">{xp} XP</span>
                   </div>
                 </div>
               </motion.div>
@@ -127,20 +127,20 @@ export function Leaderboard({ talents }: LeaderboardProps) {
 
       {/* Main Leaderboard Table */}
       {remaining.length > 0 && (
-        <div className="max-w-5xl mx-auto overflow-hidden rounded-[32px] border border-white/10 bg-white/[0.03] backdrop-blur-xl">
+        <div className="max-w-5xl mx-auto overflow-hidden rounded-2xl border border-[var(--border-default)] bg-[var(--bg-elevated)] shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 bg-white/[0.04]">
-                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-400">Class.</th>
-                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-400">Scientifique</th>
-                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-400">Localisation</th>
-                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-400">Niveau</th>
-                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Projets</th>
-                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-slate-400 text-right">Score Global</th>
+                <tr className="border-b border-[var(--border-default)] bg-[var(--bg-secondary)]">
+                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Class.</th>
+                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Scientifique</th>
+                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Localisation</th>
+                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">Niveau</th>
+                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] text-right">Projets</th>
+                  <th className="py-4 px-6 text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] text-right">Score Global</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-[var(--border-subtle)]">
                 {remaining.map((talent, index) => {
                   const rank = index + 4;
                   const levelLabel = getLevelLabel(talent.level);
@@ -152,11 +152,11 @@ export function Leaderboard({ talents }: LeaderboardProps) {
                     <tr
                       id={`leaderboard-row-${talent.id}`}
                       key={talent.id}
-                      className="hover:bg-white/[0.04] transition-colors"
+                      className="hover:bg-[var(--bg-secondary)] transition-colors"
                     >
                       {/* Rank Column */}
                       <td className="py-4 px-6">
-                        <span className="font-mono text-xs font-bold text-slate-400 bg-white/[0.03] border border-white/10 px-2 py-1 rounded-lg">
+                        <span className="font-mono text-xs font-bold text-[var(--text-secondary)] bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] px-2 py-1 rounded-md">
                           #{rank}
                         </span>
                       </td>
@@ -168,41 +168,41 @@ export function Leaderboard({ talents }: LeaderboardProps) {
                             src={avatar}
                             alt={talent.fullName}
                             referrerPolicy="no-referrer"
-                            className="w-10 h-10 rounded-xl object-cover border border-white/10"
+                            className="w-10 h-10 rounded-full object-cover border border-[var(--border-subtle)]"
                           />
                           <div>
-                            <p className="text-sm font-bold text-white hover:text-indigo-400 transition-colors leading-none">{talent.fullName}</p>
-                            <p className="text-[11px] text-slate-400 mt-1 font-medium">{talent.headline}</p>
+                            <p className="text-sm font-bold text-[var(--text-primary)]">{talent.fullName}</p>
+                            <p className="text-xs text-[var(--text-secondary)] mt-0.5">{talent.headline}</p>
                           </div>
                         </div>
                       </td>
 
                       {/* Location Column */}
                       <td className="py-4 px-6">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                          <MapPin className="w-3.5 h-3.5" />
                           <span>{talent.country || "Afrique"}</span>
                         </div>
                       </td>
 
                       {/* Expertise Badge Column */}
                       <td className="py-4 px-6">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/[0.03] border border-white/10 rounded-xl text-[10px] font-bold text-slate-350">
-                          <Award className="w-3 h-3 text-indigo-400" />
+                        <span className="badge badge-brand">
+                          <Award className="w-3 h-3" />
                           {levelLabel}
                         </span>
                       </td>
 
                       {/* Projects Column */}
-                      <td className="py-4 px-6 text-right font-mono text-xs font-semibold text-slate-300">
+                      <td className="py-4 px-6 text-right text-xs font-bold text-[var(--text-primary)]">
                         {projectsCount}
                       </td>
 
                       {/* Experience Points Column */}
                       <td className="py-4 px-6 text-right">
-                        <div className="inline-flex items-center gap-1.5 bg-indigo-500/5 px-2.5 py-1 border border-indigo-500/10 rounded-xl">
-                          <Zap className="w-3.5 h-3.5 text-amber-400" />
-                          <span className="font-mono text-xs font-black text-white">{xp} XP</span>
+                        <div className="inline-flex items-center gap-1.5 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-100">
+                          <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-100" />
+                          <span className="text-xs font-bold text-[var(--text-primary)]">{xp} XP</span>
                         </div>
                       </td>
                     </tr>
