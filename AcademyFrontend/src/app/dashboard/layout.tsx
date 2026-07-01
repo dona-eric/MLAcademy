@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <Sidebar />
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         <TopBar />
-        <main className="flex-1 overflow-y-auto bg-[#090C14] text-white custom-scrollbar relative">
+        <main className="flex-1 overflow-y-auto bg-[var(--bg-secondary)] text-[var(--text-primary)] custom-scrollbar relative">
           {children}
         </main>
       </div>
