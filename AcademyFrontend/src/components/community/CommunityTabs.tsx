@@ -11,7 +11,7 @@ interface CommunityTabsProps {
 export function CommunityTabs({ activeTab, setActiveTab }: CommunityTabsProps) {
   const tabs: { id: TabType; label: string; icon: any; countBadge?: string }[] = [
     { id: 'talents', label: 'Talents', icon: Users },
-    { id: 'leaderboard', label: 'Classement ML', icon: Trophy },
+    { id: 'leaderboard', label: 'Classement', icon: Trophy },
     { id: 'jobs', label: 'Recrutement', icon: Briefcase },
     { id: 'challenges', label: 'Challenges', icon: Trophy },
   ];

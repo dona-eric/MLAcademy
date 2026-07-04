@@ -50,10 +50,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = (await fetchApi('/api/private/users/me/')) as UserProfile;
       setUser(userData);
       
-      // Verification 2FA Obligatoire
+      // Verification 2FA Obligatoire (Sauf pour les instructeurs pour le moment)
       const verified = sessionStorage.getItem('2fa_verified') === 'true';
-      if (!verified && !window.location.pathname.includes('/2fa')) {
-          router.push('/2fa');
+      if (!verified && !window.location.pathname.includes('/2fa') && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/instructor/login')) {
+          // Si l'utilisateur est un instructeur, on ne le force pas tout de suite sur /2fa (rappel dans le studio)
+          if (!userData.is_instructor) {
+              router.push('/2fa');
+          }
       }
       return userData;
     } catch (error: any) {
@@ -89,10 +92,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.access) localStorage.setItem('access_token', data.access);
       if (data.refresh) localStorage.setItem('refresh_token', data.refresh);
 
-      // Le 2FA est OBLIGATOIRE pour tous les utilisateurs (Setup ou Vérification)
+      // Le 2FA est OBLIGATOIRE pour les apprenants. Les instructeurs ont un rappel dans le studio.
       setTwoFactorVerified(false);
-      await checkAuth();
-      router.push('/2fa');
+      const userData = await checkAuth();
+      
+      if (userData?.is_instructor) {
+        const redirect = sessionStorage.getItem("post_2fa_redirect") || '/studio';
+        router.push(redirect);
+      } else {
+        router.push('/2fa');
+      }
       
     } catch (error) {
       throw error; // On laisse le composant Login gérer l'affichage de l'erreur

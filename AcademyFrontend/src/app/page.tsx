@@ -13,7 +13,6 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
             <div className="badge badge-brand">
-              <Sparkles className="h-3.5 w-3.5" />
               <span>Élite MLAcademy</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold text-[var(--text-primary)] tracking-tight leading-[1.12]">

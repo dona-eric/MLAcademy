@@ -201,7 +201,7 @@ export default function App() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <StatItem label="Membres Actifs" value={stats.totalTalents} sub="Inscrits sur le Hub" />
               <StatItem label="Challenges" value={stats.activeChallenges} sub="Compétitions en cours" />
-              <StatItem label="Candidatures" value={stats.applicationsProcessed} sub="Soumises" />
+              <StatItem label="Recrutements" value={stats.activeJobs} sub="Jobs" />
             </div>
           </div>
         </section>

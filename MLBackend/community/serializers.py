@@ -11,10 +11,11 @@ User = get_user_model()
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
         model = Company
-        fields = ['id', 'name', 'description', 'website', 'logo', 'location', 'is_verified']
+        fields = ['id', 'name', 'description', 'website', 'logo', 'location', "position_geographique",'is_verified']
 
 class JobOfferSerializer(serializers.ModelSerializer):
     company_name = serializers.ReadOnlyField(source='company.name')
+    company_position = serializers.ReadOnlyField(source="company.position_geographique")
     company_logo = serializers.SerializerMethodField()
 
     class Meta:
@@ -22,7 +23,7 @@ class JobOfferSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'company', 'company_name', 'company_logo', 'title', 
             'description', 'requirements', 'location', 'contract_type', 
-            'salary_range', 'posted_at', 'deadline'
+            'salary_range', 'posted_at', 'deadline', "company_position",
         ]
 
     def get_company_logo(self, obj):

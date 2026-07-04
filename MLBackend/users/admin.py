@@ -86,10 +86,11 @@ class InstructorApplicationAdmin(admin.ModelAdmin):
             user.set_password(new_password)
             user.is_active = True
             user.is_instructor = True
+            user.email_verified = True
             user.save()
 
             # 3. Envoi des identifiants à l'ancienne adresse
-            login_url = f"{settings.FRONTEND_URL}/login"
+            login_url = f"{settings.FRONTEND_URL}/instructor/login"
             
             send_mail(
                 subject="Bienvenue chez MLAcademy ! Votre candidature est approuvée",

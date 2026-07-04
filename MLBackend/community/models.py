@@ -25,6 +25,7 @@ class Company(models.Model):
     website = models.URLField(blank=True, verbose_name="Site web")
     logo = models.ImageField(upload_to="companies/", blank=True, null=True)
     location = models.CharField(max_length=255, verbose_name="Siège social")
+    position_geographique = models.CharField(max_length=255, verbose_name="Localisation", blank=True, null=True)
     
     admins = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="managed_companies", verbose_name="Administrateurs")
     
@@ -49,7 +50,6 @@ class JobOffer(models.Model):
     title = models.CharField(max_length=255, verbose_name="Intitulé du poste")
     description = models.TextField(verbose_name="Description du poste")
     requirements = models.TextField(verbose_name="Pré-requis / Compétences")
-    
     location = models.CharField(max_length=255, verbose_name="Lieu")
     contract_type = models.CharField(max_length=20, choices=CONTRACT_TYPES, default='CDI')
     salary_range = models.CharField(max_length=100, blank=True, verbose_name="Fourchette de salaire")
@@ -166,7 +166,7 @@ class SponsoredChallenge(models.Model):
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='intermediate')
 
     reward = models.CharField(max_length=255, blank=True, verbose_name="Récompense (ex: Offre de stage, Prize pool)")
-    prize_pool = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Montant du prix (FCFA)")
+    prize_pool = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, verbose_name="Montant du prix (FCFA)")
     max_participants = models.PositiveIntegerField(default=0, verbose_name="Places (0 = illimité)")
     dataset_url = models.URLField(blank=True, verbose_name="Lien vers le dataset")
 

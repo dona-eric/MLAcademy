@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { fetchApi } from "@/lib/api";
-import { ShieldAlert, ShieldCheck, Download, Loader2, Award, Calendar, BarChart3, Search, ArrowRight } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Download, Loader2, Award, Calendar, BarChart3, ArrowRight } from "lucide-react";
 
 export default function CertificateVerificationPage() {
   const params = useParams();

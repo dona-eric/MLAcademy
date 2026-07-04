@@ -7,8 +7,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = {
   instructor: [
-    { name: "Espace Studio",   href: "/studio",                      icon: LayoutDashboard },
-    { name: "Mes Formations",  href: "/studio/courses",             icon: MonitorPlay },
+    { name: "Espace Studio",   href: "/studio",                   icon: LayoutDashboard },
+    { name: "Mes Formations",  href: "/studio/courses",           icon: MonitorPlay },
     { name: "Certifications",  href: "/studio/certifications",    icon: Award },
     { name: "Tutoriels & Live",href: "/studio/tutos",             icon: Play },
     { name: "Mes Étudiants",   href: "/studio/students",          icon: Users },

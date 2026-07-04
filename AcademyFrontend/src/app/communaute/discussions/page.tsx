@@ -1,14 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { 
-  Hash, Send, Users, MessageSquare, 
-  Sparkles, Zap, ChevronLeft, Loader2,
-  Plus, MoreVertical, Star, ShieldCheck
-} from "lucide-react";
+import { Hash, Send, MessageSquare, Sparkles, ChevronLeft, Loader2,Plus, MoreVertical, ShieldCheck} from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
 export default function DiscussionsPage() {

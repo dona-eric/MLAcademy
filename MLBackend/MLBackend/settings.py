@@ -14,6 +14,8 @@ from datetime import timedelta
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
+
 
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv(Path(__file__).resolve().parent.parent / '.env')
@@ -33,6 +35,18 @@ DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "*")
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:3000",
+]
+
+# Ensure cookies work over HTTP for local dev
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 
 # Application definition
@@ -124,25 +138,20 @@ else:
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-import dj_database_url
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": BASE_DIR / "AcademyDB",
-    }
-}
 
 # DATABASES = {
 #     "default": {
 #         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": "postgres",
-#         "USER": "postgres.sspacdgyeuhlvtpsqfef",
-#         "PASSWORD": os.getenv("PASSWORD_DB"),
-#         "HOST": "aws-1-eu-central-1.pooler.supabase.com",
-#         "PORT": "6543",
+#         "NAME": BASE_DIR / "AcademyDB",
 #     }
 # }
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        # "NAME": "postgres",
+    }
+}
 
 if os.getenv("DATABASE_URL"):
     DATABASES["default"] = dj_database_url.config(

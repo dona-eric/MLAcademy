@@ -22,7 +22,7 @@ class ChannelMessageAdmin(admin.ModelAdmin):
 
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
-    list_display = ('name', 'location', 'is_verified')
+    list_display = ('name', 'location', "position_geographique" ,'is_verified')
     search_fields = ('name',)
 
 @admin.register(JobOffer)

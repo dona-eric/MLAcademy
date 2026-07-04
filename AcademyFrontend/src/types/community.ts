@@ -82,6 +82,6 @@ export interface SponsoredChallenge {
 
 export interface CommunityGlobalStats {
   totalTalents: number;
-  applicationsProcessed: number;
+  activeJobs: number;
   activeChallenges: number;
 }

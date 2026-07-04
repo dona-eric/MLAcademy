@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { fetchApi } from '@/lib/api';
-import { User, Mail, Link as LinkIcon, FileText, Briefcase, GraduationCap, ArrowRight, Sparkles, CheckCircle2, Loader2, Zap, MonitorPlay,Upload, Globe
-} from 'lucide-react';
+// import { EXPERTISE_OPTIONS } from '@/types/constant';
+import { User, Mail, Link as LinkIcon, Briefcase, GraduationCap, ArrowRight, CheckCircle2, Loader2, Zap, MonitorPlay,Upload} from 'lucide-react';
 import {FaLinkedin} from 'react-icons/fa';
 
 const EXPERTISE_OPTIONS = [

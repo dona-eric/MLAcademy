@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Brain, Cpu, Sparkles, BookOpen, Award, Code, Terminal, Layers } from "lucide-react";
+import { Brain, Cpu, Sparkles, BookOpen, Award, Code, Terminal} from "lucide-react";
 
 interface CourseImageProps {
   src: string | null | undefined;

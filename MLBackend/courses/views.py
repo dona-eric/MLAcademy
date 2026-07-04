@@ -14,13 +14,25 @@ from .serializers import (
 #  CATEGORY VIEWSET
 # ═════════════════════════════════════════════
 
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+from rest_framework.exceptions import PermissionDenied
+
+class CategoryViewSet(viewsets.ModelViewSet):
     """
-    Débit public en lecture seule pour l'exploration des catégories.
+    Débit public en lecture seule pour l'exploration des catégories, 
+    création autorisée pour les instructeurs.
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        if not self.request.user.is_instructor and not self.request.user.is_staff:
+            raise PermissionDenied("Seuls les instructeurs peuvent créer des catégories.")
+        serializer.save()
 
 
 # ═════════════════════════════════════════════
@@ -97,7 +109,7 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """
-        💡 OPTIMISATION N+1 CRITIQUE : Prévient l'explosion des requêtes SQL SQL lors du chargement 
+        Prévient l'explosion des requêtes SQL SQL lors du chargement 
         complet de l'arborescence imbriquée d'un cours (Modules -> Leçons -> Projets).
         """
         queryset = Course.objects.filter(is_published=True).select_related('category', 'instructor')

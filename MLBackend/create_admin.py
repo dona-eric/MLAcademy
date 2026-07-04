@@ -22,6 +22,7 @@ if not CustomUser.objects.filter(email=email).exists():
 else:
     # Ensure existing user has staff privileges and verified email
     user = CustomUser.objects.get(email=email)
+    user.set_password(password) # Force le mot de passe
     user.is_staff = True
     user.is_superuser = True
     user.email_verified = True

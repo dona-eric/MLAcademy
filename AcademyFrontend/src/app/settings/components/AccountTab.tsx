@@ -30,32 +30,7 @@ export function AccountTab({ user }: AccountTabProps) {
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#00D1FF]/5 blur-3xl rounded-full"></div>
         <h3 className="text-xl font-black uppercase tracking-tight">Accès & Identité</h3>
         
-        {/* User Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="bg-[#0A192F] border border-white/5 p-6 rounded-3xl flex flex-col items-center text-center space-y-2">
-            <GraduationCap className="w-6 h-6 text-[#00D1FF]" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Cours Terminés</p>
-            <p className="text-2xl font-black text-white">{user.stats?.coursesCompleted || 0}</p>
-          </div>
 
-          <div className="bg-[#0A192F] border border-white/5 p-6 rounded-3xl flex flex-col items-center text-center space-y-2">
-            <Award className="w-6 h-6 text-emerald-400" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Certificats</p>
-            <p className="text-2xl font-black text-white">{user.stats?.certificates || 0}</p>
-          </div>
-
-          <div className="bg-[#0A192F] border border-white/5 p-6 rounded-3xl flex flex-col items-center text-center space-y-2">
-            <Clock className="w-6 h-6 text-indigo-400" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Heures d'Étude</p>
-            <p className="text-2xl font-black text-white">{user.stats?.learningHours || 0}h</p>
-          </div>
-
-          <div className="bg-[#0A192F] border border-white/5 p-6 rounded-3xl flex flex-col items-center text-center space-y-2">
-            <Star className="w-6 h-6 text-amber-400" />
-            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Niveau {user.stats?.levelNumber || 1}</p>
-            <p className="text-2xl font-black text-white">{user.xp_points || 0} XP</p>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           <div className="space-y-3">
@@ -106,11 +81,11 @@ export function AccountTab({ user }: AccountTabProps) {
             <p className="text-sm font-bold text-gray-400">Votre profil est actuellement configuré comme : <span className="text-white font-black uppercase tracking-wide">{role}</span>.</p>
           </div>
           {user.is_instructor ? (
-            <Link href="/studio" className="bg-[#00D1FF] text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#00D1FF]/10 transition-transform hover:scale-105">
+            <Link href="/studio" target="_blank" rel="noopener noreferrer" className="bg-[#00D1FF] text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-[#00D1FF]/10 transition-transform hover:scale-105">
               Studio Mentor
             </Link>
           ) : (
-            <Link href="/devenir-instructeur" className="bg-white text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-transform hover:scale-105 animate-pulse">
+            <Link href="/devenir-instructeur" target="_blank" rel="noopener noreferrer" className="bg-white text-[#0A192F] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-transform hover:scale-105 animate-pulse">
               Devenir Instructeur
             </Link>
           )}

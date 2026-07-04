@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
-import {
-  ConditionalHeader,
-  ConditionalFooter,
-  MainWrapper,
-} from "../components/layout/ConditionalLayoutHelpers";
+import {ConditionalHeader, ConditionalFooter, MainWrapper } from "@/components/layout/ConditionalLayoutHelpers";
 
 export const metadata: Metadata = {
   title: "MLAcademy: Apprenez la Data Science et le Machine Learning",

@@ -12,10 +12,10 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* ─── Background ─── */
-  --bg-primary: #FFFFFF;
+  --bg-primary: #e8d4d4;
   --bg-secondary: #F8F9FC;
-  --bg-tertiary: #F1F3F9;
-  --bg-elevated: #FFFFFF;
+  --bg-tertiary: #bdbec3;
+  --bg-elevated: #d3e4e6;
   --bg-overlay: rgba(0, 0, 0, 0.5);
 
   /* ─── Brand / Accent ─── */

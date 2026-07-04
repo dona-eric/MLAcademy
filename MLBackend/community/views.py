@@ -97,7 +97,7 @@ class JobOfferViewSet(viewsets.ModelViewSet):
     pagination_class = None
     serializer_class = JobOfferSerializer
     filter_backends = [filters.SearchFilter]
-    search_fields = ['title', 'description', 'company__name', 'location']
+    search_fields = ['title', 'description', 'company__name', 'company__position', 'location']
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:

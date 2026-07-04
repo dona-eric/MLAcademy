@@ -23,9 +23,9 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 const LEVEL_COLORS: Record<string, string> = {
-  beginner: "bg-emerald-500/10 text-emerald-400",
-  intermediate: "bg-amber-500/10 text-amber-400",
-  advanced: "bg-rose-500/10 text-rose-400",
+  beginner: "badge-success",
+  intermediate: "badge-warning",
+  advanced: "badge-error",
 };
 
 export default function InstructorCoursesPage() {
@@ -78,35 +78,35 @@ export default function InstructorCoursesPage() {
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-      <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+      <Loader2 className="w-8 h-8 text-[var(--brand-500)] animate-spin" />
     </div>
   );
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-500">
+    <div className="p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 animate-in fade-in duration-500 bg-[var(--bg-secondary)] min-h-[calc(100vh-64px)]">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-white">Contenu de la chaîne</h1>
-          <p className="text-[12px] text-slate-500 mt-0.5">{courses.length} élément{courses.length !== 1 ? "s" : ""} au total</p>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">Contenu de la chaîne</h1>
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">{courses.length} élément{courses.length !== 1 ? "s" : ""} au total</p>
         </div>
-        <Link href="/studio/courses/create" className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-500 text-white rounded-xl text-[12px] font-bold hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20 shrink-0">
+        <Link href="/studio/courses/create" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shrink-0">
           <Plus className="w-4 h-4" /> Nouveau cours
         </Link>
       </div>
 
       {/* Tabs + Search */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-1 bg-white/[0.03] rounded-xl p-1 border border-white/[0.06]">
+        <div className="flex items-center gap-1 bg-[var(--bg-primary)] rounded-xl p-1 shadow-sm border border-[var(--border-subtle)]">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === tab.key
-                  ? "bg-white/[0.08] text-white"
-                  : "text-slate-500 hover:text-slate-300"
+                  ? "bg-[var(--brand-50)] text-[var(--brand-600)] shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]"
               }`}
             >
               {tab.label}
@@ -115,46 +115,48 @@ export default function InstructorCoursesPage() {
         </div>
 
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
           <input
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filtrer les contenus..."
-            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2 pl-10 pr-4 text-[12px] text-white placeholder:text-slate-600 outline-none focus:border-indigo-500/40 transition-all"
+            className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-primary)] py-2 pl-10 pr-4 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:border-[var(--brand-500)] focus:ring-2 focus:ring-[var(--brand-500)]/20 transition-all shadow-sm"
           />
         </div>
       </div>
 
       {/* Bulk Actions */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-4 px-4 py-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl animate-in fade-in duration-200">
-          <span className="text-[12px] font-bold text-indigo-400">{selectedIds.size} sélectionné{selectedIds.size > 1 ? "s" : ""}</span>
-          <div className="h-4 w-px bg-indigo-500/20" />
-          <button className="text-[11px] font-bold text-slate-400 hover:text-white transition-colors">Publier</button>
-          <button className="text-[11px] font-bold text-slate-400 hover:text-white transition-colors">Archiver</button>
-          <button className="text-[11px] font-bold text-rose-400 hover:text-rose-300 transition-colors">Supprimer</button>
+        <div className="flex items-center gap-4 px-4 py-2.5 bg-[var(--brand-50)] border border-[var(--brand-200)] rounded-xl shadow-sm animate-in fade-in duration-200">
+          <span className="text-xs font-bold text-[var(--brand-600)]">{selectedIds.size} sélectionné{selectedIds.size > 1 ? "s" : ""}</span>
+          <div className="h-4 w-px bg-[var(--brand-200)]" />
+          <button className="text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--brand-600)] transition-colors">Publier</button>
+          <button className="text-[11px] font-bold text-[var(--text-secondary)] hover:text-[var(--brand-600)] transition-colors">Archiver</button>
+          <button className="text-[11px] font-bold text-red-500 hover:text-red-700 transition-colors">Supprimer</button>
         </div>
       )}
 
       {/* Table */}
       {filtered.length === 0 ? (
-        <div className="text-center py-16 space-y-4 bg-white/[0.02] border border-dashed border-white/[0.08] rounded-2xl">
-          <BookOpen className="w-12 h-12 text-slate-800 mx-auto" />
+        <div className="text-center py-16 space-y-4 card border border-dashed border-[var(--border-default)] shadow-none">
+          <div className="w-16 h-16 rounded-full bg-[var(--brand-50)] flex items-center justify-center mx-auto">
+            <BookOpen className="w-8 h-8 text-[var(--brand-500)]" />
+          </div>
           <div>
-            <p className="text-[14px] font-semibold text-white">Aucun contenu trouvé</p>
-            <p className="text-[12px] text-slate-500 mt-1">Essayez de modifier vos filtres ou créez votre premier cours.</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Aucun contenu trouvé</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">Essayez de modifier vos filtres ou créez votre premier cours.</p>
           </div>
         </div>
       ) : (
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div className="card overflow-hidden shadow-sm">
           {/* Table Header */}
-          <div className="grid grid-cols-[40px_1fr_100px_100px_90px_80px_100px_60px] items-center px-4 py-3 border-b border-white/[0.06] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+          <div className="grid grid-cols-[40px_1fr_100px_100px_90px_80px_100px_60px] items-center px-4 py-3 bg-[var(--bg-primary)] border-b border-[var(--border-subtle)] text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider">
             <button onClick={toggleAll} className="flex items-center justify-center">
               {allSelected ? (
-                <CheckSquare className="w-4 h-4 text-indigo-400" />
+                <CheckSquare className="w-4 h-4 text-[var(--brand-500)]" />
               ) : (
-                <Square className="w-4 h-4 text-slate-600" />
+                <Square className="w-4 h-4 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]" />
               )}
             </button>
             <span>Cours</span>
@@ -170,37 +172,37 @@ export default function InstructorCoursesPage() {
           {filtered.map((course) => (
             <div
               key={course.id}
-              className={`grid grid-cols-[40px_1fr_100px_100px_90px_80px_100px_60px] items-center px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.03] transition-all group ${
-                selectedIds.has(course.id) ? "bg-indigo-500/[0.04]" : ""
+              className={`grid grid-cols-[40px_1fr_100px_100px_90px_80px_100px_60px] items-center px-4 py-3 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-secondary)] transition-all group ${
+                selectedIds.has(course.id) ? "bg-[var(--brand-50)]" : "bg-[var(--bg-primary)]"
               }`}
             >
               <button onClick={() => toggleOne(course.id)} className="flex items-center justify-center">
                 {selectedIds.has(course.id) ? (
-                  <CheckSquare className="w-4 h-4 text-indigo-400" />
+                  <CheckSquare className="w-4 h-4 text-[var(--brand-500)]" />
                 ) : (
-                  <Square className="w-4 h-4 text-slate-700 group-hover:text-slate-500" />
+                  <Square className="w-4 h-4 text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)]" />
                 )}
               </button>
 
               {/* Course Info */}
               <div className="flex items-center gap-3 min-w-0 pr-4">
-                <div className="w-[100px] h-14 rounded-lg bg-slate-800/50 overflow-hidden shrink-0">
+                <div className="w-[100px] h-14 rounded-lg bg-[var(--bg-tertiary)] overflow-hidden shrink-0 border border-[var(--border-subtle)]">
                   <CourseImage src={course.thumbnail} title={course.title} className="w-full h-full object-cover" />
                 </div>
                 <div className="min-w-0">
-                  <Link href={`/studio/courses/${course.id}/edit`} className="text-[13px] font-semibold text-white hover:text-indigo-400 transition-colors truncate block">
+                  <Link href={`/studio/courses/${course.id}/edit`} className="text-[13px] font-bold text-[var(--text-primary)] hover:text-[var(--brand-500)] transition-colors truncate block">
                     {course.title}
                   </Link>
-                  <p className="text-[11px] text-slate-600 truncate mt-0.5">{course.short_description}</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] truncate mt-0.5">{course.short_description}</p>
                 </div>
               </div>
 
               {/* Status */}
               <div>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                <span className={`badge ${
                   course.is_published
-                    ? "bg-emerald-500/10 text-emerald-400"
-                    : "bg-slate-500/10 text-slate-400"
+                    ? "badge-success"
+                    : "badge-neutral"
                 }`}>
                   {course.is_published ? "Public" : "Brouillon"}
                 </span>
@@ -208,35 +210,35 @@ export default function InstructorCoursesPage() {
 
               {/* Level */}
               <div>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${LEVEL_COLORS[course.level] || "text-slate-400"}`}>
+                <span className={`badge ${LEVEL_COLORS[course.level] || "badge-neutral"}`}>
                   {LEVEL_LABELS[course.level] || course.level}
                 </span>
               </div>
 
               {/* Enrolled */}
-              <div className="flex items-center gap-1.5 text-[12px] text-slate-400 font-medium">
-                <Users className="w-3 h-3" />
+              <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] font-medium">
+                <Users className="w-3 h-3 text-[var(--text-tertiary)]" />
                 {course.enrolled_count || 0}
               </div>
 
               {/* Rating */}
-              <div className="flex items-center gap-1 text-[12px] font-medium">
+              <div className="flex items-center gap-1 text-xs font-medium text-[var(--text-secondary)]">
                 <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
-                <span className="text-slate-400">{parseFloat(course.avg_rating || "0").toFixed(1)}</span>
+                <span>{parseFloat(course.avg_rating || "0").toFixed(1)}</span>
               </div>
 
               {/* Date */}
-              <div className="text-[11px] text-slate-600 font-medium">
+              <div className="text-[11px] text-[var(--text-secondary)] font-medium">
                 {course.created_at ? new Date(course.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : "—"}
               </div>
 
               {/* Actions */}
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Link href={`/studio/courses/${course.id}/edit`} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/[0.08] text-slate-500 hover:text-white transition-all" title="Modifier">
-                  <Edit3 className="w-3.5 h-3.5" />
+                <Link href={`/studio/courses/${course.id}/edit`} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-all" title="Modifier">
+                  <Edit3 className="w-4 h-4" />
                 </Link>
-                <Link href={`/parcours/${course.slug}`} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/[0.08] text-slate-500 hover:text-white transition-all" title="Voir">
-                  <Eye className="w-3.5 h-3.5" />
+                <Link href={`/parcours/${course.slug}`} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-all" title="Voir">
+                  <Eye className="w-4 h-4" />
                 </Link>
               </div>
             </div>

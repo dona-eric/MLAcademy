@@ -4,10 +4,10 @@ import { FaGithub, FaLinkedin, FaYoutube, FaTwitter } from 'react-icons/fa';
 import { Mail } from 'lucide-react';
 
 const SOCIALS = [
-  { icon: FaLinkedin, href: 'https://www.linkedin.com/in/donerick/', label: 'LinkedIn' },
+  { icon: FaLinkedin, href: 'https://www.linkedin.com/company/dtech-africa', label: 'LinkedIn' },
   { icon: FaTwitter,  href: 'https://twitter.com/dtech-africa', label: 'Twitter' },
   { icon: FaYoutube,  href: 'https://www.youtube.com/channel/UCO_v6Qz3jH_Q-2Wp3rFm7aQ', label: 'YouTube' },
-  { icon: FaGithub,   href: 'https://github.com/donerick', label: 'GitHub' },
+  { icon: FaGithub,   href: 'https://github.com/dtech-afrik', label: 'GitHub' },
 ];
 
 const FOOTER_LINKS = [
@@ -16,7 +16,7 @@ const FOOTER_LINKS = [
     links: [
       { href: '/parcours',         label: 'Parcours complets' },
       { href: '/certifications',   label: 'Certifications' },
-      { href: '/instructeur/apply', label: 'Devenir Instructeur' },
+      { href: '/devenir-instructeur', label: 'Devenir Instructeur' },
     ],
   },
   {
@@ -44,7 +44,7 @@ export default function Footer() {
           <div className="space-y-6">
             <Link href="/" className="inline-flex items-center gap-3 group">
               <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-[var(--border-default)] shadow-sm group-hover:scale-105 transition-transform">
-                <Image src="/images/mlacademy_logo.png" alt="MLAcademy Logo" fill sizes="40px" className="object-cover" priority />
+                <Image src="/images/mlacademy_logo_final.png" alt="MLAcademy Logo" fill sizes="40px" className="object-cover" priority />
               </div>
               <span className="text-xl font-extrabold text-[var(--brand-500)] tracking-tight">MLAcademy</span>
             </Link>
@@ -59,7 +59,7 @@ export default function Footer() {
                   key={label}
                   href={href}
                   aria-label={label}
-                  className="w-9 h-9 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-default)] flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--brand-500)] hover:border-[var(--brand-200)] transition-all"
+                  className="w-10 h-9 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--brand-500)] hover:border-[var(--brand-200)] transition-all"
                 >
                   <Icon className="w-4 h-4" />
                 </Link>
@@ -89,10 +89,7 @@ export default function Footer() {
             {/* Contact */}
             <div className="space-y-4 col-span-2 md:col-span-1">
               <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Contact</h4>
-              <a
-                href="mailto:contact@mlacademy.io"
-                className="text-sm text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-colors flex items-center gap-2"
-              >
+              <a href="mailto:contact@mlacademy.io" className="text-sm text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-colors flex items-center gap-2">
                 <Mail className="w-4 h-4" /> contact@mlacademy.io
               </a>
             </div>
@@ -100,8 +97,8 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-6 border-t border-[var(--border-default)] flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-[var(--text-tertiary)]">
+        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-[var(--text-primary)]">
             © {new Date().getFullYear()} MLAcademy. Tous droits réservés.
           </p>
           <div className="flex items-center gap-6">
@@ -109,7 +106,7 @@ export default function Footer() {
               <Link
                 key={href}
                 href={href}
-                className="text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+                className="text-xs text-[var(--text-primary)] hover:text-[var(--text-secondary)] transition-colors"
               >
                 {label}
               </Link>

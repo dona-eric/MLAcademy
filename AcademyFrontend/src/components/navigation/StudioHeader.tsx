@@ -5,9 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Search, HelpCircle, Plus, User as UserIcon,
-  BookOpen, Award, Play, Puzzle, Upload, CalendarClock,
-  ChevronDown, X
-} from "lucide-react";
+  BookOpen, Award, Play, Puzzle, Upload, CalendarClock, X} from "lucide-react";
 import NotificationBell from "./NotificationBell";
 
 const CREATE_ITEMS = [

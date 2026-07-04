@@ -58,13 +58,12 @@ export default function ParcoursPage() {
           </div>
           
           <h1 className="mx-auto max-w-4xl text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-[var(--text-primary)] leading-tight">
-            Maîtrisez les technologies <br />
-            <span className="text-[var(--brand-500)]">du futur</span>
+            Les technologies qui façonnent <br />
+            <span className="text-[var(--brand-500)]">votre futur</span>
           </h1>
           
           <p className="mx-auto max-w-2xl text-lg text-[var(--text-secondary)] leading-relaxed">
-            Des parcours structurés pour passer de zéro à expert en Machine Learning, 
-            Data Engineering et Intelligence Artificielle.
+            Des parcours structurés pour passer de zéro à expert en Machine Learning, Data, Développement, AI, Quantum etc...
           </p>
 
           <div className="mx-auto mt-12 max-w-3xl space-y-8">
