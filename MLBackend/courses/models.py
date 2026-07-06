@@ -1,4 +1,6 @@
+from django.apps import apps
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
@@ -9,7 +11,7 @@ class Category(models.Model):
     Thématique de cours (ex: Machine Learning, Data Engineering, NLP).
     """
     name = models.CharField(max_length=100, unique=True, verbose_name="Nom")
-    slug = models.SlugField(max_length=220, null=True, blank=True)
+    slug = models.SlugField(max_length=220, unique=True, null=True, blank=True)
     icon = models.CharField(max_length=50, blank=True, verbose_name="Icône (emoji ou classe CSS)")
     description = models.TextField(blank=True, verbose_name="Description")
 
@@ -20,7 +22,13 @@ class Category(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            original_slug = slugify(self.name)
+            slug = original_slug
+            num = 1
+            while Category.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{original_slug}-{num}"
+                num += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -28,24 +36,19 @@ class Category(models.Model):
 
 
 # ═════════════════════════════════════════════
-#  MODULE LIBRARY (Bibliothèque de Modules réutilisables)
+#  MODULE LIBRARY
 # ═════════════════════════════════════════════
 
 class Module(models.Model):
     """
     Unité thématique RÉUTILISABLE regroupant plusieurs leçons.
-    Un même module peut apparaître dans plusieurs cours.
-    Ex: "Introduction à Python" utilisé dans "Data Scientist" ET "Développeur Web".
-    
-    Avantage : Si on met à jour une vidéo du module, elle se met à jour 
-    dans TOUS les cours qui l'utilisent.
     """
     title = models.CharField(max_length=200, verbose_name="Titre")
-    slug = models.SlugField(max_length=220, null=True, blank=True)
+    slug = models.SlugField(max_length=220, unique=True, null=True, blank=True)
     description = models.TextField(blank=True, verbose_name="Description")
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="modules", verbose_name="Catégorie",
-        help_text="Catégorie thématique pour faciliter la recherche dans la bibliothèque."
+        help_text="Catégorie thématique pour faciliter la recherche."
     )
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
         related_name="modules_authored", verbose_name="Auteur"
@@ -55,7 +58,6 @@ class Module(models.Model):
         verbose_name="Durée estimée (heures)"
     )
     is_published = models.BooleanField(default=False, verbose_name="Publié")
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -66,7 +68,13 @@ class Module(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            original_slug = slugify(self.title)
+            slug = original_slug
+            num = 1
+            while Module.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{original_slug}-{num}"
+                num += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -74,14 +82,12 @@ class Module(models.Model):
 
     @property
     def usage_count(self):
-        """Nombre de cours utilisant ce module."""
         return self.course_modules.count()
 
 
 class Lesson(models.Model):
     """
     Unité atomique d'apprentissage (vidéo + texte + exercice + quiz).
-    Appartient à un Module (qui est réutilisable).
     """
     LESSON_TYPE_CHOICES = [
         ("video", "Vidéo"),
@@ -111,7 +117,6 @@ class Lesson(models.Model):
     )
     starter_code = models.TextField(blank=True, verbose_name="Code de démarrage")
     solution_code = models.TextField(blank=True, verbose_name="Solution (instructeur)")
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -126,7 +131,6 @@ class Lesson(models.Model):
 class Project(models.Model):
     """
     Application pratique clôturant un module.
-    Peut être un Capstone (projet certifiant) pour un parcours.
     """
     module = models.OneToOneField(
         Module, on_delete=models.CASCADE, related_name="project",
@@ -146,16 +150,10 @@ class Project(models.Model):
     )
     passing_score = models.PositiveIntegerField(
         default=80, verbose_name="Score minimum pour validation (%)",
-        validators=[MinValueValidator(1), MaxValueValidator(100)])
-    required_review_count = models.PositiveIntegerField(
-        default=1, help_text="Nombre de revues nécessaires pour finaliser"
-    )
-    rubric = models.ForeignKey(
-        'Rubric', on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="projects", verbose_name="Grille d'évaluation"
+        validators=[MinValueValidator(1), MaxValueValidator(100)]
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now =  True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Projet"
@@ -165,64 +163,14 @@ class Project(models.Model):
         label = "Capstone" if self.is_capstone else "Projet"
         return f"{label} : {self.title}"
 
-    def validate_submission_data(self, scores_data):
-        """Vérifie que les scores soumis correspondent aux critères de la rubric."""
-        if not self.rubric:
-            return (True, "")
-        expected_keys = set(self.rubric.criteria_definition.keys())
-        submitted_keys = set(scores_data.keys())
-        if expected_keys != submitted_keys:
-            missing = expected_keys - submitted_keys
-            extra = submitted_keys - expected_keys
-            return (False, f"Clés manquantes: {missing}, Clés inconnues: {extra}")
-        return (True, "")
 
-
-class Rubric(models.Model):
-    """
-    Grille d'évaluation dynamique pour les projets.
-    Définit les critères de notation de manière dynamique.
-    """
-    title = models.CharField(max_length=200, verbose_name="Titre de la grille")
-    criteria_definition = models.JSONField(
-        default=dict,
-        help_text='Ex: {"clarté": {"max_points": 3}, "technique": {"max_points": 2}}'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Grille d'évaluation"
-        verbose_name_plural = "Grilles d'évaluation"
-
-    def __str__(self):
-        return self.title
-
-
-class LessonAttachment(models.Model):
-    """Pièce jointe associée à une leçon."""
-    lesson = models.ForeignKey(
-        Lesson, on_delete=models.CASCADE, related_name="attachments",
-        verbose_name="Leçon"
-    )
-    title = models.CharField(max_length=200, verbose_name="Titre de la ressource")
-    file = models.FileField(upload_to="lessons/attachments/", verbose_name="Fichier")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "Pièce jointe"
-        verbose_name_plural = "Pièces jointes"
-
-    def __str__(self):
-        return f"{self.title} ({self.lesson.title})"
-
-
+# ═════════════════════════════════════════════
 #  LEARNING PATH (Parcours / Certification)
+# ═════════════════════════════════════════════
 
 class LearningPath(models.Model):
     """
     Parcours certifiant regroupant plusieurs cours ordonnés.
-    Ex: "Professional Machine Learning Engineer"
     """
     DIFFICULTY_CHOICES = [
         ("beginner", "Débutant"),
@@ -232,7 +180,7 @@ class LearningPath(models.Model):
     ]
 
     title = models.CharField(max_length=250, verbose_name="Titre du Parcours")
-    slug = models.SlugField(max_length=220, null=True, blank=True)
+    slug = models.SlugField(max_length=220, unique=True, null=True, blank=True)
     short_description = models.CharField(max_length=400, verbose_name="Résumé court")
     description = models.TextField(verbose_name="Description complète")
     category = models.ForeignKey(
@@ -261,16 +209,13 @@ class LearningPath(models.Model):
     is_free = models.BooleanField(default=False, verbose_name="Accès libre")
     price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00,
-        verbose_name="Prix (FCFA)", help_text="0 = gratuit. L'instructeur décide."
+        verbose_name="Prix (FCFA)"
     )
-
-    # Champs dénormalisés
     enrolled_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'inscrits")
     avg_rating = models.DecimalField(
         max_digits=3, decimal_places=2, default=0.00, verbose_name="Note moyenne"
     )
     courses_count = models.PositiveIntegerField(default=0, verbose_name="Nombre de cours")
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -281,7 +226,13 @@ class LearningPath(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            original_slug = slugify(self.title)
+            slug = original_slug
+            num = 1
+            while LearningPath.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{original_slug}-{num}"
+                num += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -315,19 +266,24 @@ class LearningPathCourse(models.Model):
         verbose_name = "Cours du Parcours"
         verbose_name_plural = "Cours du Parcours"
         ordering = ["order"]
-        unique_together = [["learning_path", "course"], ["learning_path", "order"]]
+        # 💡 Remplacement de unique_together obsolète par la nouvelle API de contraintes
+        constraints = [
+            models.UniqueConstraint(fields=['learning_path', 'course'], name='unique_path_course'),
+            models.UniqueConstraint(fields=['learning_path', 'order'], name='unique_path_order_position')
+        ]
 
     def __str__(self):
         req = "★" if self.is_required else "○"
         return f"{req} #{self.order} {self.course.title} → {self.learning_path.title}"
 
 
-#  COURSE (Cours — l'unité que l'étudiant rejoint)
+# ═════════════════════════════════════════════
+#  COURSE (l'unité de base)
+# ═════════════════════════════════════════════
 
 class Course(models.Model):
     """
-    Cours individuel. Utilise des Modules de la bibliothèque via CourseModule.
-    Peut être standalone ou partie d'un LearningPath.
+    Cours individuel. composé de Modules réutilisables.
     """
     LEVEL_CHOICES = [
         ("beginner", "Débutant"),
@@ -336,7 +292,7 @@ class Course(models.Model):
     ]
 
     title = models.CharField(max_length=200, verbose_name="Titre")
-    slug = models.SlugField(max_length=220, null=True, blank=True)
+    slug = models.SlugField(max_length=220, unique=True, null=True, blank=True)
     short_description = models.CharField(max_length=300, verbose_name="Résumé court")
     description = models.TextField(verbose_name="Description complète")
     category = models.ForeignKey(
@@ -362,26 +318,22 @@ class Course(models.Model):
         blank=True, verbose_name="URL d'aperçu gratuit (vidéo)"
     )
     prerequisites_text = models.TextField(
-        blank=True, verbose_name="Prérequis (texte affiché)",
-        help_text="Description textuelle. La logique métier utilise CoursePrerequisite."
+        blank=True, verbose_name="Prérequis (texte affiché)"
     )
     syllabus = models.TextField(blank=True, verbose_name="Syllabus")
     is_published = models.BooleanField(default=False, verbose_name="Publié")
     is_free = models.BooleanField(default=False, verbose_name="Cours gratuit")
     is_standalone = models.BooleanField(
-        default=False, verbose_name="Cours autonome",
-        help_text="True = accessible en dehors d'un parcours."
+        default=False, verbose_name="Cours autonome"
     )
     price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00,
         verbose_name="Prix standalone (FCFA)"
     )
-    # Dénormalisés
     avg_rating = models.DecimalField(
         max_digits=3, decimal_places=2, default=0.00, verbose_name="Note moyenne"
     )
     enrolled_count = models.PositiveIntegerField(default=0, verbose_name="Nombre d'inscrits")
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -392,7 +344,13 @@ class Course(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            original_slug = slugify(self.title)
+            slug = original_slug
+            num = 1
+            while Course.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{original_slug}-{num}"
+                num += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -400,19 +358,19 @@ class Course(models.Model):
 
     def check_prerequisites(self, user):
         """Vérifie si l'utilisateur a terminé les prérequis."""
-        from learning.models import Enrollment
+        # 💡 Récupération dynamique du modèle pour éliminer l'import circulaire au niveau du fichier
+        Enrollment = apps.get_model('learning', 'Enrollment')
         required = self.prerequisites_set.all()
         missing = []
         for prereq in required:
             enrollment = Enrollment.objects.filter(
                 user=user, course=prereq.required_course, is_completed=True
-            ).first()
+            ).exists()
             if not enrollment:
                 missing.append(prereq.required_course)
         return (len(missing) == 0, missing)
 
     def get_ordered_modules(self):
-        """Retourne les modules de ce cours dans l'ordre défini par CourseModule."""
         return Module.objects.filter(
             course_modules__course=self
         ).order_by('course_modules__order')
@@ -420,15 +378,7 @@ class Course(models.Model):
 
 class CourseModule(models.Model):
     """
-    Table de jonction : associe un Module (de la bibliothèque) à un Cours.
-    Permet de RÉUTILISER un même module dans plusieurs cours.
-    
-    Ex: Le module "Introduction à Python" peut être dans :
-    - Cours "Data Scientist" (order=1)
-    - Cours "Développeur Web" (order=3)
-    
-    Si on met à jour une vidéo du module, elle se met à jour
-    dans TOUS les cours qui l'utilisent.
+    Table de jonction : associe un Module à un Cours.
     """
     course = models.ForeignKey(
         Course, on_delete=models.CASCADE,
@@ -444,7 +394,11 @@ class CourseModule(models.Model):
         verbose_name = "Module du Cours"
         verbose_name_plural = "Modules du Cours"
         ordering = ["order"]
-        unique_together = [["course", "module"], ["course", "order"]]
+        #  Modernisation des contraintes
+        constraints = [
+            models.UniqueConstraint(fields=['course', 'module'], name='unique_course_module_link'),
+            models.UniqueConstraint(fields=['course', 'order'], name='unique_course_module_position')
+        ]
 
     def __str__(self):
         return f"#{self.order} {self.module.title} → {self.course.title}"
@@ -466,21 +420,30 @@ class CoursePrerequisite(models.Model):
     class Meta:
         verbose_name = "Prérequis de Cours"
         verbose_name_plural = "Prérequis de Cours"
-        unique_together = [["course", "required_course"]]
+        constraints = [
+            models.UniqueConstraint(fields=['course', 'required_course'], name='unique_course_prerequisite_link')
+        ]
+
+    def clean(self):
+        # 💡 CORRECTION : Empêche qu'un cours soit le prérequis de lui-même
+        if self.course == self.required_course:
+            raise ValidationError("Un cours ne peut pas être son propre prérequis.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.required_course.title} → requis pour → {self.course.title}"
 
 
-#  CERTIFICATION EXAM & CAPSTONE
+# ═════════════════════════════════════════════
+#  CERTIFICATION EXAM
+# ═════════════════════════════════════════════
 
 class CertificationExam(models.Model):
     """
     Examen final d'un parcours certifiant.
-    La certification N'EST PAS un simple PDF. C'est un objet de validation :
-    - L'étudiant doit avoir terminé tous les cours obligatoires
-    - Il doit atteindre un score minimum à cet examen OU valider le Capstone
-    - Seulement alors le Certificate est créé.
     """
     learning_path = models.OneToOneField(
         LearningPath, on_delete=models.CASCADE,
@@ -498,12 +461,10 @@ class CertificationExam(models.Model):
     max_attempts_per_week = models.PositiveIntegerField(
         default=1, verbose_name="Tentatives par semaine"
     )
-    # Le Capstone comme alternative à l'examen QCM
     capstone_project = models.ForeignKey(
         Project, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="certification_exam",
-        verbose_name="Projet Capstone (alternatif à l'examen)",
-        help_text="Si défini, la validation de ce projet vaut aussi certification."
+        verbose_name="Projet Capstone (alternatif à l'examen)"
     )
     is_published = models.BooleanField(default=False, verbose_name="Publié")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -513,8 +474,12 @@ class CertificationExam(models.Model):
         verbose_name_plural = "Examens de Certification"
 
     def __str__(self):
-        return f" Examen : {self.title} ({self.learning_path.title})"
+        return f"Examen : {self.title} ({self.learning_path.title})"
 
+
+# ═════════════════════════════════════════════
+#  REVIEWS & RATING METRICS
+# ═════════════════════════════════════════════
 
 class CourseReview(models.Model):
     """
@@ -538,8 +503,29 @@ class CourseReview(models.Model):
     class Meta:
         verbose_name = "Avis"
         verbose_name_plural = "Avis"
-        unique_together = [["course", "user"]]
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=['course', 'user'], name='unique_course_user_review_link')
+        ]
 
     def __str__(self):
         return f"{self.user.email} — {self.course.title} ({self.rating}/5)"
+
+    def update_course_avg_rating(self):
+        """Recalcule et dénormalise la note moyenne du cours associé."""
+        stats = CourseReview.objects.filter(course=self.course).aggregate(avg=models.Avg('rating'))
+        self.course.avg_rating = stats['avg'] or 0.00
+        self.course.save(update_fields=['avg_rating'])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # 💡 CORRECTION : Met à jour la note moyenne du cours dès qu'un avis est créé ou modifié
+        self.update_course_avg_rating()
+
+    def delete(self, *args, **kwargs):
+        course = self.course
+        super().delete(*args, **kwargs)
+        # 💡 CORRECTION : Met à jour la note moyenne du cours dès qu'un avis est supprimé
+        stats = CourseReview.objects.filter(course=course).aggregate(avg=models.Avg('rating'))
+        course.avg_rating = stats['avg'] or 0.00
+        course.save(update_fields=['avg_rating'])

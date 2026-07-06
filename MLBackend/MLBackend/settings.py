@@ -14,6 +14,8 @@ from datetime import timedelta
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
+
 
 # Charger les variables d'environnement depuis le fichier .env
 load_dotenv(Path(__file__).resolve().parent.parent / '.env')
@@ -29,14 +31,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-l#g$%id**%kk5q-tdxw)&89jdx&gbi+#s!ny71^fd(27o82s+6"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
-ALLOWED_HOSTS = []
+allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "*")
+ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:3000",
+]
+
+# Ensure cookies work over HTTP for local dev
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
+    "jazzmin",
+    "phonenumber_field",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -46,6 +64,8 @@ INSTALLED_APPS = [
     "django.contrib.sites",
     # Third-party
     "rest_framework",
+    "drf_spectacular",
+    'rest_framework_simplejwt',
     "django_filters",
     "corsheaders",
     "allauth",
@@ -59,13 +79,17 @@ INSTALLED_APPS = [
     "users",
     "courses",
     "learning",
+    "management",
+    "community",
+    "notifications",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",
@@ -92,16 +116,107 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "MLBackend.wsgi.application"
+ASGI_APPLICATION = "MLBackend.asgi.application"
+
+if os.getenv("REDIS_URL"):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [os.getenv("REDIS_URL")],
+            },
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "AcademyDB",
+#     }
+# }
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        # "NAME": "postgres",
     }
+}
+
+if os.getenv("DATABASE_URL"):
+    DATABASES["default"] = dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=True,
+    )
+
+
+JAZZMIN_SETTINGS = {
+    # --- Titres et Branding ---
+    "site_title": "MLAcademy Admin",
+    "site_header": "MLAcademy",
+    "site_brand": "MLAcademy",
+    # "site_logo": "images/logo_mlacademy.png", 
+    "login_logo": None,
+    "welcome_sign": "Bienvenue sur la plateforme d'administration de MLAcademy",
+    "copyright": "MLAcademy. All rights reserved.",
+
+    # --- Ergonomie et Navigation ---
+    "search_model": ["users.CustomUser"], # Permet une barre de recherche globale (ex: chercher un utilisateur)
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    
+    # Personnalisation des Icônes (FontAwesome)
+    "icons": {
+        "users.CustomUser": "fas fa-users-cog",
+        "users.CustomUser": "fas fa-user",
+        "users.CustomGroup": "fas fa-users",
+
+    },
+    # Icônes par défaut pour les applications et modèles si non spécifiés
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    # --- Liens et Raccourcis Rapides ---
+    "topmenu_links": [
+        {"name": "Accueil", "url": "admin:index", "permissions": ["users.view_customuser"]},
+        {"name": "Voir le site", "url": "/", "new_window": True},
+        # model admin to link to (Permissions checked against model)
+        {"model": "users.CustomUser"},
+        {"app": "users"},
+    ],
+    
+    # Menu Utilisateur 
+    "usermenu_links": [
+        {"name": "Support MLAcademy", "url": "https://mlacademy.com", "new_window": True},
+    ],
+
+    "language_chooser": True,
+    "changeform_format_overrides": {"users.CustomUser": "collapsible", "users.CustomGroup": "vertical_tabs"},
+
+    # Style et Thème
+    "theme": "dark",  # Votre choix initial
+    # "dark_mode_theme": "darkly", # Vous pouvez tester d'autres variantes de thèmes sombres Boootstrap (ex: slate, cyborg, darkly)
+    
+    # Options d'interface
+    "show_ui_builder": False, # Mettez True pendant le développement pour tester les couleurs en direct, puis False en production
+    "changeform_format": "horizontal_tabs", # Organise les formulaires d'édition longs en onglets (très propre !)
+}
+
+JAZZMIN_UI_TWEAKS = {
+    "theme": "slate",
 }
 
 
@@ -137,9 +252,17 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "MLBackend.storage.IgnoreMissingManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -155,16 +278,28 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "users.authentication.CookieJWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
-}
 
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.NamespaceVersioning",
+
+    # Indique à DRF d'utiliser drf-spectacular pour le schéma
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+# Configuration optionnelle pour personnaliser la doc
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'MLAcademy API',
+    'DESCRIPTION': 'Documentation automatique de mon application',
+    'VERSION': '1.1.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    # Optionnel : pour trier les opérations par tags
+    'COMPONENT_SPLIT_REQUEST': True, 
+}
 # JWT Configuration (djangorestframework-simplejwt)
 
 SIMPLE_JWT = {
@@ -173,22 +308,20 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": False,
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
-    "AUTH_COOKIE": "access_token",
-    "AUTH_COOKIE_REFRESH": "refresh_token",
-    "AUTH_COOKIE_SECURE": False,
-    "AUTH_COOKIE_HTTP_ONLY": True,
-    "AUTH_COOKIE_PATH": "/",
-    "AUTH_COOKIE_SAMESITE": "Lax",
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_TYPE_CLAIM": "token_type",
+    "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+    "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
 }
 
 # CORS Configuration for development
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
+cors_allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+CORS_ALLOWED_ORIGINS = [orig.strip() for orig in cors_allowed_origins_env.split(",") if orig.strip()]
 CORS_ALLOW_HEADERS = list(
     (
         "accept",
@@ -202,10 +335,22 @@ CORS_ALLOW_HEADERS = list(
         "x-requested-with",
     )
 )
-CORS_EXPOSE_HEADERS = ["Set-Cookie"]
+# CORS_EXPOSE_HEADERS = ["Set-Cookie"]
 
-# Email Configuration (console pour le dev, SMTP en prod)
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email Configuration (console pour le dev, SMTP en prod avec Gmail)
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+
+# Celery Configuration
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
 
 # django-allauth Configuration
 AUTHENTICATION_BACKENDS = [
@@ -217,8 +362,9 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"  # Géré manuellement via notre vue
 SOCIALACCOUNT_LOGIN_ON_GET = True
-LOGIN_REDIRECT_URL = "http://localhost:3000/auth/social/complete?next=/parcours"
+LOGIN_REDIRECT_URL = "http://localhost:3000/onboarding"
 LOGOUT_REDIRECT_URL = "http://localhost:3000/login"
+FRONTEND_URL = "http://localhost:3000"
 
 # Configuration des providers OAuth (évite de stocker les clés dans la DB)
 SOCIALACCOUNT_PROVIDERS = {
@@ -241,6 +387,18 @@ SOCIALACCOUNT_PROVIDERS = {
     },
 }
 
+# Durée de validité du token de réinitialisation (en secondes)
+PASSWORD_RESET_TIMEOUT = 3600  # 1 heure
+
+# Hashage des mots de passe (bcrypt en priorité)
+AUTH_PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',  # fallback
+]
+
 # Media files (avatars, etc.)
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Sandbox Configuration pour l'exécution de code
+SANDBOX_URL = os.getenv("SANDBOX_URL", "http://localhost:8000/execute")
