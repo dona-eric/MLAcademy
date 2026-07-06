@@ -1,8 +1,4 @@
 name: Deploy MLAcademy
-<<<<<<< HEAD
-
-=======
->>>>>>> develop
 on:
   push:
     branches: [main, develop]
@@ -24,35 +20,3 @@ jobs:
           cd AcademyFrontend
           npm install
           npm run build
-        env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-<<<<<<< HEAD
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY }}
-=======
->>>>>>> develop
-      - name: Deploy to Vercel
-        run: |
-          cd AcademyFrontend
-          npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
-
-  deploy-backend:
-    name: Deploy Backend (Django)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Railway (Django)
-        uses: bervProject/railway-deploy@main
-        with:
-          railway_token: ${{ secrets.RAILWAY_BACKEND_TOKEN }}
-          service: mlacademy-backend
-
-  deploy-sandbox:
-    name: Deploy Sandbox (FastAPI)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Deploy to Railway (FastAPI)
-        uses: bervProject/railway-deploy@main
-        with:
-          railway_token: ${{ secrets.RAILWAY_SANDBOX_TOKEN }}
-          service: mlacademy-sandbox
