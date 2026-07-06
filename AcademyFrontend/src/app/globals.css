@@ -1,60 +1,3 @@
-<<<<<<< HEAD
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
-
-@import "tailwindcss";
-
-:root {
-  --bg-base: #f8fafc;
-  --bg-surface: #ffffff;
-  --bg-elevated: #f1f5f9;
-  --bg-overlay: #e2e8f0;
-  --brand-500: #2D7EF8;
-  --brand-400: #5B9EFA;
-  --brand-600: #1A5FCC;
-  --brand-glow: rgba(45, 126, 248, 0.15);
-  --accent-purple: #8B5CF6;
-  --accent-teal: #14B8A6;
-  --accent-amber: #F59E0B;
-  --accent-coral: #F97316;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
-  --text-inverse: #ffffff;
-  --success: #10B981;
-  --error: #EF4444;
-  --warning: #F59E0B;
-  --info: #3B82F6;
-  --border-subtle: rgba(15, 23, 42, 0.06);
-  --border-default: rgba(15, 23, 42, 0.08);
-  --border-active: rgba(45, 126, 248, 0.40);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
-}
-
-@layer base {
-  body {
-    background-color: var(--bg-base);
-    color: var(--text-primary);
-    font-family: 'Geist', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-    color: var(--text-primary);
-  }
-  code, pre {
-    font-family: 'JetBrains Mono', monospace;
-  }
-}
-
-@layer components {
-=======
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @import "tailwindcss";
@@ -161,29 +104,10 @@
 @layer components {
 
   /* ── Buttons ── */
->>>>>>> develop
   .btn-primary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-<<<<<<< HEAD
-    padding: 10px 20px;
-    border-radius: var(--radius-md);
-    background-color: var(--brand-500);
-    color: #ffffff;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.2s;
-    cursor: pointer;
-    border: none;
-    text-decoration: none;
-  }
-  .btn-primary:hover {
-    background-color: var(--brand-600);
-    box-shadow: 0 4px 12px rgba(45,126,248,0.25);
-  }
-  .btn-primary:active { transform: scale(0.98); }
-=======
     gap: 8px;
     padding: 10px 20px;
     border-radius: var(--radius-md);
@@ -211,87 +135,46 @@
     cursor: not-allowed;
     transform: none;
   }
->>>>>>> develop
 
   .btn-secondary {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-<<<<<<< HEAD
-=======
     gap: 8px;
->>>>>>> develop
     padding: 10px 20px;
     border-radius: var(--radius-md);
     background-color: transparent;
     border: 1px solid var(--border-default);
     color: var(--text-primary);
     font-weight: 600;
-<<<<<<< HEAD
-    font-size: 15px;
-    transition: all 0.2s;
-=======
     font-size: 14px;
     transition: all 0.15s ease;
->>>>>>> develop
     cursor: pointer;
     text-decoration: none;
   }
   .btn-secondary:hover {
-<<<<<<< HEAD
-    background-color: var(--bg-elevated);
-    border-color: var(--border-active);
-=======
     background-color: var(--bg-secondary);
     border-color: var(--border-active);
     color: var(--brand-500);
->>>>>>> develop
   }
 
   .btn-ghost {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-<<<<<<< HEAD
-=======
     gap: 8px;
->>>>>>> develop
     padding: 10px 20px;
     border-radius: var(--radius-md);
     background-color: transparent;
     color: var(--text-secondary);
     font-weight: 600;
-<<<<<<< HEAD
-    font-size: 15px;
-    transition: all 0.2s;
-=======
     font-size: 14px;
     transition: all 0.15s ease;
->>>>>>> develop
     cursor: pointer;
     border: none;
     text-decoration: none;
   }
   .btn-ghost:hover {
-<<<<<<< HEAD
-    background-color: rgba(15,23,42,0.05);
-    color: var(--text-primary);
-  }
-
-  .input-field {
-    width: 100%;
-    height: 40px;
-    padding: 0 16px;
-    border-radius: var(--radius-md);
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    color: var(--text-primary);
-    font-size: 14px;
-    transition: all 0.2s;
-    outline: none;
-  }
-  .input-field::placeholder { color: var(--text-tertiary); }
-=======
     background-color: var(--bg-secondary);
     color: var(--text-primary);
   }
@@ -335,38 +218,11 @@
   .input-field::placeholder {
     color: var(--text-tertiary);
   }
->>>>>>> develop
   .input-field:focus {
     border-color: var(--brand-500);
     box-shadow: 0 0 0 3px var(--brand-glow);
   }
 
-<<<<<<< HEAD
-  .card {
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.02);
-    transition: all 0.2s;
-  }
-  .card:hover {
-    border-color: rgba(45,126,248,0.2);
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.01);
-    transform: translateY(-2px);
-  }
-
-  .glass-effect {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background-color: rgba(255,255,255,0.8);
-    border: 1px solid rgba(15,23,42,0.05);
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-=======
   /* ── Cards ── */
   .card {
     background-color: var(--bg-elevated);
@@ -394,24 +250,10 @@
     align-items: center;
     gap: 4px;
     padding: 4px 10px;
->>>>>>> develop
     border-radius: var(--radius-sm);
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
-<<<<<<< HEAD
-    letter-spacing: 0.05em;
-  }
-  .badge-beginner { background-color: var(--accent-teal); color: var(--text-inverse); }
-  .badge-intermediate { background-color: var(--accent-purple); color: #ffffff; }
-  .badge-advanced { background-color: var(--accent-coral); color: #ffffff; }
-
-  .progress-bar-container {
-    height: 4px;
-    width: 100%;
-    background-color: rgba(255,255,255,0.08);
-    border-radius: 9999px;
-=======
     letter-spacing: 0.04em;
   }
   .badge-brand {
@@ -455,25 +297,16 @@
     width: 100%;
     background-color: var(--bg-tertiary);
     border-radius: var(--radius-full);
->>>>>>> develop
     overflow: hidden;
   }
   .progress-bar-fill {
     height: 100%;
-<<<<<<< HEAD
-    background: linear-gradient(90deg, var(--brand-500), var(--accent-purple));
-    border-radius: 9999px;
-    transition: width 0.5s ease;
-  }
-
-=======
     background: linear-gradient(90deg, var(--brand-500), var(--brand-400));
     border-radius: var(--radius-full);
     transition: width 0.5s ease;
   }
 
   /* ── Navigation Items ── */
->>>>>>> develop
   .nav-item {
     display: flex;
     align-items: center;
@@ -484,21 +317,6 @@
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
-<<<<<<< HEAD
-    transition: all 0.15s;
-    border: 1px solid transparent;
-  }
-  .nav-item:hover {
-    background-color: var(--bg-overlay);
-    color: var(--text-primary);
-  }
-  .nav-item.active {
-    background-color: rgba(45,126,248,0.12);
-    color: var(--brand-400);
-    border-color: rgba(45,126,248,0.35);
-  }
-
-=======
     transition: all 0.15s ease;
     border: none;
     text-decoration: none;
@@ -514,24 +332,10 @@
   }
 
   /* ── Avatar ── */
->>>>>>> develop
   .avatar {
     display: flex;
     align-items: center;
     justify-content: center;
-<<<<<<< HEAD
-    border-radius: 9999px;
-    font-weight: 700;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, var(--brand-500), var(--accent-purple));
-    color: #ffffff;
-  }
-}
-
-@layer utilities {
-  .text-gradient-brand {
-    background: linear-gradient(135deg, #ffffff, var(--brand-500));
-=======
     border-radius: var(--radius-full);
     font-weight: 700;
     flex-shrink: 0;
@@ -624,26 +428,11 @@
 @layer utilities {
   .text-gradient-brand {
     background: linear-gradient(135deg, var(--brand-500), var(--brand-400));
->>>>>>> develop
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-<<<<<<< HEAD
-  .hero-grid {
-    background-image:
-      radial-gradient(circle at center, var(--brand-glow) 0%, transparent 70%),
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-    background-size: 100% 100%, 40px 40px, 40px 40px;
-  }
-
-  .glow-brand {
-    box-shadow: 0 0 24px rgba(45,126,248,0.25), 0 0 8px rgba(45,126,248,0.15);
-  }
-}
-=======
   .glow-brand {
     box-shadow: 0 0 20px var(--brand-glow);
   }
@@ -672,4 +461,3 @@
     color: var(--brand-500);
   }
 }
->>>>>>> develop

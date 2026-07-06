@@ -37,11 +37,7 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-<<<<<<< HEAD
-
-=======
   
->>>>>>> develop
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -50,11 +46,7 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
   useEffect(() => {
     async function loadQuiz() {
       try {
-<<<<<<< HEAD
-        const data = await fetchApi("/api/learning/lessons/${lessonId}/quiz/");
-=======
         const data = await fetchApi(`/api/learning/lessons/${lessonId}/quiz/`);
->>>>>>> develop
         setQuestions(data);
       } catch (err: any) {
         setError(err.message || "Impossible de charger le quiz.");
@@ -88,11 +80,7 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-<<<<<<< HEAD
-      const response = await fetchApi("/api/learning/lessons/${lessonId}/quiz/", {
-=======
       const response = await fetchApi(`/api/learning/lessons/${lessonId}/quiz/`, {
->>>>>>> develop
         method: 'POST',
         body: JSON.stringify({ answers })
       });
@@ -144,32 +132,11 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
 
   if (result) {
     return (
-<<<<<<< HEAD
-      <motion.div
-=======
       <motion.div 
->>>>>>> develop
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="space-y-8"
       >
-<<<<<<< HEAD
-        <div className={"rounded-[40px] p-10 text-center border shadow-2xl ${result.passed ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}"}>
-          <h2 className={"text-3xl font-black mb-6 ${result.passed ? 'text-green-400' : 'text-red-400'}"}>
-            {result.passed ? 'Félicitations !' : 'Continue tes efforts !'}
-          </h2>
-
-          <div className="relative inline-block">
-            <div className={"w-32 h-32 rounded-full flex items-center justify-center text-4xl font-black border-4 shadow-2xl mb-4 mx-auto ${result.passed ? 'border-green-500 text-green-400 bg-green-500/10' : 'border-red-500 text-red-400 bg-red-500/10'}"}>
-              {result.score}%
-            </div>
-          </div>
-
-          <p className="text-gray-400 font-medium max-w-xs mx-auto">
-            {result.passed
-              ? "Tu as brillamment réussi ce quiz et validé tes acquis !"
-              : "Il te faut 85% pour valider. Tentative ${result.attempts_used}/${result.max_attempts}."}
-=======
         <div className={`rounded-[40px] p-10 text-center border shadow-2xl ${result.passed ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
           <h2 className={`text-3xl font-black mb-6 ${result.passed ? 'text-green-400' : 'text-red-400'}`}>
             {result.passed ? 'Félicitations !' : 'Continue tes efforts !'}
@@ -185,7 +152,6 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
             {result.passed 
               ? "Tu as brillamment réussi ce quiz et validé tes acquis !" 
               : `Il te faut 85% pour valider. Tentative ${result.attempts_used}/${result.max_attempts}.`}
->>>>>>> develop
           </p>
 
           <div className="flex justify-center gap-4 mt-8">
@@ -210,15 +176,9 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
             const qResult = result.results.find(r => r.question_id === q.id);
             const isCorrect = qResult?.is_correct;
             return (
-<<<<<<< HEAD
-              <div key={q.id} className={"p-6 rounded-[30px] border transition-all ${isCorrect ? 'bg-green-500/5 border-green-500/10' : 'bg-red-500/5 border-red-500/10'}"}>
-                <div className="flex items-start gap-4">
-                  <div className={"mt-1 shrink-0 ${isCorrect ? 'text-green-500' : 'text-red-500'}"}>
-=======
               <div key={q.id} className={`p-6 rounded-[30px] border transition-all ${isCorrect ? 'bg-green-500/5 border-green-500/10' : 'bg-red-500/5 border-red-500/10'}`}>
                 <div className="flex items-start gap-4">
                   <div className={`mt-1 shrink-0 ${isCorrect ? 'text-green-500' : 'text-red-500'}`}>
->>>>>>> develop
                     {isCorrect ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
                   </div>
                   <div className="space-y-3">
@@ -243,15 +203,6 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
 
   return (
     <div className="bg-[#112240] rounded-[40px] border border-white/5 shadow-2xl overflow-hidden">
-<<<<<<< HEAD
-
-      {/* Quiz Progress */}
-      <div className="px-10 pt-10 flex items-center justify-between gap-6">
-        <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: "${((currentIndex + 1) / questions.length) * 100}%" }}
-=======
       
       {/* Quiz Progress */}
       <div className="px-10 pt-10 flex items-center justify-between gap-6">
@@ -259,7 +210,6 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
           <motion.div 
             initial={{ width: 0 }}
             animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
->>>>>>> develop
             className="h-full bg-[#00D1FF] shadow-[0_0_15px_rgba(0,209,255,0.5)]"
           />
         </div>
@@ -288,21 +238,12 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
                   <button
                     key={choice.id}
                     onClick={() => handleSelect(choice.id)}
-<<<<<<< HEAD
-                    className={"group flex items-center gap-4 p-5 rounded-2xl border text-left transition-all ${isSelected ? 'bg-[#00D1FF]/10 border-[#00D1FF] shadow-[0_0_20px_rgba(0,209,255,0.1)]' : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'}"}
-                  >
-                    <div className={"w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-[#00D1FF] bg-[#00D1FF]' : 'border-gray-600'}"}>
-                      {isSelected && <div className="w-2 h-2 bg-[#0A192F] rounded-full" />}
-                    </div>
-                    <span className={"font-medium transition-colors ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}"}>
-=======
                     className={`group flex items-center gap-4 p-5 rounded-2xl border text-left transition-all ${isSelected ? 'bg-[#00D1FF]/10 border-[#00D1FF] shadow-[0_0_20px_rgba(0,209,255,0.1)]' : 'bg-white/5 border-white/5 hover:border-white/20 hover:bg-white/10'}`}
                   >
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'border-[#00D1FF] bg-[#00D1FF]' : 'border-gray-600'}`}>
                       {isSelected && <div className="w-2 h-2 bg-[#0A192F] rounded-full" />}
                     </div>
                     <span className={`font-medium transition-colors ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
->>>>>>> develop
                       {choice.text}
                     </span>
                   </button>
@@ -316,11 +257,7 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
           <button
             onClick={handlePrev}
             disabled={currentIndex === 0}
-<<<<<<< HEAD
-            className={"flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${currentIndex === 0 ? 'opacity-0 pointer-events-none' : 'text-gray-400 hover:text-white hover:bg-white/5'}"}
-=======
             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${currentIndex === 0 ? 'opacity-0 pointer-events-none' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
->>>>>>> develop
           >
             <ChevronLeft className="w-5 h-5" />
             Précédent
@@ -330,11 +267,7 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
             <button
               onClick={handleNext}
               disabled={!answers[currentQuestion.id]}
-<<<<<<< HEAD
-              className={"flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all ${answers[currentQuestion.id] ? 'bg-white/10 text-white hover:bg-white/20' : 'text-gray-600 cursor-not-allowed'}"}
-=======
               className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all ${answers[currentQuestion.id] ? 'bg-white/10 text-white hover:bg-white/20' : 'text-gray-600 cursor-not-allowed'}`}
->>>>>>> develop
             >
               Suivant
               <ChevronRight className="w-5 h-5" />
@@ -343,11 +276,7 @@ export default function QuizView({ lessonId, onComplete }: { lessonId: number | 
             <button
               onClick={handleSubmit}
               disabled={!allAnswered || submitting}
-<<<<<<< HEAD
-              className={"flex items-center gap-2 px-10 py-3 rounded-xl font-bold text-sm transition-all ${allAnswered && !submitting ? 'bg-[#00D1FF] text-[#0A192F] shadow-lg shadow-[#00D1FF]/20 hover:scale-105 active:scale-95' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}"}
-=======
               className={`flex items-center gap-2 px-10 py-3 rounded-xl font-bold text-sm transition-all ${allAnswered && !submitting ? 'bg-[#00D1FF] text-[#0A192F] shadow-lg shadow-[#00D1FF]/20 hover:scale-105 active:scale-95' : 'bg-gray-700 text-gray-500 cursor-not-allowed'}`}
->>>>>>> develop
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
               {submitting ? 'Validation...' : 'Soumettre le Quiz'}

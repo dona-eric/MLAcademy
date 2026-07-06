@@ -1,10 +1,6 @@
 "use client";
 
-<<<<<<< HEAD
-import React, { useRef, useEffect } from "react";
-=======
 import React, { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
->>>>>>> develop
 import MuxPlayer from "@mux/mux-player-react";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -18,36 +14,20 @@ interface MuxVideoPlayerProps {
   startTime?: number;
   onTimeUpdate?: (currentTime: number) => void;
   onEnded?: () => void;
-<<<<<<< HEAD
-  playerRef?: any;
-}
-
-export default function MuxVideoPlayer({
-=======
 }
 
 const MuxVideoPlayer = forwardRef<any, MuxVideoPlayerProps>(({
->>>>>>> develop
   playbackId,
   metadata,
   startTime = 0,
   onTimeUpdate,
   onEnded,
-<<<<<<< HEAD
-  playerRef: externalRef,
-}: MuxVideoPlayerProps) {
-  const internalRef = useRef<any>(null);
-  const playerRef = externalRef || internalRef;
-  const { user } = useAuth();
-
-=======
 }, ref) => {
   const playerRef = useRef<any>(null);
   const { user } = useAuth();
 
   useImperativeHandle(ref, () => playerRef.current);
 
->>>>>>> develop
   // Sauvegarder la position de lecture toutes les 5 secondes
   useEffect(() => {
     const interval = setInterval(() => {
@@ -88,11 +68,7 @@ const MuxVideoPlayer = forwardRef<any, MuxVideoPlayerProps>(({
         secondaryColor="#0f172a"
         placeholder="/mlacademy_logo.png"
       />
-<<<<<<< HEAD
-
-=======
       
->>>>>>> develop
       <style jsx global>{`
         mux-player {
           --media-button-icon-filter: drop-shadow(0 0 4px rgba(0,0,0,0.5));
@@ -102,10 +78,6 @@ const MuxVideoPlayer = forwardRef<any, MuxVideoPlayerProps>(({
       `}</style>
     </div>
   );
-<<<<<<< HEAD
-}
-=======
 });
 
 export default MuxVideoPlayer;
->>>>>>> develop

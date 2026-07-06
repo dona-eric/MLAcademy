@@ -1,18 +1,11 @@
 // social auth completion page
 "use client";
 
-<<<<<<< HEAD
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { fetchApi } from "@/lib/api";
-=======
 import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchApi, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
->>>>>>> develop
 
 type CompleteResponse = {
   message?: string;
@@ -26,16 +19,10 @@ function sanitizeNextPath(value: string | null): string {
   return value;
 }
 
-<<<<<<< HEAD
-export default function SocialAuthCompletePage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-=======
 function SocialAuthCompletePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { checkAuth } = useAuth();
->>>>>>> develop
 
   const nextPath = useMemo(() => {
     return sanitizeNextPath(searchParams.get("next"));
@@ -50,42 +37,11 @@ function SocialAuthCompletePageContent() {
 
   useEffect(() => {
     let isMounted = true;
-<<<<<<< HEAD
-=======
     let timeoutId: number | undefined;
->>>>>>> develop
 
     async function completeSocialLogin() {
       try {
         const response = (await fetchApi(
-<<<<<<< HEAD
-          "/api/users/social/complete/",
-          {
-            method: "GET",
-          },
-        )) as CompleteResponse;
-
-        if (!isMounted) return;
-
-        setStatus("success");
-        setMessage(response?.message || "Connexion sociale réussie.");
-
-        const destination = sanitizeNextPath(response?.next || nextPath);
-
-        window.setTimeout(() => {
-          if (!isMounted) return;
-          router.replace(destination);
-        }, 900);
-      } catch (error) {
-        if (!isMounted) return;
-
-        setStatus("error");
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Impossible de finaliser la connexion sociale.",
-        );
-=======
           "/api/private/users/social/complete/",
           {
             method: "GET",
@@ -133,7 +89,6 @@ function SocialAuthCompletePageContent() {
               : "Impossible de finaliser la connexion sociale.",
           );
         }
->>>>>>> develop
       }
     }
 
@@ -141,16 +96,11 @@ function SocialAuthCompletePageContent() {
 
     return () => {
       isMounted = false;
-<<<<<<< HEAD
-    };
-  }, [nextPath, router]);
-=======
       if (timeoutId) {
         window.clearTimeout(timeoutId);
       }
     };
   }, [nextPath, router, checkAuth]);
->>>>>>> develop
 
   return (
     <div
@@ -227,17 +177,10 @@ function SocialAuthCompletePageContent() {
             }}
           >
             <Link href="/login" className="btn btn-primary">
-<<<<<<< HEAD
-              Retour à la connexion
-            </Link>
-            <Link href="/parcours" className="btn btn-secondary">
-              Aller aux cours
-=======
               Connexion
             </Link>
             <Link href="/parcours" className="btn btn-secondary">
               Découvrez nos formations
->>>>>>> develop
             </Link>
           </div>
         )}
@@ -271,8 +214,6 @@ function SocialAuthCompletePageContent() {
     </div>
   );
 }
-<<<<<<< HEAD
-=======
 
 export default function SocialAuthCompletePage() {
   return (
@@ -287,4 +228,3 @@ export default function SocialAuthCompletePage() {
     </Suspense>
   );
 }
->>>>>>> develop

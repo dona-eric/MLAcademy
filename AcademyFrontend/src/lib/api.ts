@@ -101,8 +101,6 @@ export async function fetchApi(endpoint: string, options: FetchOptions = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-<<<<<<< HEAD
-=======
   if (typeof window !== "undefined") {
     // Remplace access_token par la clé exacte que tu utilises dans ton AuthContext pour sauvegarder le token
     const token = localStorage.getItem("access_token"); 
@@ -113,7 +111,6 @@ export async function fetchApi(endpoint: string, options: FetchOptions = {}) {
     }
   }
 
->>>>>>> develop
   const url = buildUrl(endpoint);
 
   try {
@@ -124,8 +121,6 @@ export async function fetchApi(endpoint: string, options: FetchOptions = {}) {
     });
 
     if (!response.ok) {
-<<<<<<< HEAD
-=======
       if (response.status === 401 && endpoint.includes("/api/public/") && headers.has("Authorization")) {
         console.warn(`Request to public endpoint ${endpoint} failed with 401. Retrying without authorization...`);
         headers.delete("Authorization");
@@ -143,7 +138,6 @@ export async function fetchApi(endpoint: string, options: FetchOptions = {}) {
           return await retryResponse.text();
         }
       }
->>>>>>> develop
       const { message, data } = await parseErrorResponse(response);
       throw new ApiError(message, response, data);
     }

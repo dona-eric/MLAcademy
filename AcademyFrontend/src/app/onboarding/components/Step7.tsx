@@ -31,16 +31,6 @@ export default function Step7({ data, setData }: Step7Props) {
   );
 
   return (
-<<<<<<< HEAD
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* En-tête */}
-      <div className="space-y-4 text-center mb-8">
-        <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">
-          Choisissez votre <span className="text-indigo-600">parcours</span>
-        </h2>
-        <p className="text-slate-500 font-medium text-lg">
-          Basé sur vos intérêts en <span className="text-indigo-600 font-bold">{data.domains.join(", ") || "tous nos domaines"}</span>, voici les formations recommandées.
-=======
     <div className="space-y-8">
       {/* En-tête */}
       <div className="space-y-2 text-center">
@@ -49,7 +39,6 @@ export default function Step7({ data, setData }: Step7Props) {
         </h2>
         <p className="text-slate-400 text-sm">
           Basé sur vos intérêts en <span className="text-indigo-400 font-bold">{data.domains.join(", ") || "tous nos domaines"}</span>, voici les formations recommandées.
->>>>>>> develop
         </p>
       </div>
 
@@ -61,27 +50,6 @@ export default function Step7({ data, setData }: Step7Props) {
             return (
               <button
                 key={course.id}
-<<<<<<< HEAD
-                type="button"
-                onClick={() => setData({ ...data, selectedCourse: course.id })}
-                className={`p-6 rounded-[2rem] border transition-all text-left relative group outline-none focus:ring-4 focus:ring-indigo-500/10 ${
-                  isSelected 
-                    ? 'border-indigo-600 bg-indigo-50 shadow-sm ring-1 ring-indigo-600' 
-                    : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                    isSelected ? 'bg-indigo-600 text-white shadow-sm' : 'bg-indigo-50 text-indigo-600'
-                  }`}>
-                    <Rocket className="w-5 h-5" />
-                  </div>
-                  {isSelected && <CheckCircle2 className="w-5 h-5 text-indigo-600 animate-in fade-in zoom-in-75 duration-150" />}
-                </div>
-                <h3 className="font-black text-lg tracking-tight mb-1 text-slate-900">{course.title}</h3>
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-3">{course.domain}</p>
-                <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-=======
                 type="button" // Empêche le déclenchement de la soumission globale
                 onClick={() => setData({ ...data, selectedCourse: course.id })}
                 className={`p-6 rounded-[2rem] border transition-all text-left relative group outline-none focus:ring-2 focus:ring-indigo-500/50 ${
@@ -97,7 +65,6 @@ export default function Step7({ data, setData }: Step7Props) {
                 <h3 className="font-black text-lg tracking-tighter mb-1 text-white">{course.title}</h3>
                 <p className="text-[10px] font-bold text-indigo-400/60 uppercase tracking-widest mb-2">{course.domain}</p>
                 <div className="flex gap-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
->>>>>>> develop
                   <span>{course.duration}</span>
                   <span>•</span>
                   <span>{course.level}</span>
@@ -107,29 +74,11 @@ export default function Step7({ data, setData }: Step7Props) {
           })}
         </div>
       ) : (
-<<<<<<< HEAD
-        <div className="text-center py-12 text-slate-500 text-sm font-medium bg-slate-50 border border-slate-200 rounded-2xl">
-=======
         <div className="text-center py-12 text-slate-500 text-sm italic">
->>>>>>> develop
           Aucune formation trouvée pour vos domaines sélectionnés.
         </div>
       )}
 
-<<<<<<< HEAD
-      {/* Option d'exploration libre */}
-      <button 
-        type="button"
-        onClick={() => setData({ ...data, selectedCourse: "explore" })}
-        className={`w-full flex items-center justify-center gap-2 p-5 rounded-2xl border border-dashed transition-all outline-none focus:ring-4 focus:ring-indigo-500/10 ${
-          data.selectedCourse === "explore" 
-            ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-bold' 
-            : 'border-slate-300 text-slate-500 hover:bg-slate-50 hover:border-slate-400'
-        }`}
-      >
-        <Search className="w-5 h-5" />
-        <span className="font-medium text-sm">Explorer tout le catalogue (cours gratuits & payants)</span>
-=======
       {/* Option d'exploration libre (Converti de div à button pour l'accessibilité) */}
       <button 
         type="button"
@@ -142,7 +91,6 @@ export default function Step7({ data, setData }: Step7Props) {
       >
         <Search className="w-4 h-4" />
         <span>Explorer tout le catalogue (cours gratuits & payants)</span>
->>>>>>> develop
       </button>
     </div>
   );

@@ -53,11 +53,7 @@ export default function LessonNotes({ lessonId, currentTime, onSeek }: LessonNot
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
     const s = Math.floor(seconds % 60);
-<<<<<<< HEAD
-    return `${h > 0 ? `${h}: ` : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-=======
     return `${h > 0 ? `${h}:` : ""}${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
->>>>>>> develop
   };
 
   return (

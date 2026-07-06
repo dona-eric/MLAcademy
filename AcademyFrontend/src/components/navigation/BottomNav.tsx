@@ -14,17 +14,6 @@ function NavItem({ name, href, icon: Icon, isActive }: { name: string; href: str
   return (
     <Link href={href} className="relative flex flex-col items-center gap-1.5 p-2 min-w-[70px] transition-all duration-300 group">
       {isActive && (
-<<<<<<< HEAD
-        <div className="absolute -top-1 w-8 h-[3px] bg-indigo-600 shadow-sm rounded-full" />
-      )}
-      <div className={`p-1 rounded-lg transition-all duration-300 ${isActive ? "scale-110" : "group-hover:scale-105"}`}>
-        <Icon className={`h-6 w-6 transition-colors duration-300 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-      </div>
-      <span className={`text-[9px] uppercase tracking-widest font-black transition-colors ${isActive ? "text-indigo-600" : "text-slate-500"}`}>
-        {name}
-      </span>
-      {isActive && <div className="absolute inset-0 bg-indigo-50 rounded-2xl -z-10 blur-sm" />}
-=======
         <div className="absolute -top-1 w-8 h-[2px] bg-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)] rounded-full animate-pulse" />
       )}
       <div className={`p-1 rounded-lg transition-all duration-300 ${isActive ? "scale-110" : "group-hover:scale-105"}`}>
@@ -34,7 +23,6 @@ function NavItem({ name, href, icon: Icon, isActive }: { name: string; href: str
         {name}
       </span>
       {isActive && <div className="absolute inset-0 bg-cyan-400/5 rounded-2xl -z-10 blur-sm" />}
->>>>>>> develop
     </Link>
   );
 }
@@ -43,11 +31,7 @@ export default function BottomNav() {
   const pathname = usePathname();
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 px-4 pb-6 pointer-events-none">
-<<<<<<< HEAD
-      <div className="mx-auto max-w-md bg-white/90 backdrop-blur-xl border border-slate-200 rounded-[2rem] shadow-lg pointer-events-auto overflow-hidden">
-=======
       <div className="mx-auto max-w-md bg-[#0f1218]/80 backdrop-blur-xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] pointer-events-auto overflow-hidden">
->>>>>>> develop
         <div className="flex items-center justify-around py-3 px-2">
           {NAV_ITEMS.map((item) => (
             <NavItem
