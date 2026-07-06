@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+<<<<<<< HEAD
 import { Bell, Target, BookOpen, Clock, CheckCircle2 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +9,15 @@ import Link from "next/link";
 const TYPE_ICONS: Record<string, React.ReactNode> = {
   deadline: <Clock    className="h-4 w-4 text-red-500" />,
   grade:    <CheckCircle2 className="h-4 w-4 text-emerald-500" />,
+=======
+import { Bell, Zap, Target, BookOpen, Clock, CheckCircle2 } from "lucide-react";
+import { fetchApi } from "@/lib/api";
+import Link from "next/link";
+
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  deadline: <Clock   className="h-4 w-4 text-rose-500" />,
+  grade:    <Zap     className="h-4 w-4 text-emerald-500" />,
+>>>>>>> develop
   message:  <BookOpen className="h-4 w-4 text-indigo-500" />,
 };
 
@@ -17,6 +27,7 @@ const API = {
   readAll: "/api/private/learning/notifications/mark_all_as_read/",
 };
 
+<<<<<<< HEAD
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -29,10 +40,13 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
+=======
+>>>>>>> develop
 function NotificationItem({ n, onRead }: { n: any; onRead: (id: number) => void }) {
   return (
     <div
       onClick={() => !n.is_read && onRead(n.id)}
+<<<<<<< HEAD
       className={`p-3 rounded-lg flex items-start gap-3 transition-all cursor-pointer ${
         n.is_read
           ? "opacity-60"
@@ -50,12 +64,32 @@ function NotificationItem({ n, onRead }: { n: any; onRead: (id: number) => void 
         </p>
       </div>
       {!n.is_read && <div className="h-2 w-2 rounded-full bg-indigo-500 shrink-0 mt-1.5" />}
+=======
+      className={`p-3 rounded-2xl flex items-start gap-4 transition-all cursor-pointer ${
+        n.is_read ? "opacity-60 grayscale-[0.5]" : "bg-indigo-50/50 hover:bg-indigo-50 border border-transparent hover:border-indigo-100"
+      }`}
+    >
+      <div className="h-8 w-8 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0">
+        {TYPE_ICONS[n.type] ?? <Target className="h-4 w-4 text-slate-400" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] font-black text-slate-900 truncate">{n.title}</p>
+        <p className="text-[9px] text-slate-500 line-clamp-2 mt-0.5">{n.content}</p>
+        <p className="text-[8px] font-medium text-slate-400 mt-2 uppercase tracking-tighter">
+          {new Date(n.created_at).toLocaleDateString()}
+        </p>
+      </div>
+      {!n.is_read && <div className="h-2 w-2 rounded-full bg-indigo-500 shrink-0 mt-1" />}
+>>>>>>> develop
     </div>
   );
 }
 
 export default function NotificationBell() {
+<<<<<<< HEAD
   const { user } = useAuth();
+=======
+>>>>>>> develop
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,13 +97,19 @@ export default function NotificationBell() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const load = async () => {
+<<<<<<< HEAD
     // Guard: Don't attempt to fetch if user is not authenticated
     if (!user) return;
+=======
+>>>>>>> develop
     try {
       const data = await fetchApi(API.list);
       setNotifications(Array.isArray(data) ? data : (data?.results ?? []));
     } catch (err) {
+<<<<<<< HEAD
       // Silently handle auth errors — user may have logged out
+=======
+>>>>>>> develop
       console.error("Failed to load notifications", err);
     }
   };
@@ -77,7 +117,11 @@ export default function NotificationBell() {
   const markAsRead = async (id: number) => {
     try {
       await fetchApi(API.read(id), { method: "POST" });
+<<<<<<< HEAD
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+=======
+      load();
+>>>>>>> develop
     } catch (err) {
       console.error("Failed to mark as read", err);
     }
@@ -86,13 +130,18 @@ export default function NotificationBell() {
   const markAllAsRead = async () => {
     try {
       await fetchApi(API.readAll, { method: "POST" });
+<<<<<<< HEAD
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+=======
+      load();
+>>>>>>> develop
     } catch (err) {
       console.error("Failed to mark all as read", err);
     }
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     // Only load when user is authenticated
     if (user) {
       load();
@@ -103,6 +152,9 @@ export default function NotificationBell() {
   }, [user]);
 
   useEffect(() => {
+=======
+    load();
+>>>>>>> develop
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
         setIsOpen(false);
@@ -111,6 +163,7 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+<<<<<<< HEAD
   // Don't render the bell at all if user is not authenticated
   if (!user) return null;
 
@@ -122,26 +175,53 @@ export default function NotificationBell() {
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white">
             {unreadCount > 9 ? "9+" : unreadCount}
+=======
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button onClick={() => setIsOpen(!isOpen)} type="button" className="relative -m-2.5 p-2.5 text-slate-400 hover:text-indigo-600 transition-colors">
+        <span className="sr-only">Voir les notifications</span>
+        <Bell className="h-6 w-6" aria-hidden="true" />
+        {unreadCount > 0 && (
+          <span className="absolute top-2 right-2 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[10px] font-black text-white ring-2 ring-white">
+            {unreadCount}
+>>>>>>> develop
           </span>
         )}
       </button>
 
       {isOpen && (
+<<<<<<< HEAD
         <div className="absolute right-0 mt-3 w-80 origin-top-right rounded-xl bg-white p-4 shadow-lg border border-slate-200 z-50">
           <div className="flex items-center justify-between px-1 pb-3 border-b border-slate-100">
             <h3 className="text-sm font-semibold text-slate-900">Notifications</h3>
             {unreadCount > 0 && (
               <button onClick={markAllAsRead} className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
                 Tout marquer comme lu
+=======
+        <div className="absolute right-0 mt-4 w-80 origin-top-right rounded-[24px] bg-white p-4 shadow-2xl ring-1 ring-slate-900/5 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center justify-between px-2 pb-4 border-b border-slate-50">
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Notifications</h3>
+            {unreadCount > 0 && (
+              <button onClick={markAllAsRead} className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700">
+                Tout lire
+>>>>>>> develop
               </button>
             )}
           </div>
 
+<<<<<<< HEAD
           <div className="mt-2 max-h-80 overflow-y-auto space-y-1">
             {notifications.length === 0 ? (
               <div className="py-10 text-center space-y-2">
                 <CheckCircle2 className="h-8 w-8 text-slate-200 mx-auto" />
                 <p className="text-xs font-medium text-slate-400">Aucune notification</p>
+=======
+          <div className="mt-2 max-h-96 overflow-y-auto space-y-2 custom-scrollbar">
+            {notifications.length === 0 ? (
+              <div className="py-10 text-center space-y-3">
+                <CheckCircle2 className="h-8 w-8 text-slate-100 mx-auto" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rien à signaler</p>
+>>>>>>> develop
               </div>
             ) : (
               notifications.map((n) => <NotificationItem key={n.id} n={n} onRead={markAsRead} />)
@@ -149,8 +229,13 @@ export default function NotificationBell() {
           </div>
 
           {notifications.length > 0 && (
+<<<<<<< HEAD
             <div className="pt-3 border-t border-slate-100 mt-2 text-center">
               <Link href="/dashboard/notifications" className="text-xs font-medium text-slate-500 hover:text-indigo-600 transition-colors">
+=======
+            <div className="pt-4 border-t border-slate-50 mt-2 text-center">
+              <Link href="/dashboard/notifications" className="text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-indigo-600 transition-colors">
+>>>>>>> develop
                 Voir l'historique complet
               </Link>
             </div>

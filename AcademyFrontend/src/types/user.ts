@@ -1,6 +1,18 @@
 export interface StudentProfile {
   onboarding_completed?: boolean;
+<<<<<<< HEAD
   [key: string]: unknown;
+=======
+  [key: string]: any;
+}
+
+export interface UserProfileStats {
+  coursesCompleted: number;
+  certificates: number;
+  learningHours: number;
+  points: number;
+  levelNumber: number;
+>>>>>>> develop
 }
 
 export interface UserProfile {
@@ -18,6 +30,10 @@ export interface UserProfile {
   personal_goals: string;
   is_public_profile: boolean;
   email_verified: boolean;
+<<<<<<< HEAD
+=======
+  otp_enabled: boolean;
+>>>>>>> develop
   date_joined: string;
   last_login: string | null;
   is_instructor: boolean;
@@ -25,6 +41,7 @@ export interface UserProfile {
   is_superuser: boolean;
   instructor_status: "pending" | "approved" | "rejected";
   student_profile?: StudentProfile;
+<<<<<<< HEAD
 }
 
 export interface Student {
@@ -35,4 +52,8 @@ export interface Student {
   email: string;
   enrolled_count?: number;
   enrolled_course?: string;
+=======
+  stats?: UserProfileStats;
+  xp_points?: number;
+>>>>>>> develop
 }

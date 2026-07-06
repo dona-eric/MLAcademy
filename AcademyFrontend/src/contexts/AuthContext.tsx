@@ -13,7 +13,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
+<<<<<<< HEAD
   checkAuth: () => Promise<void>;
+=======
+  checkAuth: () => Promise<UserProfile | null>;
+>>>>>>> develop
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+<<<<<<< HEAD
   const checkAuth = async () => {
     // Éviter l'exécution côté serveur
     if (typeof window === 'undefined') return;
@@ -57,6 +62,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!userData.is_superuser && !userData.is_staff && !verified && !window.location.pathname.includes('/2fa')) {
           router.push('/2fa');
       }
+=======
+  const checkAuth = async (): Promise<UserProfile | null> => {
+    // Éviter l'exécution côté serveur
+    if (typeof window === 'undefined') return null;
+
+    try {
+      setLoading(true);
+      const userData = (await fetchApi('/api/private/users/me/')) as UserProfile;
+      setUser(userData);
+      
+      // Verification 2FA Obligatoire (Sauf pour les instructeurs pour le moment)
+      const verified = sessionStorage.getItem('2fa_verified') === 'true';
+      if (!verified && !window.location.pathname.includes('/2fa') && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/instructor/login')) {
+          // Si l'utilisateur est un instructeur, on ne le force pas tout de suite sur /2fa (rappel dans le studio)
+          if (!userData.is_instructor) {
+              router.push('/2fa');
+          }
+      }
+      return userData;
+>>>>>>> develop
     } catch (error: any) {
       // On nettoie l'utilisateur si l'appel échoue (non connecté ou session expirée)
       setUser(null);
@@ -64,10 +89,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('refresh_token');
       sessionStorage.removeItem('2fa_verified');
       
+<<<<<<< HEAD
       // On ne log en "error" que ce qui n'est pas une simple absence de session
       if (!error.message.includes("authentification") && !error.message.includes("401")) {
         console.error("Erreur d'authentification inattendue:", error);
       }
+=======
+      // On ne log en "error" que ce qui n'est pas une simple absence de session (401 Unauthorized)
+      if (error?.status !== 401 && !error?.message?.includes("authentification") && !error?.message?.includes("401") && !error?.message?.includes("jeton")) {
+        console.error("Erreur d'authentification inattendue:", error);
+      }
+      return null;
+>>>>>>> develop
     } finally {
       setLoading(false);
     }
@@ -89,10 +122,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.access) localStorage.setItem('access_token', data.access);
       if (data.refresh) localStorage.setItem('refresh_token', data.refresh);
 
+<<<<<<< HEAD
       // Le 2FA est OBLIGATOIRE pour tous les utilisateurs (Setup ou Vérification)
       setTwoFactorVerified(false);
       await checkAuth();
       router.push('/2fa');
+=======
+      // Le 2FA est OBLIGATOIRE pour les apprenants. Les instructeurs ont un rappel dans le studio.
+      setTwoFactorVerified(false);
+      const userData = await checkAuth();
+      
+      if (userData?.is_instructor) {
+        const redirect = sessionStorage.getItem("post_2fa_redirect") || '/studio';
+        router.push(redirect);
+      } else {
+        router.push('/2fa');
+      }
+>>>>>>> develop
       
     } catch (error) {
       throw error; // On laisse le composant Login gérer l'affichage de l'erreur

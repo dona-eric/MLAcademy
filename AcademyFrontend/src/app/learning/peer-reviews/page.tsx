@@ -24,7 +24,11 @@ export default function PeerReviewsPage() {
       router.push('/login');
       return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> develop
     async function fetchSubmissions() {
       try {
         const data = await fetchApi('/api/private/learning/peer-reviews/to_review/');
@@ -42,9 +46,15 @@ export default function PeerReviewsPage() {
     e.preventDefault();
     if (!activeSubmission) return;
     setSubmittingReview(true);
+<<<<<<< HEAD
 
     try {
       await fetchApi("/api/private/learning/peer-reviews/${activeSubmission.id}/review/", {
+=======
+    
+    try {
+      await fetchApi(`/api/private/learning/peer-reviews/${activeSubmission.id}/review/`, {
+>>>>>>> develop
         method: 'POST',
         body: JSON.stringify({
           score: score,
@@ -77,7 +87,11 @@ export default function PeerReviewsPage() {
       {error && <div className="alert-error mb-8">{error}</div>}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> develop
         {/* Liste des soumissions en attente */}
         <div className="md:col-span-1 space-y-4">
           <h2 className="text-xl font-semibold mb-4">À corriger ({submissions.length})</h2>
@@ -87,8 +101,13 @@ export default function PeerReviewsPage() {
             </div>
           ) : (
             submissions.map((sub) => (
+<<<<<<< HEAD
               <div
                 key={sub.id}
+=======
+              <div 
+                key={sub.id} 
+>>>>>>> develop
                 onClick={() => setActiveSubmission(sub)}
                 className="glass-panel p-4 cursor-pointer hover:border-indigo-500 transition-colors"
                 style={{ border: activeSubmission?.id === sub.id ? '2px solid var(--accent-primary)' : '' }}
@@ -109,7 +128,11 @@ export default function PeerReviewsPage() {
           {activeSubmission ? (
             <div className="glass-panel p-6">
               <h2 className="text-xl font-bold mb-6 border-b border-gray-800 pb-4">Évaluation du Projet #{activeSubmission.project}</h2>
+<<<<<<< HEAD
 
+=======
+              
+>>>>>>> develop
               <div className="mb-8 space-y-6">
                 {activeSubmission.repo_url && (
                   <div>
@@ -119,7 +142,11 @@ export default function PeerReviewsPage() {
                     </a>
                   </div>
                 )}
+<<<<<<< HEAD
 
+=======
+                
+>>>>>>> develop
                 {activeSubmission.code_content && (
                   <div>
                     <h3 className="text-sm text-muted uppercase tracking-wider mb-2">Code principal</h3>
@@ -132,12 +159,21 @@ export default function PeerReviewsPage() {
 
               <form onSubmit={handleSubmitReview} className="bg-black/20 p-6 rounded-xl border border-gray-800">
                 <h3 className="text-lg font-semibold mb-4">Votre évaluation</h3>
+<<<<<<< HEAD
 
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-2">Score (/100)</label>
                   <input
                     type="number"
                     min="0" max="100"
+=======
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">Score (/100)</label>
+                  <input 
+                    type="number" 
+                    min="0" max="100" 
+>>>>>>> develop
                     value={score}
                     onChange={(e) => setScore(parseInt(e.target.value))}
                     required
@@ -148,7 +184,11 @@ export default function PeerReviewsPage() {
 
                 <div className="mb-6">
                   <label className="block text-sm font-medium mb-2">Commentaires constructifs (obligatoire)</label>
+<<<<<<< HEAD
                   <textarea
+=======
+                  <textarea 
+>>>>>>> develop
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     required
@@ -158,8 +198,13 @@ export default function PeerReviewsPage() {
                   ></textarea>
                 </div>
 
+<<<<<<< HEAD
                 <button
                   type="submit"
+=======
+                <button 
+                  type="submit" 
+>>>>>>> develop
                   disabled={submittingReview || feedback.trim().length < 10}
                   className="btn btn-primary w-full"
                 >

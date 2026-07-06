@@ -6,10 +6,18 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchApi } from "@/lib/api";
 import { 
+<<<<<<< HEAD
   BookOpen, ChevronRight, 
   Search, Loader2, BarChart3,
   CheckCircle2, PlayCircle
 } from "lucide-react";
+=======
+  BookOpen, Clock, ChevronRight, 
+  Search, Filter, Loader2, BarChart3,
+  CheckCircle2, PlayCircle
+} from "lucide-react";
+import CourseImage from "@/components/learning/CourseImage";
+>>>>>>> develop
 
 export default function MyCoursesPage() {
   const { user, loading: authLoading } = useAuth();
@@ -135,6 +143,7 @@ function CourseCard({ enrollment }: { enrollment: any }) {
   return (
     <div className="glass-card rounded-[32px] border border-white/5 overflow-hidden hover:border-indigo-500/30 transition-all group flex flex-col h-full bg-white/5">
       <div className="relative aspect-video bg-slate-900 overflow-hidden">
+<<<<<<< HEAD
         {enrollment.course_thumbnail ? (
           <img src={enrollment.course_thumbnail} alt={enrollment.course_title} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
         ) : (
@@ -142,6 +151,13 @@ function CourseCard({ enrollment }: { enrollment: any }) {
             <BarChart3 className="w-12 h-12 text-white/5" />
           </div>
         )}
+=======
+        <CourseImage
+          src={enrollment.course_thumbnail}
+          title={enrollment.course_title}
+          className="w-full h-full object-cover group-hover:scale-110 transition duration-700"
+        />
+>>>>>>> develop
         <div className="absolute top-4 left-4">
            <span className="px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-white border border-white/10 shadow-sm">
               {enrollment.course_level || "Mixte"}

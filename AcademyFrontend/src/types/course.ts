@@ -47,9 +47,15 @@ export interface CourseSummary {
   title: string;
   slug: string;
   short_description: string;
+<<<<<<< HEAD
   category: Category | null;
   instructor_name: string;
   level: 'beginner' | 'intermediate' | 'advanced' | 'professional' | string;
+=======
+  category: Category;
+  instructor_name: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+>>>>>>> develop
   duration_hours: number;
   thumbnail: string | null;
   avg_rating: string;
@@ -74,6 +80,7 @@ export interface PaginatedResponse<T> {
   previous: string | null;
   results: T[];
 }
+<<<<<<< HEAD
 
 export interface LearningPathSummary {
   id: number;
@@ -91,3 +98,5 @@ export interface LearningPathSummary {
   category: Category | null;
   creator_name: string;
 }
+=======
+>>>>>>> develop

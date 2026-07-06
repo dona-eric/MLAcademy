@@ -1,27 +1,27 @@
-name: "Nouvelle fonctionnalité"
-description: Proposer une nouvelle fonctionnalité pour MLAcademy
-title: "[FEAT] "
-labels: ["enhancement"]
-body:
-  - type: textarea
-    id: description
-    attributes:
-      label: Description
-      description: Décris clairement la fonctionnalité souhaitée
-    validations:
-      required: true
-  - type: textarea
-    id: acceptance
-    attributes:
-      label: Critères d'acceptation
-      description: Quand peut-on considérer cette tâche terminée ?
-      placeholder: "- [ ] Critère 1\n- [ ] Critère 2"
-    validations:
-      required: true
-  - type: dropdown
-    id: priority
-    attributes:
-      label: Priorité
-      options: [Critique, Haute, Moyenne, Basse]
-    validations:
-      required: true
+# name: "Nouvelle fonctionnalité"
+# description: Proposer une nouvelle fonctionnalité pour MLAcademy
+# title: "[FEAT] "
+# labels: ["enhancement"]
+# body:
+#   - type: textarea
+#     id: description
+#     attributes:
+#       label: Description
+#       description: Décris clairement la fonctionnalité souhaitée
+#     validations:
+#       required: true
+#   - type: textarea
+#     id: acceptance
+#     attributes:
+#       label: Critères d'acceptation
+#       description: Quand peut-on considérer cette tâche terminée ?
+#       placeholder: "- [ ] Critère 1\n- [ ] Critère 2"
+#     validations:
+#       required: true
+#   - type: dropdown
+#     id: priority
+#     attributes:
+#       label: Priorité
+#       options: [Critique, Haute, Moyenne, Basse]
+#     validations:
+#       required: true

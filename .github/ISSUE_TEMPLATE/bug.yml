@@ -1,24 +1,24 @@
-name: "Bug Report"
-description: Signaler un bug
-title: "[BUG] "
-labels: ["bug"]
-body:
-  - type: textarea
-    id: description
-    attributes:
-      label: Description du bug
-    validations:
-      required: true
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Étapes pour reproduire
-      placeholder: "1. Aller sur...\n2. Cliquer sur...\n3. Observer..."
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: Comportement attendu
-    validations:
-      required: true
+# name: "Bug Report"
+# description: Signaler un bug
+# title: "[BUG] "
+# labels: ["bug"]
+# body:
+#   - type: textarea
+#     id: description
+#     attributes:
+#       label: Description du bug
+#     validations:
+#       required: true
+#   - type: textarea
+#     id: reproduction
+#     attributes:
+#       label: Étapes pour reproduire
+#       placeholder: "1. Aller sur...\n2. Cliquer sur...\n3. Observer..."
+#     validations:
+#       required: true
+#   - type: textarea
+#     id: expected
+#     attributes:
+#       label: Comportement attendu
+#     validations:
+#       required: true

@@ -1,0 +1,10 @@
+{
+  "name": "mlbackend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bash -c 'source .venv/bin/activate && python3 manage.py runserver 8000'",
+    "makemigrations": "bash -c 'source .venv/bin/activate &&  python3 manage.py makemigrations'",
+    "migrate": "bash -c 'source .venv/bin/activate && python3 manage.py migrate'"
+  }
+}

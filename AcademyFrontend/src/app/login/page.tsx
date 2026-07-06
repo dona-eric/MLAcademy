@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import { useState, type ChangeEvent, type FormEvent, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -135,3 +136,8 @@ export default function LoginPage() {
     </div>
   );
 }
+=======
+import UnifiedAuthPage from "../register/account/page";
+
+export default UnifiedAuthPage;
+>>>>>>> develop
