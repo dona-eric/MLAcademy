@@ -6,11 +6,11 @@ import { LogOut, Loader2, ShieldAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { fetchApi } from "@/lib/api";
 import { SETTING_TABS, SettingsTab } from "@/types/setting";
-
 import { AccountTab } from "./components/AccountTab";
 import { SecurityTab } from "./components/SecurityTab";
 import { NotificationTab } from "./components/NotificationTab";
 import { BillingTab } from "./components/BillingTab";
+import "../globals.css";
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -73,7 +73,6 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
-
           {/* Side Navigation */}
           <div className="lg:col-span-3 space-y-3">
             {SETTING_TABS.map((tab) => (
@@ -120,7 +119,7 @@ export default function SettingsPage() {
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest block">
-                Pour confirmer, veuillez saisir <span className="text-rose-600 font-mono font-bold select-none">SUPPRIMER</span> :
+                Pour confirmer, veuillez saisir <span className="text-rose-600 font-mono font-bold select-none">DELETE MY ACCOUNT</span> :
               </label>
               <input type="text" value={confirmDeleteText} onChange={(e) => setConfirmDeleteText(e.target.value)} className="input-field font-mono uppercase" placeholder="SUPPRIMER"/>
             </div>

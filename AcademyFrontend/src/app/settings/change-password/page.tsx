@@ -132,22 +132,8 @@ export default function ChangePasswordPage() {
               <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ancien mot de passe</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-[#00D1FF] transition-colors" />
-                <input 
-                  type={showOld ? "text" : "password"} 
-                  required 
-                  value={oldPassword} 
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  autoComplete="current-password"
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-sm text-white focus:outline-none focus:border-[#00D1FF]/50 focus:bg-slate-900 transition-all placeholder:text-slate-600 font-sans"
-                  placeholder="••••••••"
-                />
-                <button 
-                  type="button" 
-                  onClick={() => setShowOld(!showOld)} 
-                  aria-label={showOld ? "Masquer l'ancien mot de passe" : "Afficher l'ancien mot de passe"}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
-                >
-                  {showOld ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                <input type={showOld ? "text" : "password"} required value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} autoComplete="current-password" className="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 pl-12 pr-12 text-sm text-white focus:outline-none focus:border-[#00D1FF]/50 focus:bg-slate-900 transition-all placeholder:text-slate-600 font-sans" placeholder="••••••••"/>
+                <button type="button" onClick={() => setShowOld(!showOld)} aria-label={showOld ? "Masquer l'ancien mot de passe" : "Afficher l'ancien mot de passe"} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"> {showOld ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { UserProfile } from "@/types/user";
-import { Mail, Zap, Calendar, GraduationCap, Award, Clock, Star } from "lucide-react";
+import { Mail, Zap, Calendar } from "lucide-react";
 
 interface AccountTabProps {
   user: UserProfile;
