@@ -73,14 +73,14 @@ export default function BecomeInstructorPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
-              onClick={() => router.push("/instructeur/apply")}
+              onClick={() => router.push("/instructor/apply")}
               className="btn-primary py-4 px-10 rounded-2xl text-xs font-black uppercase tracking-widest bg-indigo-500 border-indigo-500 hover:bg-indigo-600 hover:border-indigo-600 shadow-xl shadow-indigo-500/25 flex items-center gap-2"
             >
               Déposer ma candidature <ArrowRight className="w-4 h-4" />
             </button>
             
             <Link
-              href="/instructeur/application/status"
+              href="/instructor/application/status"
               className="py-4 px-6 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white border border-white/5 hover:border-white/10 bg-white/5 transition-all flex items-center gap-2"
             >
               <ClipboardCheck className="w-4 h-4" /> Suivre mon dossier
