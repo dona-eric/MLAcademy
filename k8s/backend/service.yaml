@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlbackend-service
+  labels:
+    app: mlbackend
+spec:
+  # NodePort permet d'exposer facilement le port sur localhost en développement (Minikube/k3d)
+  # En production (AWS/GCP), on utiliserait plutôt type: ClusterIP couplé à un Ingress, ou type: LoadBalancer
+  type: NodePort
+  selector:
+    app: mlbackend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 30080

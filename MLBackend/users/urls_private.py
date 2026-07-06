@@ -8,7 +8,10 @@ from .views import (
     ProfileView,
     SocialJWTCompleteView,
     Verify2FAView,
-    ApplyInstructorView, InstructorApplicationStatusView, ChangePasswordView,)
+    ApplyInstructorView,
+    InstructorApplicationStatusView,
+    ChangePasswordView,
+)
 
 urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
