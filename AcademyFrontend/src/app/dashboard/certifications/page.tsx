@@ -53,76 +53,76 @@ export default function MyCertificationsPage() {
       {/* Background Gradients */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[var(--brand-50)] blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none opacity-60"></div>
       
-      <div className="p-6 lg:p-10 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700 relative z-10 text-[var(--text-primary)]">
+      <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-700 relative z-10 text-[var(--text-primary)]">
         
         <div className="space-y-2">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
             Mes <span className="text-[var(--brand-500)]">Certifications</span>
           </h1>
         </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         <div className="card p-8 bg-[var(--brand-500)] text-white space-y-6 shadow-md relative overflow-hidden group border-none">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+         <div className="card p-6 bg-[var(--brand-500)] text-white space-y-4 shadow-md relative overflow-hidden group border-none">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
-            <Trophy className="h-6 w-6 text-[var(--brand-100)] relative z-10" />
+            <Trophy className="h-5 w-5 text-[var(--brand-100)] relative z-10" />
             <div className="relative z-10">
-               <p className="text-4xl font-black">{certificates.length}</p>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--brand-100)] mt-2">Certificats obtenus</p>
+               <p className="text-3xl font-black">{certificates.length}</p>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--brand-100)] mt-1">Certificats obtenus</p>
             </div>
          </div>
-         <div className="card p-8 space-y-6 hover:-translate-y-1 transition-transform">
-            <div className="h-12 w-12 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center border border-[var(--border-default)]">
-               <Target className="h-6 w-6 text-[var(--text-tertiary)]" />
+         <div className="card p-6 space-y-4 hover:-translate-y-1 transition-transform">
+            <div className="h-10 w-10 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center border border-[var(--border-default)]">
+               <Target className="h-5 w-5 text-[var(--text-tertiary)]" />
             </div>
             <div>
-               <p className="text-4xl font-black text-[var(--text-primary)]">{pathEnrollments.filter(p => !p.is_completed).length}</p>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mt-2">En cours</p>
+               <p className="text-3xl font-black text-[var(--text-primary)]">{pathEnrollments.filter(p => !p.is_completed).length}</p>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mt-1">En cours</p>
             </div>
          </div>
-         <div className="card p-8 space-y-6 hover:-translate-y-1 transition-transform">
-            <div className="h-12 w-12 rounded-xl bg-[var(--warning-light)] flex items-center justify-center border border-amber-200">
-               <Star className="h-6 w-6 text-[var(--warning)] fill-amber-100" />
+         <div className="card p-6 space-y-4 hover:-translate-y-1 transition-transform">
+            <div className="h-10 w-10 rounded-xl bg-[var(--warning-light)] flex items-center justify-center border border-amber-200">
+               <Star className="h-5 w-5 text-[var(--warning)] fill-amber-100" />
             </div>
             <div>
-               <p className="text-4xl font-black text-[var(--text-primary)]">{pathEnrollments.length}</p>
-               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mt-2">Cours Inscrits</p>
+               <p className="text-3xl font-black text-[var(--text-primary)]">{pathEnrollments.length}</p>
+               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mt-1">Cours Inscrits</p>
             </div>
          </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-12">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
         
         {/* Left: Active Paths */}
-        <div className="space-y-8">
-          <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
-             <Zap className="h-5 w-5 text-[var(--brand-500)]" />
-             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-secondary)]">Parcours Certifiants</h2>
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3">
+             <Zap className="h-4 w-4 text-[var(--brand-500)]" />
+             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)]">Parcours Certifiants</h2>
           </div>
 
           {pathEnrollments.length === 0 ? (
-            <div className="p-16 rounded-2xl bg-[var(--bg-primary)] border border-dashed border-[var(--border-default)] text-center space-y-6">
-               <div className="h-16 w-16 mx-auto rounded-full bg-[var(--bg-secondary)] flex items-center justify-center border border-[var(--border-subtle)]">
-                 <Award className="h-8 w-8 text-[var(--text-tertiary)]" />
+            <div className="p-10 rounded-2xl bg-[var(--bg-primary)] border border-dashed border-[var(--border-default)] text-center space-y-4">
+               <div className="h-12 w-12 mx-auto rounded-full bg-[var(--bg-secondary)] flex items-center justify-center border border-[var(--border-subtle)]">
+                 <Award className="h-6 w-6 text-[var(--text-tertiary)]" />
                </div>
-               <div className="space-y-2">
-                 <h3 className="text-lg font-bold text-[var(--text-primary)]">Aucun parcours professionnel</h3>
-                 <p className="text-sm text-[var(--text-secondary)] max-w-xs mx-auto">Visez l'excellence en vous inscrivant à un parcours complet de certification.</p>
+               <div className="space-y-1">
+                 <h3 className="text-base font-bold text-[var(--text-primary)]">Aucun parcours professionnel</h3>
+                 <p className="text-xs text-[var(--text-secondary)] max-w-xs mx-auto">Visez l'excellence en vous inscrivant à un parcours complet de certification.</p>
                </div>
-               <Link href="/certifications" className="btn-secondary py-3 px-8 text-xs inline-block">Voir les certifications</Link>
+               <Link href="/certifications" className="btn-secondary py-2 px-6 text-[10px] inline-block font-bold">Voir les certifications</Link>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {pathEnrollments.map((enrollment) => (
-                <div key={enrollment.id} className="card p-8 hover:border-[var(--brand-300)] transition-all group">
-                   <div className="flex flex-col md:flex-row gap-6">
-                      <div className="w-20 h-20 rounded-xl bg-[var(--brand-50)] flex items-center justify-center shrink-0 border border-[var(--brand-100)]">
-                         <Trophy className="h-8 w-8 text-[var(--brand-500)]" />
+                <div key={enrollment.id} className="card p-6 hover:border-[var(--brand-300)] transition-all group">
+                   <div className="flex flex-col md:flex-row gap-5">
+                      <div className="w-16 h-16 rounded-xl bg-[var(--brand-50)] flex items-center justify-center shrink-0 border border-[var(--brand-100)]">
+                         <Trophy className="h-6 w-6 text-[var(--brand-500)]" />
                       </div>
-                      <div className="flex-1 space-y-5">
+                      <div className="flex-1 space-y-4">
                          <div className="space-y-1">
-                            <h3 className="text-xl font-black text-[var(--text-primary)] group-hover:text-[var(--brand-500)] transition-colors leading-tight">{enrollment.path_title}</h3>
-                            <div className="flex items-center gap-3 mt-1">
+                            <h3 className="text-lg font-black text-[var(--text-primary)] group-hover:text-[var(--brand-500)] transition-colors leading-tight">{enrollment.path_title}</h3>
+                            <div className="flex items-center gap-2 mt-1">
                                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-tertiary)]">{enrollment.path_level || 'Niveau Standard'}</span>
                                <span className="w-1 h-1 rounded-full bg-[var(--border-default)]"></span>
                                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--brand-500)]">{enrollment.progress_percentage}% Complété</span>
@@ -162,10 +162,10 @@ export default function MyCertificationsPage() {
         </div>
 
         {/* Right: Certificates List */}
-        <div className="space-y-8">
-          <div className="flex items-center gap-3 border-b border-[var(--border-subtle)] pb-4">
-             <Star className="h-5 w-5 text-[var(--warning)]" />
-             <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-secondary)]">Diplômes Obtenus</h2>
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-[var(--border-subtle)] pb-3">
+             <Star className="h-4 w-4 text-[var(--warning)]" />
+             <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)]">Diplômes Obtenus</h2>
           </div>
 
           {certificates.length === 0 ? (
@@ -196,13 +196,13 @@ export default function MyCertificationsPage() {
             </div>
           )}
 
-          <div className="p-8 rounded-2xl bg-[var(--brand-50)] border border-[var(--brand-100)] text-[var(--text-primary)] space-y-5 relative overflow-hidden group">
+          <div className="p-6 rounded-2xl bg-[var(--brand-50)] border border-[var(--brand-100)] text-[var(--text-primary)] space-y-4 relative overflow-hidden group">
              <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
-             <h4 className="text-xl font-black leading-tight relative z-10 text-[var(--text-primary)]">
+             <h4 className="text-lg font-black leading-tight relative z-10 text-[var(--text-primary)]">
                Partagez vos succès sur LinkedIn
              </h4>
              <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed relative z-10">MLAcademy vous permet d'ajouter vos certifications directement à votre profil professionnel en un clic.</p>
-             <button className="w-full py-4 rounded-xl bg-white hover:bg-slate-50 border border-[var(--border-default)] text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10 shadow-sm text-[var(--text-primary)] hover:text-[#0A66C2]">
+             <button className="w-full py-3 rounded-xl bg-white hover:bg-slate-50 border border-[var(--border-default)] text-[10px] font-black uppercase tracking-[0.2em] transition-all relative z-10 shadow-sm text-[var(--text-primary)] hover:text-[#0A66C2]">
                 Lier mon compte LinkedIn
              </button>
           </div>
