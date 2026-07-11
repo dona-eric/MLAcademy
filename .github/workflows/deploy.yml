@@ -20,4 +20,3 @@ jobs:
           cd AcademyFrontend
           npm install
           npm run build
-

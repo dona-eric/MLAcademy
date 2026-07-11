@@ -30,6 +30,8 @@ urlpatterns = [
     path("api/auth/", include("allauth.urls")),
     # Talent Hub & Community
     path("api/community/", include("community.urls")),
+    # AI Chat & Copilot
+    path("api/chat/", include("chat.urls")),
 
     # Téléchargement du schéma au format YAML/JSON
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

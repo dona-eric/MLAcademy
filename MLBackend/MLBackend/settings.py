@@ -62,7 +62,6 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-    # Third-party
     "rest_framework",
     "drf_spectacular",
     'rest_framework_simplejwt',
@@ -82,6 +81,7 @@ INSTALLED_APPS = [
     "management",
     "community",
     "notifications",
+    "chat",
 ]
 
 MIDDLEWARE = [
@@ -141,7 +141,7 @@ else:
 
 # DATABASES = {
 #     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
+#         "ENGINE": "django.db.backends.sqlite3",
 #         "NAME": BASE_DIR / "AcademyDB",
 #     }
 # }

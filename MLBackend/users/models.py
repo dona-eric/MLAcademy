@@ -22,6 +22,9 @@ class CustomUser(AbstractUser):
         default=uuid.uuid4, editable=False, unique=True,
         verbose_name="Token de vérification"
     )
+    verification_sent_at = models.DateTimeField(
+        auto_now=True, verbose_name="Date d'envoi de la vérification"
+    )
 
     otp_enabled = models.BooleanField(
         default=False, verbose_name="2FA activé"

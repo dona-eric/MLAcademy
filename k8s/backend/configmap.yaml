@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mlbackend-config
+  labels:
+    app: mlbackend
+data:
+  # Environment Variables non-sensibles
+  DEBUG: "False"
+  DJANGO_SETTINGS_MODULE: "MLBackend.settings"
+  SANDBOX_URL: "http://sandbox-service:8001/execute"
+  NEXT_PUBLIC_API_URL: "http://localhost:8000"
+  EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+  EMAIL_HOST_USER: "dtech.afrik@gmail.com"

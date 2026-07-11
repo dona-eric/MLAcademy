@@ -18,6 +18,9 @@ export default function VerifyEmailPage() {
   const [status, setStatus] = useState<VerificationState>('loading');
   const [message, setMessage] = useState('Nous vérifions votre adresse e-mail...');
   const [countdown, setCountdown] = useState(5);
+  const [emailToResend, setEmailToResend] = useState('');
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [resendMessage, setResendMessage] = useState('');
   const hasRun = useRef(false);
 
   useEffect(() => {
@@ -29,18 +32,24 @@ export default function VerifyEmailPage() {
       try {
         const response = (await fetchApi(
           `/api/public/users/verify-email/${token}/`
-        )) as VerifyEmailResponse
+        )) as VerifyEmailResponse;
+        
         if (!mounted) return;
-        if (response.message && response.message.toLowerCase().includes('déjà')) {
-          setStatus('already_verified');
-        } else {
-          setStatus('success');
-        }
+        
+        setStatus('success');
         setMessage(response.message || 'Adresse e-mail vérifiée avec succès.');
       } catch (err: any) {
         if (!mounted) return;
-        setStatus('error');
-        setMessage(err.message || 'Le lien de vérification est invalide ou a expiré.');
+
+        // ALIGNEMENT BACKEND : Si l'API renvoie 400 parce que le token est consommé (donc déjà vérifié)
+        const errorMessage = err.message || '';
+        if (errorMessage.toLowerCase().includes('déjà') || errorMessage.toLowerCase().includes('utilisé')) {
+          setStatus('already_verified');
+          setMessage('Votre adresse e-mail a déjà été confirmée.');
+        } else {
+          setStatus('error');
+          setMessage(errorMessage || 'Le lien de vérification est invalide ou a expiré.');
+        }
       }
     }
     verifyToken();
@@ -68,6 +77,29 @@ export default function VerifyEmailPage() {
 
   const handleContinue = () => {
     router.push(user ? '/dashboard' : '/login');
+  };
+
+  const handleResend = async () => {
+    if (!emailToResend.trim()) {
+      setResendMessage('Veuillez entrer votre adresse e-mail.');
+      setResendStatus('error');
+      return;
+    }
+    setResendStatus('loading');
+    setResendMessage('');
+    try {
+      await fetchApi('/api/public/users/resend-verification/', {
+        method: 'POST',
+        body: JSON.stringify({ email: emailToResend.trim().toLowerCase() })
+      });
+      setResendStatus('success');
+      setResendMessage('Nouveau lien envoyé ! Vérifiez votre boîte de réception.');
+      setEmailToResend(''); // UX : On vide le champ après un envoi réussi
+    } catch (err: any) {
+      setResendStatus('error');
+      // Affiche l'erreur renvoyée par Django (ex: le cooldown de 2 minutes - code 429)
+      setResendMessage(err.message || 'Erreur lors du renvoi du lien.');
+    }
   };
 
   return (
@@ -123,17 +155,47 @@ export default function VerifyEmailPage() {
           )}
 
           {/* Action Button */}
-          {status !== 'loading' && (
+          {status !== 'loading' && status !== 'error' && (
             <button
               onClick={handleContinue}
-              className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group transition-all duration-300 ${
-                status === 'error'
-                  ? 'bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20'
-                  : 'bg-white text-[#0A192F] hover:bg-[#00D1FF] hover:text-[#0A192F] hover:shadow-lg hover:shadow-[#00D1FF]/10'
-              }`}>
+              className="w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group transition-all duration-300 bg-white text-[#0A192F] hover:bg-[#00D1FF] hover:text-[#0A192F] hover:shadow-lg hover:shadow-[#00D1FF]/10">
               <span>{user ? 'Aller au Tableau de Bord' : 'Continuer vers la Connexion'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
+          )}
+
+          {/* Resend Link Form (when error) */}
+          {status === 'error' && (
+            <div className="space-y-4 pt-4 border-t border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
+                Recevoir un nouveau lien
+              </p>
+              <input 
+                type="email"
+                placeholder="votre@email.com"
+                value={emailToResend}
+                onChange={(e) => setEmailToResend(e.target.value)}
+                className="w-full bg-[#0A192F] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#00D1FF] transition-colors placeholder:text-slate-500"
+              />
+              <button
+                onClick={handleResend}
+                disabled={resendStatus === 'loading'}
+                className="w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group transition-all duration-300 bg-[#00D1FF]/10 border border-[#00D1FF]/20 text-[#00D1FF] hover:bg-[#00D1FF]/20 disabled:opacity-50">
+                {resendStatus === 'loading' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Renvoyer le lien</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+              {resendMessage && (
+                <p className={`text-xs font-medium px-2 ${resendStatus === 'error' ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {resendMessage}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

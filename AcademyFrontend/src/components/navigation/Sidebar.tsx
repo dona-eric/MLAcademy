@@ -2,7 +2,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, Compass, BookOpen, User, Settings, BarChart3, LogOut, LayoutDashboard, MonitorPlay, Users, Sparkles, ChevronRight, Play, Award, Box, ShieldCheck } from "lucide-react";
+import { NotepadText} from "lucide-react";
+import { Home, Compass, BookOpen, User, Settings, LogOut, LayoutDashboard, MonitorPlay, Users, Sparkles, ChevronRight, Play, Award, Box, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 const NAV_ITEMS = {
@@ -20,7 +21,7 @@ const NAV_ITEMS = {
     { name: "Catalogue",       href: "/parcours",                     icon: Compass },
     { name: "Mes Cours",       href: "/dashboard/courses",            icon: BookOpen },
     { name: "Certifications",  href: "/dashboard/certifications",     icon: Award },
-    { name: "Notes & Résultats",href: "/dashboard/grades",            icon: BarChart3 },
+    { name: "Notes & Résultats",href: "/dashboard/grades",            icon: NotepadText },
     { name: "Messages",        href: "/dashboard/messages",           icon: Users },
     { name: "Profil",          href: "/profile",                      icon: User },
     { name: "Paramètres",      href: "/settings",                     icon: Settings },

@@ -34,6 +34,6 @@ export const LANGUAGE_LEVELS = [
 ];
 
 export const SITUATIONS = ["Étudiant", "Salarié", "Indépendant", "En recherche d'emploi", "En reconversion"];
-export const EXPERIENCES = ["Aucune expérience", "Junior (moins de 2 ans)", "Confirmé (2 à 5 ans)", "Senior (plus de 5 ans)"];
+export const EXPERIENCES = ["Aucune expérience", "Junior (moins de 2 ans)", "Expérimenté (2 à 5 ans)", "Senior (plus de 5 ans)"];
 export const COUNTRIES = ["Bénin", "Sénégal", "Côte d'Ivoire", "France", "Canada", "Europe (Zone)"];
 export const SPECIFIC_STATUSES = ["Réfugié", "Situation de handicap", "Ancien militaire", "Sportif de haut niveau", "Aucun"];
