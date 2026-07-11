@@ -40,3 +40,6 @@ Thumbs.db
 *.sqlite3-journal
 *.sqlite3-shm
 *.pyc
+AcademyDB
+logs.txt
+media/
