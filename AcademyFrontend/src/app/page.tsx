@@ -1,246 +1,216 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowRight,
-  Award,
-  BarChart3,
-  BookOpen,
-  ChevronRight,
-  Code2,
-  Cpu,
-  Database,
-  PlayCircle,
-  Sparkles,
-  Users,
-} from "lucide-react";
-
-const highlights = [
-  {
-    title: "Cours structurés",
-    desc: "Des parcours progressifs pour apprendre le ML, la data science et l’IA sans te perdre.",
-  },
-  {
-    title: "Pratique guidée",
-    desc: "Notebooks, exercices et projets pour transformer la théorie en compétences concrètes.",
-  },
-  {
-    title: "Certifications",
-    desc: "Valide tes acquis avec des certificats valorisables dans ton portfolio et ton CV.",
-  },
-];
-
-const features = [
-  {
-    icon: <Code2 className="h-7 w-7" />,
-    title: "Éditeur intégré",
-    desc: "Travaille directement dans l’interface avec une expérience pensée pour apprendre efficacement.",
-  },
-  {
-    icon: <Cpu className="h-7 w-7" />,
-    title: "Apprentissage moderne",
-    desc: "Des contenus orientés cas d’usage, projets concrets et montée en compétence progressive.",
-  },
-  {
-    icon: <Award className="h-7 w-7" />,
-    title: "Certificats",
-    desc: "Une reconnaissance claire de ton niveau sur chaque parcours terminé.",
-  },
-  {
-    icon: <Users className="h-7 w-7" />,
-    title: "Communauté",
-    desc: "Apprends aux côtés d’autres passionnés et progresse avec plus de motivation.",
-  },
-  {
-    icon: <Database className="h-7 w-7" />,
-    title: "Datasets & cas réels",
-    desc: "Des ressources adaptées aux problématiques data science et IA actuelles.",
-  },
-  {
-    icon: <ChevronRight className="h-7 w-7" />,
-    title: "Parcours évolutifs",
-    desc: "Des modules conçus pour accompagner la progression du débutant à l’avancé.",
-  },
-];
+import Image from "next/image";
+import { ArrowRight, Award, Code2, Users, Quote, ChevronRight, Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="min-h-screen overflow-hidden bg-slate-50 text-slate-900">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.16),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(37,99,235,0.12),_transparent_28%)]" />
-        <div className="relative mx-auto grid max-w-7xl gap-16 px-6 py-20 lg:grid-cols-2 lg:items-center lg:px-8 lg:py-28">
+    <div className="relative min-h-screen bg-white overflow-hidden">
+
+      {/* ── HERO SECTION ── */}
+      <section className="relative pt-24 pb-16 px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/75 px-4 py-2 text-xs font-bold uppercase tracking-[0.18em] text-indigo-700 shadow-sm backdrop-blur">
-              <Sparkles className="h-4 w-4 text-indigo-500" />
-              MLAcademy — plateforme d’apprentissage en IA
+            <div className="badge badge-brand">
+              <span>Élite MLAcademy</span>
             </div>
-
-            <div className="space-y-6">
-              <h1 className="max-w-xl text-5xl font-bold leading-[0.95] tracking-tight text-slate-950 md:text-7xl">
-                Apprends le{" "}
-                Apprends le <span className="text-gradient">Machine Learning</span> avec une
-                                expérience moderne.
-              </h1>
-              <p className="max-w-xl text-lg leading-8 text-slate-600 md:text-xl">
-                Une plateforme pensée pour progresser en data science, IA et
-                machine learning avec des parcours clairs, des exercices
-                pratiques et des certifications.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <Link href="/parcours" className="btn btn-primary px-7 py-4">
-                Explorer les parcours <ArrowRight className="h-4 w-4" />
+            <h1 className="text-4xl md:text-5xl lg:text-[3.5rem] font-extrabold text-[var(--text-primary)] tracking-tight leading-[1.12]">
+              Des compétences d'aujourd'hui <br className="hidden md:block" />
+              qui ont <span className="text-[var(--brand-500)]">de l'avenir</span>.
+            </h1>
+            <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-xl">
+              Notre différence ? Une école 100% en ligne et un modèle pédagogique unique qui propulse votre réussite dans le domaine de l'Intelligence Artificielle.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 pt-2">
+              <Link href="/register" className="btn-primary text-base px-8 py-4 group">
+                Démarrer mon inscription
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/register" className="btn btn-secondary px-7 py-4">
-                Créer un compte
+              <Link href="/parcours" className="btn-secondary text-base px-8 py-4">
+                Voir les formations
               </Link>
             </div>
+          </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              {highlights.map((item) => (
+          <div className="relative w-full max-w-[500px] mx-auto">
+            <div className="absolute -inset-4 bg-[var(--brand-50)] rounded-3xl blur-2xl opacity-50"></div>
+            <div className="relative rounded-2xl overflow-hidden shadow-xl border border-[var(--border-default)] aspect-[4/3] sm:aspect-square">
+              <Image
+                src="/images/hero_student.png"
+                alt="Étudiant MLAcademy"
+                width={600} height={600} priority
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── AUDIENCE CARDS ── */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-8 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Étudiants */}
+          <div className="card p-10 md:p-12 border-l-4 border-l-[var(--warning)] relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-amber-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-60 group-hover:opacity-80 transition-all"></div>
+            <h3 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4 tracking-tight leading-tight relative z-10">
+              Étudiants(es), Professionnels, Profils en reconversion
+            </h3>
+            <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-8 max-w-sm relative z-10">
+              Faites un grand pas vers votre nouvelle carrière en suivant l'une de nos formations diplômantes.
+            </p>
+            <Link href="/register" className="btn-primary py-3 px-6 text-sm relative z-10">
+              Démarrer mon inscription
+            </Link>
+            <div className="mt-6 relative z-10">
+              <Link href="/parcours" className="text-sm font-semibold text-[var(--brand-500)] hover:text-[var(--brand-600)] transition-colors inline-flex items-center gap-1">
+                Découvrir les formations <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Instructeurs */}
+          <div className="card p-10 md:p-12 border-l-4 border-l-[var(--success)] relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-60 group-hover:opacity-80 transition-all"></div>
+            <h3 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-4 tracking-tight leading-tight relative z-10">
+              Instructeurs / Entreprises
+            </h3>
+            <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-8 max-w-sm relative z-10">
+              Partagez votre expertise ou recrutez nos talents. Rejoignez notre réseau d'expertise, de talents émergents.
+            </p>
+            <Link href="/instructeur/apply" className="btn-success py-3 px-6 text-sm relative z-10">
+              Devenir Instructeur
+            </Link>
+            <div className="mt-6 flex flex-col gap-3 relative z-10">
+              <Link href="/studio" className="text-sm font-semibold text-[var(--brand-500)] hover:text-[var(--brand-600)] transition-colors inline-flex items-center gap-1">
+                Découvrir l'espace <ChevronRight className="w-4 h-4" />
+              </Link>
+              <Link href="/instructeur/application/status" className="text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors inline-flex items-center gap-1">
+                Suivre ma candidature <ChevronRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FEATURES ── */}
+      <section className="bg-[var(--bg-secondary)] py-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center space-y-4 mb-16">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">
+              Savoir. Faire. <span className="text-[var(--brand-500)]">Savoir-faire</span>.
+            </h2>
+            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto">
+              Avec MLAcademy, découvrez une nouvelle façon d'apprendre : <span className="text-[var(--brand-500)] font-bold">20% de théorie, 80% de pratique.</span>
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Code2,
+                color: 'var(--brand-500)',
+                bgColor: 'var(--brand-50)',
+                title: 'Apprenez\noù que vous soyez',
+                desc: "Accédez à votre formation 100% en ligne au bureau, à la maison, en ville... Partout !",
+              },
+              {
+                icon: Users,
+                color: 'var(--success)',
+                bgColor: 'var(--success-light)',
+                title: 'Un mentor\npour vous accompagner',
+                desc: "Bénéficiez des conseils d'un expert professionnel qui vous aide à progresser tout au long de votre formation.",
+              },
+              {
+                icon: Award,
+                color: 'var(--warning)',
+                bgColor: 'var(--warning-light)',
+                title: 'Travaillez sur\ndes projets professionnalisants',
+                desc: "Réalisez des projets concrets, issus de scénarios métiers, directement applicables dans le monde du travail.",
+              },
+            ].map(({ icon: Icon, color, bgColor, title, desc }, i) => (
+              <div key={i} className="card-flat p-8 text-center space-y-5 flex flex-col items-center hover:shadow-md transition-shadow">
                 <div
-                  key={item.title}
-                  className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm backdrop-blur"
+                  className="w-16 h-16 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: bgColor }}
                 >
-                  <h3 className="text-sm font-bold text-slate-950">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {item.desc}
+                  <Icon className="w-7 h-7" style={{ color }} />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="text-lg font-bold text-[var(--text-primary)] whitespace-pre-line leading-snug">{title}</h3>
+                  <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-xs mx-auto">
+                    {desc}
                   </p>
                 </div>
-              ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIAL ── */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="relative w-full max-w-[500px] mx-auto">
+            <div className="absolute -inset-4 bg-[var(--brand-50)] rounded-3xl blur-2xl opacity-40"></div>
+            <div className="relative rounded-2xl overflow-hidden border border-[var(--border-default)] shadow-lg aspect-[4/3] sm:aspect-square">
+              <Image
+                src="/images/testimonial_student.png"
+                alt="Témoignage Étudiant"
+                width={500} height={500}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
 
-          <div className="relative">
-            <div className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-indigo-500/10 via-blue-500/10 to-cyan-500/10 blur-3xl" />
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-slate-950 p-3 shadow-2xl">
-              <div className="rounded-[1.5rem] bg-slate-900">
-                <div className="flex items-center justify-between border-b border-white/5 px-6 py-4 text-xs text-slate-400">
-                  <span>training_pipeline.py</span>
-                  <span className="inline-flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" /> Progression en temps réel
-                  </span>
-                </div>
-                <div className="grid gap-4 p-6 md:grid-cols-[1.3fr_0.7fr]">
-                  <div className="rounded-3xl bg-white/5 p-5 font-mono text-sm leading-7 text-cyan-200">
-                    <pre className="whitespace-pre-wrap">{`from mlacademy import Dataset
+          <div className="space-y-6">
+            <div className="w-12 h-12 rounded-xl bg-[var(--brand-50)] flex items-center justify-center">
+              <Quote className="w-5 h-5 text-[var(--brand-500)]" />
+            </div>
 
-# Charger un projet data science
-project = Dataset.load("ml_foundations")
-X, y = project.prepare()
+            <h2 className="text-2xl md:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight">
+              Nos étudiants <span className="text-[var(--brand-500)]">témoignent</span>
+            </h2>
 
-model.fit(X, y)
-print("Modèle entraîné avec succès")`}</pre>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="rounded-3xl bg-white p-5">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
-                        Progression
-                      </p>
-                      <p className="mt-2 text-3xl font-bold text-slate-950">
-                        84%
-                      </p>
-                      <div className="mt-4 h-2 rounded-full bg-slate-100">
-                        <div className="h-2 w-[84%] rounded-full bg-gradient-to-r from-indigo-500 to-blue-500" />
-                      </div>
-                    </div>
-                    <div className="rounded-3xl bg-indigo-500 p-5 text-white">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-indigo-100">
-                        Certification
-                      </p>
-                      <p className="mt-2 text-lg font-semibold">
-                        Prêt pour l’examen final
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <blockquote className="text-lg text-[var(--text-secondary)] leading-relaxed">
+              « Ma formation m'a beaucoup plu parce qu'elle était très adaptée à mes contraintes de temps ! Tout est fait à distance, mais je me sentais quand même très accompagnée. Chez MLAcademy, l'expertise des instructeurs fait toute la différence. »
+            </blockquote>
+
+            <div className="pt-2">
+              <p className="text-lg font-bold text-[var(--text-primary)]">Amina Diallo</p>
+              <p className="text-[var(--brand-500)] font-medium text-sm">Data Scientist Junior chez TechAfrica</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-6 lg:px-8">
-        <div className="grid gap-4 md:grid-cols-3">
-          {[
-            ["2500+", "apprenants déjà inscrits"],
-            ["Parcours", "structurés et progressifs"],
-            ["Certifications", "pour valider les acquis"],
-          ].map(([value, label]) => (
-            <div
-              key={label}
-              className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-              <p className="text-3xl font-bold text-slate-950">{value}</p>
-              <p className="mt-1 text-sm text-slate-500">{label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── CTA FINAL ── */}
+      <section className="max-w-7xl mx-auto px-6 lg:px-8 py-16 pb-24">
+        <div className="rounded-2xl border border-[var(--brand-200)] bg-[var(--brand-50)] p-12 lg:p-16 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[var(--brand-100)] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 opacity-50 pointer-events-none"></div>
 
-      <section className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
-        <div className="max-w-2xl space-y-4">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-600">
-            Pourquoi MLAcademy
-          </p>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-950 md:text-5xl">
-            Une base produit claire, minimaliste et centrée sur l’apprentissage.
-          </h2>
-          <p className="text-lg leading-8 text-slate-600">
-            On garde toutes les fonctionnalités du projet, mais on les présente
-                        dans une interface plus sobre, plus lisible et plus rassurante sur
-                        mobile, tablette et desktop.
-          </p>
-        </div>
-
-        <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {features.map((feature) => (
-            <article
-              key={feature.title}
-              className="rounded-[1.75rem] border border-slate-200 bg-white p-8 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                {feature.icon}
-              </div>
-              <h3 className="mt-6 text-xl font-semibold text-slate-950">
-                {feature.title}
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                {feature.desc}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+            <div className="space-y-6">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight leading-tight">
+                Prêt à donner un <span className="text-[var(--brand-500)]">nouvel élan</span> à votre carrière ?
+              </h2>
+              <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-xl">
+                Mettez à jour vos connaissances, développez de nouvelles compétences et obtenez une certification reconnue. Quel que soit votre projet, nous sommes là pour vous accompagner.
               </p>
-            </article>
-          ))}
-        </div>
-      </section>
+              <Link href="/register" className="btn-primary text-base px-8 py-4 inline-flex">
+                Démarrer mon inscription <ArrowRight className="h-5 w-5" />
+              </Link>
+            </div>
 
-      <section className="mx-auto max-w-7xl px-6 pb-20 lg:px-8">
-        <div className="overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-12 text-center text-white shadow-2xl md:px-12 md:py-16">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-indigo-200">
-            Prêt à commencer ?
-          </p>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight md:text-5xl">
-            Construis ton parcours en IA dès maintenant.
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-300 md:text-lg">
-            Explore les formations, démarre ton onboarding et retrouve tout dans
-            ton dashboard.
-          </p>
-          <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
-            <Link
-              href="/register"
-              className="btn btn-primary bg-white text-slate-950 hover:bg-indigo-50"
-            >
-              Rejoindre MLAcademy
-            </Link>
-            <Link
-              href="/parcours"
-              className="btn btn-secondary border-white/15 bg-white/5 text-white hover:border-white/30 hover:text-white"
-            >
-              Voir les parcours <PlayCircle className="h-4 w-4" />
-            </Link>
+            <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-[var(--border-default)] shadow-lg bg-white">
+              <Image
+                src="/images/femme_africaine_tech_mlacademy_1.png"
+                alt="Étudiante en formation IA"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+            </div>
           </div>
         </div>
       </section>

@@ -27,7 +27,7 @@ export default function PeerReviewsPage() {
     
     async function fetchSubmissions() {
       try {
-        const data = await fetchApi('/api/learning/peer-reviews/to_review/');
+        const data = await fetchApi('/api/private/learning/peer-reviews/to_review/');
         setSubmissions(data);
       } catch (err: any) {
         setError(err.message || 'Erreur lors du chargement des soumissions.');
@@ -44,7 +44,7 @@ export default function PeerReviewsPage() {
     setSubmittingReview(true);
     
     try {
-      await fetchApi(`/api/learning/peer-reviews/${activeSubmission.id}/review/`, {
+      await fetchApi(`/api/private/learning/peer-reviews/${activeSubmission.id}/review/`, {
         method: 'POST',
         body: JSON.stringify({
           score: score,

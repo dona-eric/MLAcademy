@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,8 +14,14 @@ import {
   ChevronRight,
   Menu,
   X,
-  Play
+  Play,
+  Lock,
+  StickyNote
 } from "lucide-react";
+import QuizView from "@/components/learning/QuizView";
+import CodeSandbox from "@/components/learning/CodeSandbox";
+import MuxVideoPlayer from "@/components/learning/MuxVideoPlayer";
+import LessonNotes from "@/components/learning/LessonNotes";
 
 export default function LessonPlayerPage() {
   const params = useParams();
@@ -28,6 +34,9 @@ export default function LessonPlayerPage() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'content' | 'practice' | 'quiz' | 'notes'>('content');
+  const [currentTime, setCurrentTime] = useState(0);
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -38,7 +47,7 @@ export default function LessonPlayerPage() {
 
     async function loadData() {
       try {
-        const cData = await fetchApi(`/api/courses/${courseSlug}/`);
+        const cData = await fetchApi(`/api/public/courses/${courseSlug}/`);
         setCourse(cData);
         if (lessonId) {
           const lData = await fetchApi(`/api/lessons/${lessonId}/`);
@@ -53,12 +62,28 @@ export default function LessonPlayerPage() {
     loadData();
   }, [courseSlug, lessonId, user, authLoading, router]);
 
+  const { prevLesson, nextLesson } = useMemo(() => {
+    if (!course || !lessonId) return { prevLesson: null, nextLesson: null };
+    
+    const allLessons: any[] = [];
+    course.modules?.forEach((mod: any) => {
+      mod.lessons?.forEach((les: any) => {
+        allLessons.push(les);
+      });
+    });
+
+    const currentIndex = allLessons.findIndex((l) => l.id.toString() === lessonId);
+    return {
+      prevLesson: currentIndex > 0 ? allLessons[currentIndex - 1] : null,
+      nextLesson: currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null
+    };
+  }, [course, lessonId]);
+
   const handleComplete = async () => {
+    if (lesson?.is_completed) return;
     setCompleting(true);
     try {
       await fetchApi(`/api/lessons/${lessonId}/complete/`, { method: 'POST' });
-      // In a real scenario, we might navigate to next lesson or update local state
-      // For now, reload lesson state to reflect completion
       const lData = await fetchApi(`/api/lessons/${lessonId}/`);
       setLesson(lData);
     } catch (err) {
@@ -78,10 +103,16 @@ export default function LessonPlayerPage() {
 
   if (!lesson || !course) return <div className="p-10 text-center text-white">Leçon introuvable.</div>;
 
+  const tabs = [
+    { id: 'content', label: 'Vidéo', icon: PlayCircle },
+    { id: 'practice', label: 'Pratique', icon: Code2 },
+    { id: 'quiz', label: 'Quizz', icon: FileText },
+    { id: 'notes', label: 'Notes', icon: StickyNote },
+  ];
+
   return (
     <div className="flex h-screen bg-[#0A192F] overflow-hidden font-inter text-gray-300">
       
-      {/* Sidebar Overlay (Mobile) */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
       )}
@@ -110,8 +141,7 @@ export default function LessonPlayerPage() {
               <div className="space-y-1">
                 {mod.lessons?.map((les: any) => {
                   const isActive = les.id.toString() === lessonId;
-                  // For demo purposes, we don't have is_completed in this payload without tracking, but pretend:
-                  const isCompleted = false; 
+                  const isCompleted = les.is_completed; 
                   
                   return (
                     <Link 
@@ -138,7 +168,6 @@ export default function LessonPlayerPage() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#00D1FF]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
 
@@ -151,63 +180,141 @@ export default function LessonPlayerPage() {
             <h1 className="text-white font-bold font-georgia line-clamp-1">{lesson.title}</h1>
           </div>
           <div className="flex items-center gap-4">
+            <div className="hidden md:flex bg-white/5 rounded-full p-1 border border-white/5">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-[#00D1FF] text-[#0A192F]' : 'text-gray-400 hover:text-white'}`}
+                >
+                  <tab.icon className="w-3.5 h-3.5" />
+                  {tab.label}
+                </button>
+              ))}
+            </div>
             <button 
               onClick={handleComplete}
-              disabled={completing}
-              className="px-4 py-2 bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white text-xs font-bold uppercase tracking-widest rounded-full transition-colors flex items-center gap-2"
+              disabled={completing || lesson?.is_completed}
+              className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-full transition-colors flex items-center gap-2 ${lesson?.is_completed ? 'bg-green-500/10 text-green-500' : 'bg-[#00D1FF]/10 text-[#00D1FF] hover:bg-[#00D1FF] hover:text-[#0A192F]'}`}
             >
-              <CheckCircle2 className="w-4 h-4" />
-              {completing ? 'Validation...' : 'Terminer'}
+              {lesson?.is_completed ? <CheckCircle2 className="w-4 h-4" /> : <PlayCircle className="w-4 h-4" />}
+              {lesson?.is_completed ? 'Complété' : (completing ? 'Validation...' : 'Marquer comme fini')}
             </button>
           </div>
         </header>
 
-        {/* Player & Content */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-10 z-10 relative">
-          <div className="max-w-4xl mx-auto space-y-10">
-            
-            {/* Video Player Placeholder */}
-            {lesson.video_url ? (
-              <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative group">
-                <img src={course.thumbnail || ''} alt="Video poster" className="w-full h-full object-cover opacity-50" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-20 h-20 bg-[#00D1FF] rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform shadow-[0_0_40px_rgba(0,209,255,0.4)]">
-                    <Play className="w-8 h-8 text-[#0A192F] ml-1" />
+        {/* Mobile Tabs */}
+        <div className="md:hidden flex bg-[#112240] border-b border-white/5 p-2 shrink-0 z-10">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl text-[10px] font-bold transition-all ${activeTab === tab.id ? 'bg-[#00D1FF]/10 text-[#00D1FF]' : 'text-gray-500'}`}
+            >
+              <tab.icon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar z-10 relative">
+          
+          {activeTab === 'content' && (
+            <div className="p-6 lg:p-10 h-full overflow-y-auto custom-scrollbar">
+              <div className="max-w-4xl mx-auto space-y-10">
+                {lesson.video_url || lesson.mux_playback_id ? (
+                  <MuxVideoPlayer 
+                    ref={playerRef}
+                    playbackId={lesson.mux_playback_id || "qxb01yV02npx9S019401v2K9870102L6n01q"} // Fallback test ID
+                    metadata={{
+                      video_id: lesson.id.toString(),
+                      video_title: lesson.title,
+                      viewer_user_id: user?.id?.toString() || ""
+                    }}
+                    onTimeUpdate={(time) => setCurrentTime(time)}
+                    onEnded={handleComplete}
+                  />
+                ) : (
+                  <div className="aspect-video bg-[#112240] rounded-3xl flex flex-col items-center justify-center shadow-2xl border border-white/10">
+                    <FileText className="w-16 h-16 text-gray-600 mb-4" />
+                    <p className="text-gray-400 font-medium">Contenu textuel uniquement</p>
+                  </div>
+                )}
+
+                <div className="bg-[#112240] rounded-[40px] p-10 border border-white/5 shadow-xl">
+                  <div className="prose prose-invert prose-lg max-w-none text-gray-300">
+                    {lesson.content ? (
+                      <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+                    ) : (
+                      <p>Le contenu textuel de cette leçon n'est pas encore disponible.</p>
+                    )}
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="aspect-video bg-[#112240] rounded-3xl flex flex-col items-center justify-center shadow-2xl border border-white/10">
-                <FileText className="w-16 h-16 text-gray-600 mb-4" />
-                <p className="text-gray-400 font-medium">Contenu textuel uniquement</p>
-              </div>
-            )}
-
-            {/* Lesson Content */}
-            <div className="bg-[#112240] rounded-[40px] p-10 border border-white/5 shadow-xl">
-              <div className="prose prose-invert prose-lg max-w-none text-gray-300">
-                {lesson.content ? (
-                  <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
-                ) : (
-                  <p>Le contenu textuel de cette leçon n'est pas encore disponible.</p>
-                )}
-              </div>
             </div>
+          )}
 
-            {/* Bottom Navigation */}
-            <div className="flex items-center justify-between pt-6 border-t border-white/5">
-              <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-xl hover:bg-white/5">
-                <ChevronLeft className="w-5 h-5" />
-                <span className="font-bold text-sm">Leçon précédente</span>
-              </button>
-              <button className="flex items-center gap-2 text-[#00D1FF] hover:text-white transition-colors px-4 py-2 rounded-xl hover:bg-[#00D1FF]/10">
-                <span className="font-bold text-sm">Leçon suivante</span>
-                <ChevronRight className="w-5 h-5" />
-              </button>
+          {activeTab === 'practice' && (
+            <div className="h-full p-6">
+              <CodeSandbox lessonId={lesson.id} />
             </div>
-            
-          </div>
+          )}
+
+          {activeTab === 'quiz' && (
+            <div className="h-full overflow-y-auto p-6 lg:p-10">
+               <div className="max-w-3xl mx-auto">
+                  <QuizView lessonId={lesson.id} onComplete={handleComplete} />
+               </div>
+            </div>
+          )}
+
+          {activeTab === 'notes' && (
+            <div className="h-full p-6 lg:p-10">
+               <div className="max-w-3xl mx-auto h-full">
+                  <LessonNotes 
+                    lessonId={lesson.id} 
+                    currentTime={currentTime} 
+                    onSeek={(time) => {
+                      if (playerRef.current) {
+                        playerRef.current.currentTime = time;
+                        setActiveTab('content');
+                      }
+                    }} 
+                  />
+               </div>
+            </div>
+          )}
+
         </div>
+
+        {/* Bottom Navigation */}
+        <footer className="h-16 shrink-0 bg-[#0A192F]/80 backdrop-blur-md border-t border-white/5 flex items-center justify-between px-6 z-10">
+          {prevLesson ? (
+            <Link 
+              href={`/learning/${courseSlug}/lesson/${prevLesson.id}`}
+              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-xl hover:bg-white/5"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span className="font-bold text-sm">Précédent</span>
+            </Link>
+          ) : <div />}
+
+          {nextLesson && (
+            <button
+              onClick={() => {
+                if (lesson.is_completed) {
+                  router.push(`/learning/${courseSlug}/lesson/${nextLesson.id}`);
+                }
+              }}
+              className={`flex items-center gap-2 px-6 py-2 rounded-xl transition-all ${lesson.is_completed ? 'text-[#00D1FF] hover:bg-[#00D1FF]/10' : 'text-gray-600 cursor-not-allowed opacity-50'}`}
+            >
+              <span className="font-bold text-sm">Suivant</span>
+              {lesson.is_completed ? <ChevronRight className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+            </button>
+          )}
+        </footer>
+
       </main>
     </div>
   );

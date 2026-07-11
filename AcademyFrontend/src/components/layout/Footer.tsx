@@ -1,46 +1,118 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { FaGithub, FaLinkedin, FaYoutube, FaTwitter } from 'react-icons/fa';
+import { Mail } from 'lucide-react';
+
+const SOCIALS = [
+  { icon: FaLinkedin, href: 'https://www.linkedin.com/company/dtech-africa', label: 'LinkedIn' },
+  { icon: FaTwitter,  href: 'https://twitter.com/dtech-africa', label: 'Twitter' },
+  { icon: FaYoutube,  href: 'https://www.youtube.com/channel/UCO_v6Qz3jH_Q-2Wp3rFm7aQ', label: 'YouTube' },
+  { icon: FaGithub,   href: 'https://github.com/dtech-afrik', label: 'GitHub' },
+];
+
+const FOOTER_LINKS = [
+  {
+    title: 'Plateforme',
+    links: [
+      { href: '/parcours',         label: 'Parcours complets' },
+      { href: '/certifications',   label: 'Certifications' },
+      { href: '/devenir-instructeur', label: 'Devenir Instructeur' },
+    ],
+  },
+  {
+    title: 'Ressources',
+    links: [
+      { href: '/communaute', label: 'Communauté' },
+      { href: '/blog',       label: 'Blog Tech' },
+      { href: '/faq',        label: 'Aide & FAQ' },
+    ],
+  },
+];
+
+const LEGAL_LINKS = [
+  { href: '/legal',   label: 'Mentions Légales' },
+  { href: '/privacy', label: 'Confidentialité' },
+];
 
 export default function Footer() {
   return (
-    <footer className="footer-container">
-      <div className="container footer-content">
-        <div className="footer-brand">
-          <Link href="/" className="logo-link">
-            <Image 
-              src="/mlacademy_logo.png" 
-              alt="MLAcademy Logo" 
-              width={100} 
-              height={80} 
-              className="logo-img-footer"
-            />
-          </Link>
-          <p className="footer-desc">
-            La plateforme francophone de référence pour l'apprentissage du Machine Learning et de la Data Science.
+    <footer className="border-t border-[var(--border-default)] bg-[var(--bg-secondary)] pt-16 pb-8">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_2fr] gap-12 mb-12">
+
+          {/* Brand Column */}
+          <div className="space-y-6">
+            <Link href="/" className="inline-flex items-center gap-3 group">
+              <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-[var(--border-default)] shadow-sm group-hover:scale-105 transition-transform">
+                <Image src="/images/mlacademy_logo_final.png" alt="MLAcademy Logo" fill sizes="40px" className="object-cover" priority />
+              </div>
+              <span className="text-xl font-extrabold text-[var(--brand-500)] tracking-tight">MLAcademy</span>
+            </Link>
+
+            <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-sm">
+              La plateforme francophone de référence pour l'apprentissage du Machine Learning et de la Data Science par la pratique.
+            </p>
+
+            <div className="flex items-center gap-3">
+              {SOCIALS.map(({ icon: Icon, href, label }) => (
+                <Link
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  className="w-10 h-9 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--brand-500)] hover:border-[var(--brand-200)] transition-all"
+                >
+                  <Icon className="w-4 h-4" />
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Links Columns */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+            {FOOTER_LINKS.map(({ title, links }) => (
+              <div key={title} className="space-y-4">
+                <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">{title}</h4>
+                <nav className="flex flex-col gap-3">
+                  {links.map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="text-sm text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-colors"
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
+            ))}
+
+            {/* Contact */}
+            <div className="space-y-4 col-span-2 md:col-span-1">
+              <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Contact</h4>
+              <a href="mailto:contact@mlacademy.io" className="text-sm text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-colors flex items-center gap-2">
+                <Mail className="w-4 h-4" /> contact@mlacademy.io
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-[var(--text-primary)]">
+            © {new Date().getFullYear()} MLAcademy. Tous droits réservés.
           </p>
-        </div>
-        <div className="footer-links">
-          <div className="footer-col">
-            <h4>Apprendre</h4>
-            <Link href="/parcours">Parcours complets</Link>
-            <Link href="/projets">Projets pratiques</Link>
-            <Link href="/certifications">Certifications</Link>
-          </div>
-          <div className="footer-col">
-            <h4>Communauté</h4>
-            <Link href="/forum">Forum</Link>
-            <Link href="/discord">Serveur Discord</Link>
-            <Link href="/blog">Blog technique</Link>
-          </div>
-          <div className="footer-col">
-            <h4>Légal</h4>
-            <Link href="/cgu">Conditions d'utilisation</Link>
-            <Link href="/confidentialite">Politique de confidentialité</Link>
+          <div className="flex items-center gap-6">
+            {LEGAL_LINKS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-xs text-[var(--text-primary)] hover:text-[var(--text-secondary)] transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
-      </div>
-      <div className="footer-bottom container">
-        <p>&copy; {new Date().getFullYear()} MLAcademy. Tous droits réservés.</p>
       </div>
     </footer>
   );

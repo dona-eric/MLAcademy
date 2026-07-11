@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlbackend
+  labels:
+    app: mlbackend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mlbackend
+  template:
+    metadata:
+      labels:
+        app: mlbackend
+    spec:
+      containers:
+      - name: mlbackend
+        image: mlacademy-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: mlbackend-config
+        - secretRef:
+            name: mlbackend-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        # Liveness probe pour redémarrer le pod s'il plante
+        livenessProbe:
+          tcpSocket:
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        # Readiness probe pour savoir s'il est prêt à recevoir du trafic
+        readinessProbe:
+          tcpSocket:
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10

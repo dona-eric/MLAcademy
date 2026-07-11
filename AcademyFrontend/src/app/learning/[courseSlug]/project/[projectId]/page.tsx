@@ -61,7 +61,7 @@ export default function ProjectPage({ params }: { params: Promise<{ courseSlug: 
         // Fetch project details (assuming an endpoint exists, if not we will fetch via module or course)
         // A generic view for a specific project might be needed. For now, let's assume we have it at /api/learning/projects/{id}/
         // As a workaround, we fetch the course and find the project.
-        const courseData = await fetchApi(`/api/courses/${courseSlug}/`);
+        const courseData = await fetchApi(`/api/public/courses/${courseSlug}/`);
         let foundProject = null;
         for (const mod of courseData.modules) {
           if (mod.project && mod.project.id.toString() === projectId) {
@@ -78,7 +78,7 @@ export default function ProjectPage({ params }: { params: Promise<{ courseSlug: 
         // Fetch submission for this project
         try {
           // The backend expects an endpoint to list submissions, we filter by project
-          const submissions = await fetchApi(`/api/learning/submissions/`);
+          const submissions = await fetchApi(`/api/private/learning/submissions/`);
           const mySubmission = submissions.find((s: any) => s.project.toString() === projectId);
           if (mySubmission) {
             setSubmission(mySubmission);
@@ -111,12 +111,12 @@ export default function ProjectPage({ params }: { params: Promise<{ courseSlug: 
       
       // Save draft first
       if (currentSubmission) {
-        currentSubmission = await fetchApi(`/api/learning/submissions/${currentSubmission.id}/`, {
+        currentSubmission = await fetchApi(`/api/private/learning/submissions/${currentSubmission.id}/`, {
           method: 'PUT',
           body: JSON.stringify(payload)
         });
       } else {
-        currentSubmission = await fetchApi(`/api/learning/submissions/`, {
+        currentSubmission = await fetchApi(`/api/private/learning/submissions/`, {
           method: 'POST',
           body: JSON.stringify(payload)
         });
@@ -125,7 +125,7 @@ export default function ProjectPage({ params }: { params: Promise<{ courseSlug: 
 
       // If they want to submit for review, hit the submit endpoint
       if (targetStatus === 'pending' && currentSubmission) {
-        await fetchApi(`/api/learning/submissions/${currentSubmission.id}/submit/`, {
+        await fetchApi(`/api/private/learning/submissions/${currentSubmission.id}/submit/`, {
           method: 'POST'
         });
         // Update local status

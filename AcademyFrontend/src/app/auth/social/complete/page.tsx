@@ -1,10 +1,11 @@
 // social auth completion page
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, ApiError } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 type CompleteResponse = {
   message?: string;
@@ -18,9 +19,10 @@ function sanitizeNextPath(value: string | null): string {
   return value;
 }
 
-export default function SocialAuthCompletePage() {
+function SocialAuthCompletePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { checkAuth } = useAuth();
 
   const nextPath = useMemo(() => {
     return sanitizeNextPath(searchParams.get("next"));
@@ -35,36 +37,58 @@ export default function SocialAuthCompletePage() {
 
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: number | undefined;
 
     async function completeSocialLogin() {
       try {
         const response = (await fetchApi(
-          "/api/users/social/complete/",
+          "/api/private/users/social/complete/",
           {
             method: "GET",
           },
-        )) as CompleteResponse;
+        )) as CompleteResponse & { access?: string; refresh?: string };
 
         if (!isMounted) return;
 
+        if (response.access) localStorage.setItem("access_token", response.access);
+        if (response.refresh) localStorage.setItem("refresh_token", response.refresh);
+
+        // Synchroniser le contexte utilisateur global avant de rediriger
+        await checkAuth();
+
+        if (!isMounted) return;
+
+        // Sauvegarder la destination finale voulue pour après la validation 2FA
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("post_2fa_redirect", nextPath);
+        }
+
         setStatus("success");
-        setMessage(response?.message || "Connexion sociale réussie.");
+        setMessage(response?.message || "Connexion sociale réussie. Redirection vers la sécurisation 2FA...");
 
-        const destination = sanitizeNextPath(response?.next || nextPath);
-
-        window.setTimeout(() => {
+        timeoutId = window.setTimeout(() => {
           if (!isMounted) return;
-          router.replace(destination);
+          router.replace("/2fa");
         }, 900);
-      } catch (error) {
+      } catch (error: any) {
         if (!isMounted) return;
 
         setStatus("error");
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Impossible de finaliser la connexion sociale.",
-        );
+        if (error instanceof ApiError) {
+          if (error.status === 401) {
+            setMessage("Session d'authentification sociale invalide ou expirée.");
+          } else if (error.status === 403) {
+            setMessage("Accès refusé. Votre compte n'est pas autorisé.");
+          } else {
+            setMessage(error.message || "Erreur lors de la finalisation.");
+          }
+        } else {
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "Impossible de finaliser la connexion sociale.",
+          );
+        }
       }
     }
 
@@ -72,8 +96,11 @@ export default function SocialAuthCompletePage() {
 
     return () => {
       isMounted = false;
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
     };
-  }, [nextPath, router]);
+  }, [nextPath, router, checkAuth]);
 
   return (
     <div
@@ -150,10 +177,10 @@ export default function SocialAuthCompletePage() {
             }}
           >
             <Link href="/login" className="btn btn-primary">
-              Retour à la connexion
+              Connexion
             </Link>
             <Link href="/parcours" className="btn btn-secondary">
-              Aller aux cours
+              Découvrez nos formations
             </Link>
           </div>
         )}
@@ -185,5 +212,19 @@ export default function SocialAuthCompletePage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function SocialAuthCompletePage() {
+  return (
+    <Suspense fallback={
+      <div className="auth-container" style={{ minHeight: "calc(100vh - 72px)" }}>
+        <div className="glass-panel" style={{ width: "100%", maxWidth: "520px", padding: "2.75rem", textAlign: "center" }}>
+          <h1 className="text-gradient" style={{ fontSize: "2rem", marginBottom: "1rem" }}>Chargement...</h1>
+        </div>
+      </div>
+    }>
+      <SocialAuthCompletePageContent />
+    </Suspense>
   );
 }

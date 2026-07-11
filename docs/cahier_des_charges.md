@@ -95,7 +95,7 @@ Devenir la référence francophone de formation en Data Science et Machine Learn
 ### 3.5 Gamification & Engagement
 **F-10 Système de Points & Badges**
 - Points XP gagnés à chaque leçon complétée, quiz réussi, projet soumis.
-- Badges thématiques : "Premier pas", "Ninja Pandas", "ML Master".
+- Badges thématiques : "Beginner", "Ninja Coding", "Master of Code".
 - Classement hebdomadaire/mensuel entre apprenants (opt-in).
 - Défis hebdomadaires : mini-projets chronométrés avec bonus XP.
 
@@ -129,7 +129,7 @@ Devenir la référence francophone de formation en Data Science et Machine Learn
 - Système de bons de réduction et codes promo.
 - Remboursement sous 14 jours (politique satisfait ou remboursé).
 
-### 3.8 Interface d'Administration
+### 3.8 Interface d'Administration & Studio Instructeur
 **F-14 Tableau de Bord Admin**
 - Statistiques globales : apprenants actifs, CA, cours les plus suivis, taux de complétion.
 - Gestion des utilisateurs : recherche, suspension, modification des accès.
@@ -142,6 +142,12 @@ Devenir la référence francophone de formation en Data Science et Machine Learn
 - Constructeur de quiz par glisser-déposer.
 - Prévisualisation de la leçon avant publication.
 - Gestion des versions (draft / publié / archivé).
+
+**F-16 Espace Studio (Instructeur)**
+- Tableau de bord avec indicateurs de performance (revenus, étudiants, temps d'étude).
+- Gestion visuelle du curriculum : création de modules et leçons dynamiques.
+- Section "Projets & Quiz" : ajout de projets de fin de module certifiants, instructions Markdown, et code d'amorçage.
+- **[À venir]** Espace "Peer Review" (Évaluation par les pairs) : interface permettant de corriger, noter et faire des retours sur les projets soumis par les apprenants.
 
 ### 3.9 Système de Notifications
 - Notifications in-app : nouvelles leçons, badges obtenus, réponses au forum.
