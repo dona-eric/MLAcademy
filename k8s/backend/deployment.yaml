@@ -32,13 +32,11 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
-        # Liveness probe pour redémarrer le pod s'il plante
         livenessProbe:
           tcpSocket:
             port: 8000
           initialDelaySeconds: 15
           periodSeconds: 20
-        # Readiness probe pour savoir s'il est prêt à recevoir du trafic
         readinessProbe:
           tcpSocket:
             port: 8000

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 import {ConditionalHeader, ConditionalFooter, MainWrapper } from "@/components/layout/ConditionalLayoutHelpers";
+import { GlobalAIAssistant } from "@/components/GlobalAIAssistant";
 
 export const metadata: Metadata = {
   title: "MLAcademy: Apprenez la Data Science et le Machine Learning",
@@ -20,6 +21,7 @@ export default function RootLayout({
         <AuthProvider>
           <ConditionalHeader />
           <MainWrapper>{children}</MainWrapper>
+          <GlobalAIAssistant />
           <ConditionalFooter />
         </AuthProvider>
       </body>

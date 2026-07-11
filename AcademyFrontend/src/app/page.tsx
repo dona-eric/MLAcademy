@@ -85,7 +85,7 @@ export default function Home() {
               <Link href="/studio" className="text-sm font-semibold text-[var(--brand-500)] hover:text-[var(--brand-600)] transition-colors inline-flex items-center gap-1">
                 Découvrir l'espace <ChevronRight className="w-4 h-4" />
               </Link>
-              <Link href="/instructeur/application/status" className="text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors inline-flex items-center gap-1">
+              <Link href="/instructor/application/status" className="text-xs font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors inline-flex items-center gap-1">
                 Suivre ma candidature <ChevronRight className="w-3 h-3" />
               </Link>
             </div>

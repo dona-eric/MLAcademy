@@ -44,12 +44,12 @@ export default function Footer() {
           <div className="space-y-6">
             <Link href="/" className="inline-flex items-center gap-3 group">
               <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-[var(--border-default)] shadow-sm group-hover:scale-105 transition-transform">
-                <Image src="/images/mlacademy_logo_final.png" alt="MLAcademy Logo" fill sizes="40px" className="object-cover" priority />
+                <Image src="/images/mlacademy_logo_final.png" alt="MLAcademy Logo" fill sizes="50px" className="object-cover" priority />
               </div>
               <span className="text-xl font-extrabold text-[var(--brand-500)] tracking-tight">MLAcademy</span>
             </Link>
 
-            <p className="text-[var(--text-secondary)] text-sm leading-relaxed max-w-sm">
+            <p className="text-[var(--text-primary)] text-sm leading-relaxed max-w-sm">
               La plateforme francophone de référence pour l'apprentissage du Machine Learning et de la Data Science par la pratique.
             </p>
 
@@ -89,7 +89,7 @@ export default function Footer() {
             {/* Contact */}
             <div className="space-y-4 col-span-2 md:col-span-1">
               <h4 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Contact</h4>
-              <a href="mailto:contact@mlacademy.io" className="text-sm text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-colors flex items-center gap-2">
+              <a href="mailto:dtech.afrik@gmail.com" className="text-sm text-[var(--text-secondary)] hover:text-[var(--brand-500)] transition-colors flex items-center gap-2">
                 <Mail className="w-4 h-4" /> contact@mlacademy.io
               </a>
             </div>

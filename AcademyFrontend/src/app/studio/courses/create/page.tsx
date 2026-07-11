@@ -9,6 +9,8 @@ import {
   Plus, Trash2, ChevronRight, Check, Loader2
 } from "lucide-react";
 import { fetchApi } from "@/lib/api";
+import { CopilotInput } from "@/components/studio/CopilotInput";
+import { CopilotTextarea } from "@/components/studio/CopilotTextarea";
 
 export default function CreateCoursePage() {
   const router = useRouter();
@@ -135,8 +137,12 @@ export default function CreateCoursePage() {
             <section className="card p-8 border border-[var(--border-subtle)] space-y-6 shadow-sm">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest ml-1">Titre de la formation</label>
-                <input 
-                  required name="title" value={formData.title} onChange={handleChange}
+                <CopilotInput 
+                  required 
+                  name="title" 
+                  fieldName="title"
+                  value={formData.title} 
+                  onValueChange={(val) => setFormData(prev => ({ ...prev, title: val }))}
                   className="w-full bg-[var(--bg-primary)] border border-[var(--border-default)] rounded-xl py-4 px-6 text-base font-bold text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-500)] focus:ring-4 focus:ring-[var(--brand-500)]/10 transition-all placeholder:text-[var(--text-tertiary)]"
                   placeholder="Ex: Maîtriser Apache Spark pour le Big Data"
                 />
@@ -144,8 +150,12 @@ export default function CreateCoursePage() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest ml-1">Résumé court</label>
-                <input 
-                  required name="short_description" value={formData.short_description} onChange={handleChange}
+                <CopilotInput 
+                  required 
+                  name="short_description" 
+                  fieldName="short_description"
+                  value={formData.short_description} 
+                  onValueChange={(val) => setFormData(prev => ({ ...prev, short_description: val }))}
                   className="w-full bg-[var(--bg-primary)] border border-[var(--border-default)] rounded-xl py-3 px-6 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--brand-500)] focus:ring-4 focus:ring-[var(--brand-500)]/10 transition-all placeholder:text-[var(--text-tertiary)]"
                   placeholder="Une phrase accrocheuse pour le catalogue..."
                 />
@@ -153,8 +163,12 @@ export default function CreateCoursePage() {
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-[var(--text-tertiary)] uppercase tracking-widest ml-1">Description complète</label>
-                <textarea 
-                  required name="description" value={formData.description} onChange={handleChange}
+                <CopilotTextarea 
+                  required 
+                  name="description" 
+                  fieldName="description"
+                  value={formData.description} 
+                  onValueChange={(val) => setFormData(prev => ({ ...prev, description: val }))}
                   rows={8}
                   className="w-full bg-[var(--bg-primary)] border border-[var(--border-default)] rounded-xl py-4 px-6 text-sm text-[var(--text-secondary)] focus:outline-none focus:border-[var(--brand-500)] focus:ring-4 focus:ring-[var(--brand-500)]/10 transition-all placeholder:text-[var(--text-tertiary)]"
                   placeholder="Détaillez le programme, les objectifs et ce que l'apprenant va accomplir..."

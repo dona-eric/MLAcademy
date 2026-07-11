@@ -14,12 +14,14 @@ from .views import (
     PublicInstructorStatusView,
     InstructorAccountActivateView,
     AdminAccountActivateView,
+    ResendVerificationEmailView,
 )
 
 urlpatterns = [
     path("check-email/", CheckEmailView.as_view(), name="check-email"),
     path("register/", RegisterView.as_view(), name="user-register"),
     path("verify-email/<uuid:token>/", VerifyEmailView.as_view(), name="verify-email"),
+    path("resend-verification/", ResendVerificationEmailView.as_view(), name="resend-verification"),
     path("token/", CustomTokenObtainPairView.as_view(), name="token-obtain-pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("password-reset/", PasswordResetRequestView.as_view(), name="password-reset-request"),

@@ -156,11 +156,20 @@ class VerifyEmailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Check expiration (24 hours)
+        if user.verification_sent_at:
+            expiration_time = user.verification_sent_at + timezone.timedelta(hours=24)
+            if timezone.now() > expiration_time:
+                return Response(
+                    {"error": "Le lien de vérification a expiré."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         if user.email_verified:
             return Response({"message": "Email déjà vérifié."})
 
         user.email_verified = True
-        user.verification_token = uuid.uuid4()  # Invalide le token après usage
+        user.verification_token = None
         user.save(update_fields=["email_verified", "verification_token"])
 
         return Response(
@@ -168,6 +177,72 @@ class VerifyEmailView(APIView):
                 "message": "Email confirmé avec succès ! Vous pouvez maintenant vous connecter."
             }
         )
+
+class ResendVerificationEmailView(APIView):
+    """
+    POST /api/public/users/resend-verification/
+    Renvoie le lien d'activation si l'email n'est pas encore vérifié.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response(
+                {"error": "L'adresse email est requise."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        generic_response = Response(
+            {
+            "message": "Si l'email existe, un nouveau lien d'activation de votre compt à été envoyé."
+            }
+        )
+        try:
+            user = User.objects.get(email=email.strip().lower())
+        except User.DoesNotExist:
+            # Pour des raisons de sécurité, on ne révèle pas que l'email n'existe pas
+            return generic_response
+
+        if user.email_verified:
+            return Response(
+                {"error": "Cet email est déjà vérifié."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        # ANTI-SPAM (Rate Limiting) : Limiter à 1 renvoi toutes les 2 minutes
+        if user.verification_sent_at:
+            cooldown_time = user.verification_sent_at + timedelta(minutes=2)
+            if timezone.now() < cooldown_time:
+                return Response(
+                    {
+                        "error": "Veuillez patienter 2 minutes avant de demander un nouveau lien."
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+        # Générer un nouveau token et mettre à jour la date d'envoi
+        user.verification_token = uuid.uuid4()
+        user.verification_sent_at = timezone.now()
+        user.save(update_fields=["verification_token", "verification_sent_at"])
+
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
+        
+        send_mail(
+            subject="MLAcademy - Nouveau Lien d'activation",
+            message=(
+                f"Bonjour {user.first_name or user.email},\n\n"
+                f"Cliquez sur ce nouveau lien pour confirmer votre email :\n{verification_link}\n\n"
+                "Ce lien est valable 24 heures.\n\n"
+                "L'équipe MLAcademy"
+            ),
+            from_email="noreply@mlacademy.io",
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+
+        return Response(
+            {
+                "message": "Un nouveau lien de vérification a été envoyé à votre adresse email."
+            })
 #  CONNEXION JWT
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
