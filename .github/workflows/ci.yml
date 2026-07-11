@@ -1,9 +1,9 @@
 name: CI
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, courses]
   pull_request:
-    branches: [main, develop]
+    branches: [develop, courses]
 
 jobs:
   frontend:
@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22.21.1'
           cache: 'npm'
           cache-dependency-path: AcademyFrontend/package-lock.json
       - name: Install & Lint
@@ -27,13 +27,13 @@ jobs:
           npx tsc --noEmit
 
   backend:
-    name: Backend (Django) CI
+    name: Backend MLAcademy
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.13.7'
       - name: Install dependencies
         run: |
           cd MLBackend
@@ -48,9 +48,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.13.7'
       - name: Install dependencies
         run: |
           cd MLSandbox
