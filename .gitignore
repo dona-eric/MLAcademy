@@ -34,3 +34,6 @@ Thumbs.db
 # Misc
 *.log
 .turbo/
+logs.txt
+AcademyDB
+media/
