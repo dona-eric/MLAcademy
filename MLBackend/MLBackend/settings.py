@@ -176,7 +176,21 @@ if os.getenv("DATABASE_URL"):
         ssl_require=True,
     )
 
-
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'asyncio': {
+            'handlers': ['console'],
+            'level': 'WARNING',  # Évite d'afficher les infos ou erreurs mineures d'annulation
+        },
+    },
+}
 JAZZMIN_SETTINGS = {
     # --- Titres et Branding ---
     "site_title": "MLAcademy Admin",
