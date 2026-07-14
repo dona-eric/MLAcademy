@@ -32,6 +32,8 @@ coverage/
 Thumbs.db
 
 # Misc
+docs/
+er_diagram.md
 *.log
 .turbo/
 *.sqlite3

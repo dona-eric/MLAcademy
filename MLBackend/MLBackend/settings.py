@@ -36,17 +36,33 @@ DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "*")
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
 
+CORS_ALLOWED_ORIGINS = [
+    "https://mlacademie.vercel.app",
+]
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
+    "https://mlacademie.vercel.app",
     "http://localhost:3000",
 ]
+CORS_ALLOW_CREDENTIALS = True
+if os.getenv("FRONTEND_PROD_URL"):
+    CSRF_TRUSTED_ORIGINS.append(os.getenv("FRONTEND_PROD_URL"))
 
-# Ensure cookies work over HTTP for local dev
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
+# Secure cookies in production
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SAMESITE = 'Lax'
+
+# Strict Security Headers in Production
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    # Force HTTPS only if specified (useful if proxy like Vercel/Nginx handles it)
+    SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() == "true"
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 
 # Application definition
@@ -283,6 +299,16 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "10/day",
+        "user": "20/hour",
+        "login": "5/minute",
+        "ai_chat": "100/day",
+    },
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
 

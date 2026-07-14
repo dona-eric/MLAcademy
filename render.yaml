@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: mlacademy-backend
+    name: MLBackend
     env: python
     buildCommand: "./build.sh"
     startCommand: "cd MLBackend && daphne -b 0.0.0.0 -p $PORT MLBackend.asgi:application"
@@ -9,9 +9,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.9
       - key: DATABASE_URL
-        fromDatabase:
-          name: mlacademy-db
-          property: connectionString
+        sync: false
       - key: REDIS_URL
         fromService:
           type: redis
@@ -21,7 +19,6 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
-        -
       - key: ALLOWED_HOSTS
         value: "*"
       - key: CORS_ALLOWED_ORIGINS
@@ -31,7 +28,3 @@ services:
     name: mlacademy-redis
     plan: free
     ipAllowList: []
-
-databases:
-  - name: mlacademy-db
-    plan: free
