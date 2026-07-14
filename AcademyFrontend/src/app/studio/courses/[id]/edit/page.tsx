@@ -177,8 +177,8 @@ export default function EditCoursePage({ params }: { params: Promise<{ id: strin
         method: "POST",
         body: JSON.stringify({ name: newCategoryName.trim(), icon: "📁" }),
       });
-      setCategories(prev => [...prev, data]);
-      setCourse(prev => ({ ...prev, category: data.id }));
+      setCategories((prev: any[]) => [...prev, data]);
+      setCourse((prev: any) => ({ ...prev, category: data.id }));
       setNewCategoryName("");
       setIsCreatingCategory(false);
     } catch (err) {

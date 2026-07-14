@@ -30,6 +30,7 @@ export interface UserProfile {
   date_joined: string;
   last_login: string | null;
   is_instructor: boolean;
+  is_recruiter?: boolean;
   is_staff: boolean;
   is_superuser: boolean;
   instructor_status: "pending" | "approved" | "rejected";

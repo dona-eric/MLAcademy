@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Award, Code2, Users, Quote, ChevronRight, Sparkles } from "lucide-react";
+import { ArrowRight, Award, Code2, Users, Quote, ChevronRight} from "lucide-react";
 
 export default function Home() {
   return (

@@ -1,6 +1,8 @@
 import React from "react";
 import { Search, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import Link from "next/link";
 
 interface CommunityHeroProps {
   searchQuery: string;
@@ -16,6 +18,8 @@ export function CommunityHero({
   onSearch,
   onOpenRegisterModal,
 }: CommunityHeroProps) {
+  const { user } = useAuth();
+  
   return (
     <div id="community-hero" className="relative overflow-hidden pt-28 pb-16 bg-[var(--bg-primary)] border-b border-[var(--border-subtle)]">
       {/* Background Gradients */}
@@ -76,7 +80,7 @@ export function CommunityHero({
               <span>Filtrer</span>
             </button>
 
-            {onOpenRegisterModal && (
+            {onOpenRegisterModal && !user && (
               <button
                 id="register-profile-modal-btn"
                 type="button"
@@ -86,6 +90,18 @@ export function CommunityHero({
                 <UserPlus className="w-4 h-4 text-[var(--brand-500)]" />
                 <span>Rejoindre</span>
               </button>
+            )}
+
+            {user && (
+              <Link href="/communaute/messages" className="btn-secondary px-6 py-4 rounded-2xl text-sm whitespace-nowrap">
+                Messages
+              </Link>
+            )}
+            
+            {user && (user.is_recruiter || user.is_staff) && (
+              <Link href="/communaute/recruteur" className="btn-secondary px-6 py-4 rounded-2xl text-sm bg-[var(--brand-50)] text-[var(--brand-600)] border-[var(--brand-200)] whitespace-nowrap">
+                Espace Recruteur
+              </Link>
             )}
           </form>
         </motion.div>
