@@ -36,16 +36,11 @@ DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "*")
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://mlacademie.vercel.app",
-    "https://mlacademy.onrender.com",
-]
 CSRF_TRUSTED_ORIGINS = [
     "https://mlacademie.vercel.app",
     "https://mlacademy.onrender.com",
     "http://localhost:3000",
 ]
-CORS_ALLOW_CREDENTIALS = True
 if os.getenv("FRONTEND_PROD_URL"):
     CSRF_TRUSTED_ORIGINS.append(os.getenv("FRONTEND_PROD_URL"))
 
@@ -363,7 +358,7 @@ SIMPLE_JWT = {
 
 # CORS Configuration for development
 CORS_ALLOW_CREDENTIALS = True
-cors_allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+cors_allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "https://mlacademie.vercel.app,https://mlacademy.onrender.com,http://localhost:3000")
 CORS_ALLOWED_ORIGINS = [orig.strip() for orig in cors_allowed_origins_env.split(",") if orig.strip()]
 CORS_ALLOW_HEADERS = list(
     (
