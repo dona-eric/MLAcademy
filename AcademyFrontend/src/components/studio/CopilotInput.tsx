@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { fetchApi } from '@/lib/api';
+import { Sparkles } from 'lucide-react';
 
 interface CopilotInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
   fieldName: string;
@@ -69,6 +70,15 @@ export function CopilotInput({ fieldName, courseId, value, onValueChange, classN
     onValueChange(e.target.value);
   };
 
+  const acceptSuggestion = () => {
+    if (suggestion) {
+      const newValue = `${value}${suggestion}`;
+      onValueChange(newValue);
+      setSuggestion('');
+      inputRef.current?.focus();
+    }
+  };
+
   return (
     <div className="relative w-full">
       <div 
@@ -97,9 +107,13 @@ export function CopilotInput({ fieldName, courseId, value, onValueChange, classN
         </div>
       )}
       {!isFetching && suggestion && (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 border border-slate-700 rounded px-1 z-20 pointer-events-none">
-          TAB
-        </div>
+        <button 
+          type="button"
+          onClick={acceptSuggestion}
+          className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-[#00D1FF] bg-[#00D1FF]/10 hover:bg-[#00D1FF]/20 px-2 py-1 rounded-md z-20 transition-colors pointer-events-auto"
+        >
+          <Sparkles className="w-3 h-3" /> Accepter
+        </button>
       )}
     </div>
   );
