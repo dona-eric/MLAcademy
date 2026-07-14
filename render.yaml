@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: MLBackend
+    name: MLAcademy
     env: python
     buildCommand: "./build.sh"
     startCommand: "cd MLBackend && daphne -b 0.0.0.0 -p $PORT MLBackend.asgi:application"
