@@ -38,9 +38,11 @@ ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.s
 
 CORS_ALLOWED_ORIGINS = [
     "https://mlacademie.vercel.app",
+    "https://mlacademy.onrender.com",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "https://mlacademie.vercel.app",
+    "https://mlacademy.onrender.com",
     "http://localhost:3000",
 ]
 CORS_ALLOW_CREDENTIALS = True
@@ -402,9 +404,9 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"  # Géré manuellement via notre vue
 SOCIALACCOUNT_LOGIN_ON_GET = True
-LOGIN_REDIRECT_URL = "http://localhost:3000/onboarding"
-LOGOUT_REDIRECT_URL = "http://localhost:3000/login"
-FRONTEND_URL = "http://localhost:3000"
+LOGIN_REDIRECT_URL = "https://mlacademie.vercel.app/onboarding"
+LOGOUT_REDIRECT_URL = "https://mlacademie.vercel.app/login"
+FRONTEND_URL = "https://mlacademie.vercel.app"
 
 # Configuration des providers OAuth (évite de stocker les clés dans la DB)
 SOCIALACCOUNT_PROVIDERS = {
