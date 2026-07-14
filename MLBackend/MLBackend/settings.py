@@ -60,6 +60,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -373,7 +374,6 @@ CORS_ALLOW_HEADERS = list(
         "x-requested-with",
     )
 )
-# CORS_EXPOSE_HEADERS = ["Set-Cookie"]
 
 # Email Configuration (console pour le dev, SMTP en prod avec Gmail)
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
