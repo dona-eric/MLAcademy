@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FaGithub, FaLinkedin, FaYoutube, FaTwitter } from 'react-icons/fa';
 import { Mail } from 'lucide-react';
+import Newsletter from '../marketing/Newsletter';
 
 const SOCIALS = [
   { icon: FaLinkedin, href: 'https://www.linkedin.com/company/dtech-africa', label: 'LinkedIn' },
@@ -38,6 +39,10 @@ export default function Footer() {
   return (
     <footer className="border-t border-[var(--border-default)] bg-[var(--bg-secondary)] pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="mb-16 -mt-8">
+          <Newsletter />
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_2fr] gap-12 mb-12">
 
           {/* Brand Column */}
