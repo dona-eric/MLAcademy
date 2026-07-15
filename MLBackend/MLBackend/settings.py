@@ -15,6 +15,11 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
+import os
+import firebase_admin
+from firebase_admin import credentials
+
+# Chemin vers votre fichier JSON de clé privée téléchargé
 
 
 # Charger les variables d'environnement depuis le fichier .env
@@ -376,12 +381,12 @@ CORS_ALLOW_HEADERS = list(
 )
 
 # Email Configuration (console pour le dev, SMTP en prod avec Gmail)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 # Celery Configuration
 CELERY_BROKER_URL = "redis://localhost:6379/0"
@@ -440,3 +445,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # Sandbox Configuration pour l'exécution de code
 SANDBOX_URL = os.getenv("SANDBOX_URL", "http://localhost:8000/execute")
+
+cred_path = os.path.join(os.path.dirname(__file__), 'mlacademy-82d8b-firebase-adminsdk-fbsvc-9d6ae399a8.json')
+
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+    print("Firebase Admin initialisé avec succès !")

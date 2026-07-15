@@ -45,3 +45,4 @@ er_diagram.md
 AcademyDB
 logs.txt
 media/
+*.json

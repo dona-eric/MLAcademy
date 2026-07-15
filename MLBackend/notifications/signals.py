@@ -4,6 +4,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from users.models import Notification
 from learning.serializers import NotificationSerializer
+from firebase_admin import messaging
 
 @receiver(post_save, sender=Notification)
 def send_notification_to_channel(sender, instance, created, **kwargs):
@@ -20,3 +21,26 @@ def send_notification_to_channel(sender, instance, created, **kwargs):
                 'message': serializer.data
             }
         )
+
+
+def send_push_notification(fcm_token, title, body, data_payload=None):
+    """
+    Envoie une notification push à un appareil spécifique (Web ou Mobile) 
+    via son token FCM enregistré en base de données.
+    """
+    message = messaging.Message(
+        notification=messaging.Notification(
+            title=title,
+            body=body,
+        ),
+        data=data_payload or {}, # Données optionnelles lues par l'application (ex: id du cours)
+        token=fcm_token,
+    )
+    
+    try:
+        response = messaging.send(message)
+        print('Notification envoyée avec succès, ID:', response)
+        return True
+    except Exception as e:
+        print("Échec de l'envoi de la notification:", e)
+        return False
