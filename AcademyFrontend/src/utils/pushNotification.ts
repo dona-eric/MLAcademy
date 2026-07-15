@@ -1,5 +1,5 @@
 // src/utils/pushNotification.ts
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { fetchApi } from '@/lib/api';
 
@@ -17,7 +17,7 @@ export const initFcm = async () => {
   try {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
 
-    const app = initializeApp(firebaseConfig);
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     const messaging = getMessaging(app);
 
     // 1. Demander la permission au navigateur
@@ -29,7 +29,7 @@ export const initFcm = async () => {
 
     // 2. Récupérer le Token FCM unique de cet appareil
     const token = await getToken(messaging, {
-      vapidKey: process.env.GENERATE_KEY_PAIR
+      vapidKey: process.env.NEXT_PUBLIC_GENERATE_KEY_PAIR
     });
 
     if (token) {

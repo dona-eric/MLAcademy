@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? window.location.origin : "");
 
 type FetchOptions = RequestInit & {
   // Les cookies HttpOnly sont envoyés automatiquement avec credentials: include.

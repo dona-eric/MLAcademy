@@ -11,6 +11,7 @@ from .views import (
     ApplyInstructorView,
     InstructorApplicationStatusView,
     ChangePasswordView,
+    SaveFCMTokenView,
 )
 
 urlpatterns = [
@@ -22,6 +23,7 @@ urlpatterns = [
     path("me/delete/", DeleteAccountView.as_view(), name="account-delete"),
     path("me/export/", ExportUserDataView.as_view(), name="account-export"),
     path("me/change-password/", ChangePasswordView.as_view(), name="change-password"),
+    path("save-fcm-token/", SaveFCMTokenView.as_view(), name="save-fcm-token"),
     path("apply-instructeur/", ApplyInstructorView.as_view(), name="apply-instructor"),
     path("instructeur-application/status/", InstructorApplicationStatusView.as_view(), name="instructor-status"),
 ]
