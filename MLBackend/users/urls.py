@@ -19,6 +19,7 @@ from .views import (
     Verify2FAView,
     VerifyEmailView, ApplyInstructorView,
     CheckEmailView,
+    SaveFCMTokenView,
 )
 
 urlpatterns = [
@@ -41,6 +42,7 @@ urlpatterns = [
     # Profil Apprenant
     path("me/", ProfileView.as_view(), name="profile-me"),
     path("profile/<str:username>/", PublicProfileView.as_view(), name="profile-public"),
+    path("save-fcm-token/", SaveFCMTokenView.as_view(), name="save-fcm-token"),
     # Compte (RGPD)
     path("me/delete/", DeleteAccountView.as_view(), name="account-delete"),
     path("me/export/", ExportUserDataView.as_view(), name="account-export"),

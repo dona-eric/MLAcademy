@@ -21,6 +21,17 @@ def send_notification_to_channel(sender, instance, created, **kwargs):
                 'message': serializer.data
             }
         )
+        
+        # Envoi des notifications Push (FCM)
+        from users.models import FCMDevice
+        devices = FCMDevice.objects.filter(user=instance.user)
+        for device in devices:
+            send_push_notification(
+                fcm_token=device.token,
+                title=instance.title,
+                body=instance.content,
+                data_payload={'link': instance.link} if instance.link else {}
+            )
 
 
 def send_push_notification(fcm_token, title, body, data_payload=None):

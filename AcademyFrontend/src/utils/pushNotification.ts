@@ -1,6 +1,7 @@
 // src/utils/pushNotification.ts
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { fetchApi } from '@/lib/api';
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -32,9 +33,11 @@ export const initFcm = async () => {
     });
 
     if (token) {
-      console.log("FCM Token de l'utilisateur :", token);
-      // TODO: Envoyer ce token à votre backend Django via une API POST
-      // ex: await axios.post('/api/private/users/save-fcm-token/', { token });
+      console.log("FCM Token de l'utilisateur généré avec succès.");
+      await fetchApi('/api/private/users/save-fcm-token/', {
+        method: 'POST',
+        body: JSON.stringify({ token })
+      });
     }
   } catch (error) {
     console.error("Erreur lors de la configuration de FCM:", error);

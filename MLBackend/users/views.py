@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authentication import SessionAuthentication
-from .models import BetaTesteur, InstructorApplication, InstructorProfile
+from .models import BetaTesteur, InstructorApplication, InstructorProfile, FCMDevice
 from .serializers import (
     CustomTokenObtainPairSerializer,
     PasswordResetConfirmSerializer,
@@ -493,6 +493,26 @@ class Verify2FAView(APIView):
         return Response(
             {"error": "Code OTP incorrect."}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class SaveFCMTokenView(APIView):
+    """
+    POST /api/private/users/save-fcm-token/
+    Enregistre le token FCM d'un appareil utilisateur pour les notifications Push.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response(
+                {"error": "Le token FCM est requis."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Enregistre ou met à jour le token
+        FCMDevice.objects.get_or_create(user=request.user, token=token)
+        
+        return Response({"message": "Token FCM enregistré avec succès."})
 
 
 #  COMPTE — RGPD
