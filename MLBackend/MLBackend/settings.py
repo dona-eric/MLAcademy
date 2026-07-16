@@ -380,13 +380,17 @@ CORS_ALLOW_HEADERS = list(
     )
 )
 
-# Email Configuration (console pour le dev, SMTP en prod avec Gmail)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND")
+# Email Configuration (SMTP par défaut car pas de nom de domaine pour Resend)
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+# Configuration Resend (Prêt pour quand vous aurez un domaine)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+DEFAULT_FROM_EMAIL = "noreply@mlacademy.io"
 
 # Celery Configuration
 CELERY_BROKER_URL = "redis://localhost:6379/0"
