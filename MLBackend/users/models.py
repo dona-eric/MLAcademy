@@ -343,3 +343,19 @@ class BetaTesteur(models.Model):
         ordering = ['-applied_at']
     def __str__(self):
         return f"Application Bêta Testeur par {self.user.email} - Statut: {self.is_approved}"
+
+class FCMDevice(models.Model):
+    """
+    Stocke le token Firebase Cloud Messaging (FCM) d'un utilisateur pour les notifications push.
+    Un utilisateur peut avoir plusieurs appareils.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="fcm_devices")
+    token = models.CharField(max_length=255, unique=True, verbose_name="FCM Token")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Appareil FCM"
+        verbose_name_plural = "Appareils FCM"
+
+    def __str__(self):
+        return f"Appareil de {self.user.email}"

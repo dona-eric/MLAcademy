@@ -21,7 +21,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authentication import SessionAuthentication
-from .models import BetaTesteur, InstructorApplication, InstructorProfile
+from .models import BetaTesteur, InstructorApplication, InstructorProfile, FCMDevice
 from .serializers import (
     CustomTokenObtainPairSerializer,
     PasswordResetConfirmSerializer,
@@ -72,7 +72,7 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        frontend_url = getattr(settings, "FRONTEND_URL")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
         send_mail(
             subject="Bienvenue sur MLAcademy! Confirmez votre email",
@@ -81,9 +81,9 @@ class RegisterView(generics.CreateAPIView):
                 f"Cliquez sur ce lien pour confirmer votre email :\n{verification_link}\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email="noreply@mlacademy.io",
+            from_email="[EMAIL_ADDRESS]",
             recipient_list=[user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
 
         return Response(
@@ -108,7 +108,7 @@ class BetaTesterRegisterView(RegisterView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        frontend_url = getattr(settings, "FRONTEND_URL")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
         send_mail(
             subject="Bienvenue dans le programme Bêta-Testeurs MLAcademyHub",
@@ -121,9 +121,9 @@ class BetaTesterRegisterView(RegisterView):
                 "Nous vous tiendrons informé dès qu'elle sera disponible.\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email="noreply@mlacademy.io",
+            from_email=[EMAIL_ADDRESS],
             recipient_list=[user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
 
         return Response(
@@ -210,7 +210,7 @@ class ResendVerificationEmailView(APIView):
             )
         # ANTI-SPAM (Rate Limiting) : Limiter à 1 renvoi toutes les 2 minutes
         if user.verification_sent_at:
-            cooldown_time = user.verification_sent_at + timedelta(minutes=2)
+            cooldown_time = user.verification_sent_at + timezone.timedelta(minutes=2)
             if timezone.now() < cooldown_time:
                 return Response(
                     {
@@ -236,7 +236,7 @@ class ResendVerificationEmailView(APIView):
             ),
             from_email="noreply@mlacademy.io",
             recipient_list=[user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
 
         return Response(
@@ -493,6 +493,26 @@ class Verify2FAView(APIView):
         return Response(
             {"error": "Code OTP incorrect."}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class SaveFCMTokenView(APIView):
+    """
+    POST /api/private/users/save-fcm-token/
+    Enregistre le token FCM d'un appareil utilisateur pour les notifications Push.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response(
+                {"error": "Le token FCM est requis."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Enregistre ou met à jour le token
+        FCMDevice.objects.get_or_create(user=request.user, token=token)
+        
+        return Response({"message": "Token FCM enregistré avec succès."})
 
 
 #  COMPTE — RGPD

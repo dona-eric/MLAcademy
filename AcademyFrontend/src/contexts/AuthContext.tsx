@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import type { UserProfile } from '@/types/user';
+import { initFcm } from '@/utils/pushNotification';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -58,6 +59,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               router.push('/2fa');
           }
       }
+      
+      // Initialisation des notifications Push Firebase si l'utilisateur est connecté
+      if (userData) {
+        initFcm();
+      }
+      
       return userData;
     } catch (error: any) {
       // On nettoie l'utilisateur si l'appel échoue (non connecté ou session expirée)

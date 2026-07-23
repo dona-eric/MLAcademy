@@ -20,6 +20,8 @@ function UnifiedAuthPageContent() {
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [resendMessage, setResendMessage] = useState('');
   
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   const googleLoginUrl = `${API_BASE_URL}/api/auth/google/login/?process=login`;
@@ -133,6 +135,22 @@ function UnifiedAuthPageContent() {
     }
   };
 
+  const handleResendEmail = async () => {
+    setResendStatus('loading');
+    setResendMessage('');
+    try {
+      await fetchApi('/api/public/users/resend-verification/', {
+        method: 'POST',
+        body: JSON.stringify({ email: formData.email })
+      });
+      setResendStatus('success');
+      setResendMessage('Nouveau lien envoyé ! Vérifiez votre boîte de réception.');
+    } catch (err: any) {
+      setResendStatus('error');
+      setResendMessage(err.message || 'Erreur lors du renvoi du lien.');
+    }
+  };
+
   const handleSocialClick = (providerUrl: string) => {
     const redirect = searchParams?.get("redirect");
     if (redirect) {
@@ -163,8 +181,20 @@ function UnifiedAuthPageContent() {
               Veuillez cliquer sur le lien pour activer votre compte.
             </p>
           </div>
-          <div className="pt-4">
-            <button onClick={() => { setStep(1); setIsLoginMode(true); }} className="btn-secondary w-full py-3">
+          <div className="pt-4 space-y-4 border-t border-[var(--border-subtle)] mt-6">
+            <button 
+              onClick={handleResendEmail} 
+              disabled={resendStatus === 'loading'}
+              className="w-full py-3 rounded-xl text-sm font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-colors bg-[var(--brand-50)] text-[var(--brand-500)] hover:bg-[var(--brand-100)] border border-[var(--brand-200)]"
+            >
+              {resendStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Renvoyer l\'email'}
+            </button>
+            {resendMessage && (
+              <p className={`text-xs font-bold ${resendStatus === 'error' ? 'text-[var(--error)]' : 'text-[var(--success)]'}`}>
+                {resendMessage}
+              </p>
+            )}
+            <button onClick={() => { setStep(1); setIsLoginMode(true); }} className="btn-secondary w-full py-3 mt-2">
               Retour à la connexion
             </button>
           </div>

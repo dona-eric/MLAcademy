@@ -15,6 +15,11 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
+import os
+import firebase_admin
+from firebase_admin import credentials
+
+# Chemin vers votre fichier JSON de clé privée téléchargé
 
 
 # Charger les variables d'environnement depuis le fichier .env
@@ -36,14 +41,11 @@ DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "*")
 ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
 
-CORS_ALLOWED_ORIGINS = [
-    "https://mlacademie.vercel.app",
-]
 CSRF_TRUSTED_ORIGINS = [
     "https://mlacademie.vercel.app",
+    "https://mlacademy.onrender.com",
     "http://localhost:3000",
 ]
-CORS_ALLOW_CREDENTIALS = True
 if os.getenv("FRONTEND_PROD_URL"):
     CSRF_TRUSTED_ORIGINS.append(os.getenv("FRONTEND_PROD_URL"))
 
@@ -63,6 +65,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -103,7 +106,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -112,6 +114,8 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
 ]
 
 ROOT_URLCONF = "MLBackend.urls"
@@ -360,7 +364,7 @@ SIMPLE_JWT = {
 
 # CORS Configuration for development
 CORS_ALLOW_CREDENTIALS = True
-cors_allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+cors_allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "https://mlacademie.vercel.app,https://mlacademy.onrender.com,http://localhost:3000")
 CORS_ALLOWED_ORIGINS = [orig.strip() for orig in cors_allowed_origins_env.split(",") if orig.strip()]
 CORS_ALLOW_HEADERS = list(
     (
@@ -375,15 +379,18 @@ CORS_ALLOW_HEADERS = list(
         "x-requested-with",
     )
 )
-# CORS_EXPOSE_HEADERS = ["Set-Cookie"]
 
-# Email Configuration (console pour le dev, SMTP en prod avec Gmail)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+# Email Configuration (SMTP par défaut car pas de nom de domaine pour Resend)
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+# Configuration Resend (Prêt pour quand vous aurez un domaine)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+DEFAULT_FROM_EMAIL = "noreply@mlacademy.io"
 
 # Celery Configuration
 CELERY_BROKER_URL = "redis://localhost:6379/0"
@@ -402,9 +409,9 @@ ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "none"  # Géré manuellement via notre vue
 SOCIALACCOUNT_LOGIN_ON_GET = True
-LOGIN_REDIRECT_URL = "http://localhost:3000/onboarding"
-LOGOUT_REDIRECT_URL = "http://localhost:3000/login"
-FRONTEND_URL = "http://localhost:3000"
+LOGIN_REDIRECT_URL = "https://mlacademie.vercel.app/onboarding"
+LOGOUT_REDIRECT_URL = "https://mlacademie.vercel.app/login"
+FRONTEND_URL = "https://mlacademie.vercel.app"
 
 # Configuration des providers OAuth (évite de stocker les clés dans la DB)
 SOCIALACCOUNT_PROVIDERS = {
@@ -442,3 +449,10 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # Sandbox Configuration pour l'exécution de code
 SANDBOX_URL = os.getenv("SANDBOX_URL", "http://localhost:8000/execute")
+
+cred_path = os.path.join(os.path.dirname(__file__), 'mlacademy-82d8b-firebase-adminsdk-fbsvc-9d6ae399a8.json')
+
+if os.path.exists(cred_path):
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+    print("Firebase Admin initialisé avec succès !")
