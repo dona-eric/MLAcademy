@@ -43,3 +43,4 @@ Thumbs.db
 AcademyDB
 logs.txt
 media/
+*.json
