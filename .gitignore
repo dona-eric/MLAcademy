@@ -46,3 +46,6 @@ AcademyDB
 logs.txt
 media/
 *.json
+
+
+k8s/backend/secret.yaml
