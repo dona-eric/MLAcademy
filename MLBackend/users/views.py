@@ -21,6 +21,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authentication import SessionAuthentication
+from .utils import send_mail_async
 from .models import BetaTesteur, InstructorApplication, InstructorProfile, FCMDevice
 from .serializers import (
     CustomTokenObtainPairSerializer,
@@ -74,16 +75,15 @@ class RegisterView(generics.CreateAPIView):
 
         frontend_url = getattr(settings, "FRONTEND_URL")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
-        send_mail(
+        send_mail_async(
             subject="Bienvenue sur MLAcademy! Confirmez votre email",
             message=(
                 f"Bonjour {user.first_name or user.email},\n\n"
                 f"Cliquez sur ce lien pour confirmer votre email :\n{verification_link}\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email="[EMAIL_ADDRESS]",
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=False,
         )
 
         return Response(
@@ -226,7 +226,7 @@ class ResendVerificationEmailView(APIView):
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
         
-        send_mail(
+        send_mail_async(
             subject="MLAcademy - Nouveau Lien d'activation",
             message=(
                 f"Bonjour {user.first_name or user.email},\n\n"
@@ -234,9 +234,8 @@ class ResendVerificationEmailView(APIView):
                 "Ce lien est valable 24 heures.\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email="noreply@mlacademy.io",
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=False,
         )
 
         return Response(
@@ -356,15 +355,14 @@ class PasswordResetRequestView(APIView):
                 f"{settings.FRONTEND_URL}"
                 f"/password-reset/confirm/{uid}/{token}/"
             )
-            send_mail(
+            send_mail_async(
                 subject="MLAcademy — Réinitialisation de votre mot de passe",
                 message=(
                     f"Bonjour,\n\nCliquez sur ce lien pour réinitialiser votre mot de passe :\n"
                     f"{reset_link}\n\nCe lien expire dans 24h.\n\nL'équipe MLAcademy"
                 ),
-                from_email="noreply@mlacademy.io",
+                from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=True,
             )
         except User.DoesNotExist:
             pass  # Sécurité : ne pas révéler si l'email existe

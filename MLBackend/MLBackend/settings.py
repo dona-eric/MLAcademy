@@ -380,17 +380,20 @@ CORS_ALLOW_HEADERS = list(
     )
 )
 
-# Email Configuration (SMTP par défaut car pas de nom de domaine pour Resend)
+# Email Configuration (Brevo / SMTP via variables d'environnement)
 EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp-relay.brevo.com")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", os.getenv("EMAIL_HOST_USER", "noreply@mlacademy.io"))
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+EMAIL_TIMEOUT = 5  # Empêche le serveur de bloquer si le serveur SMTP met trop de temps à répondre
 
 # Configuration Resend (Prêt pour quand vous aurez un domaine)
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-DEFAULT_FROM_EMAIL = "noreply@mlacademy.io"
 
 # Celery Configuration
 CELERY_BROKER_URL = "redis://localhost:6379/0"
