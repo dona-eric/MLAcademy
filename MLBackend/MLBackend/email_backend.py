@@ -16,7 +16,7 @@ class BrevoEmailBackend(BaseEmailBackend):
 
     def __init__(self, fail_silently=False, **kwargs):
         super().__init__(fail_silently=fail_silently, **kwargs)
-        self.api_key = getattr(settings, "BREVO_API_KEY", None) or getattr(settings, "RESEND_API_KEY", None)
+        self.api_key = getattr(settings, "BREVO_API_KEY", None)
         self.from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "dtech.afrik@gmail.com")
 
     def send_messages(self, email_messages):

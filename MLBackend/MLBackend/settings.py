@@ -394,7 +394,7 @@ SERVER_EMAIL = DEFAULT_FROM_EMAIL
 EMAIL_TIMEOUT = 5  # Empêche le serveur de bloquer si la connexion met trop de temps
 
 # Configuration Resend (Prêt pour quand vous aurez un domaine)
-RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+# RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
 # Celery Configuration
 CELERY_BROKER_URL = "redis://localhost:6379/0"
