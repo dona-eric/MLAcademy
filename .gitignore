@@ -48,4 +48,4 @@ media/
 *.json
 
 
-k8s/backend/secret.yaml
+k8s/**/secret.yaml
