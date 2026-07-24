@@ -345,27 +345,31 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data["email"]
+        email = serializer.validated_data["email"].strip().lower()
 
         try:
-            user = User.objects.get(email=email)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            reset_link = (
-                f"{settings.FRONTEND_URL}"
-                f"/password-reset/confirm/{uid}/{token}/"
-            )
-            send_mail_async(
-                subject="MLAcademy — Réinitialisation de votre mot de passe",
-                message=(
-                    f"Bonjour,\n\nCliquez sur ce lien pour réinitialiser votre mot de passe :\n"
-                    f"{reset_link}\n\nCe lien expire dans 24h.\n\nL'équipe MLAcademy"
-                ),
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-            )
-        except User.DoesNotExist:
-            pass  # Sécurité : ne pas révéler si l'email existe
+            user = User.objects.filter(email__iexact=email).first()
+            if user:
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+                reset_link = (
+                    f"{frontend_url}"
+                    f"/password-reset/confirm/{uid}/{token}/"
+                )
+                send_mail_async(
+                    subject="MLAcademy — Réinitialisation de votre mot de passe",
+                    message=(
+                        f"Bonjour {user.first_name or 'cher membre'},\n\n"
+                        f"Cliquez sur ce lien pour réinitialiser votre mot de passe :\n"
+                        f"{reset_link}\n\nCe lien expire dans 24h.\n\nL'équipe MLAcademy"
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Erreur réinitialisation mot de passe: {e}")
 
         return Response(
             {
