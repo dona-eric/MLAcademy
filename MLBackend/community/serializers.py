@@ -211,15 +211,28 @@ class SponsoredChallengeSerializer(serializers.ModelSerializer):
     company_logo = serializers.SerializerMethodField()
     spots_remaining = serializers.ReadOnlyField()
     submissions_count = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    difficulty_display = serializers.CharField(source='get_difficulty_display', read_only=True)
+    type_display = serializers.CharField(source='get_challenge_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = SponsoredChallenge
         fields = [
             'id', 'company', 'company_name', 'company_logo', 'title', 'slug',
-            'description', 'rules', 'evaluation_criteria', 'difficulty',
-            'reward', 'prize_pool', 'max_participants', 'spots_remaining',
-            'dataset_url', 'is_active', 'is_open', 'is_approved',
-            'deadline', 'submissions_count', 'created_at'
+            'short_description', 'description', 'objective', 'rules', 'evaluation_criteria',
+            'difficulty', 'difficulty_display', 'category', 'category_display',
+            'challenge_type', 'type_display', 'status', 'status_display',
+            'start_date', 'deadline', 'results_date',
+            'allow_teams', 'max_team_size',
+            'dataset_url', 'is_dataset_private', 'dataset_size', 'dataset_license',
+            'deliverables', 'recommended_tech',
+            'evaluation_mode', 'has_auto_grading', 'enable_public_leaderboard',
+            'reward', 'prize_pool', 'first_prize', 'second_prize', 'third_prize', 'other_perks',
+            'mentor_name', 'contact_email', 'organizer_website',
+            'progression_order', 'prerequisite_challenge', 'ranking_tier', 'badge_reward',
+            'max_participants', 'spots_remaining', 'is_active', 'is_open', 'is_approved',
+            'submissions_count', 'created_at', 'updated_at'
         ]
 
     def get_company_logo(self, obj):
@@ -234,16 +247,18 @@ class SponsoredChallengeSerializer(serializers.ModelSerializer):
 
 
 class ChallengeSubmissionSerializer(serializers.ModelSerializer):
-    user_name = serializers.ReadOnlyField(source='user.username')
+    user_name = serializers.ReadOnlyField(source='user.get_full_name')
+    username = serializers.ReadOnlyField(source='user.username')
     user_avatar = serializers.SerializerMethodField()
     challenge_title = serializers.ReadOnlyField(source='challenge.title')
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = ChallengeSubmission
         fields = [
-            'id', 'challenge', 'challenge_title', 'user', 'user_name', 'user_avatar',
-            'repo_url', 'description', 'demo_url',
-            'score', 'rank', 'jury_feedback', 'status',
+            'id', 'challenge', 'challenge_title', 'user', 'user_name', 'username', 'user_avatar',
+            'submission_number', 'repo_url', 'notebook_url', 'demo_url', 'pdf_report_url', 'description',
+            'score', 'rank', 'jury_feedback', 'status', 'status_display',
             'submitted_at', 'evaluated_at', 'created_at'
         ]
         read_only_fields = ['user', 'score', 'rank', 'jury_feedback', 'status', 'submitted_at', 'evaluated_at']
