@@ -27,7 +27,8 @@ def community_stats(request):
     return Response({
         "totalTalents": User.objects.filter(is_public_profile=True).count(),
         "applicationsProcessed": JobApplication.objects.count(),
-        "activeChallenges": SponsoredChallenge.objects.filter(is_approved=True, is_active=True).count()
+        "activeChallenges": SponsoredChallenge.objects.filter(is_approved=True, is_active=True).count(),
+        "activeJobs": JobOffer.objects.filter(is_active=True).count()
     })
 
 
