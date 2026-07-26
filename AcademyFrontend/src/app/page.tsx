@@ -78,7 +78,7 @@ export default function Home() {
             <p className="text-[var(--text-secondary)] text-base leading-relaxed mb-8 max-w-sm relative z-10">
               Partagez votre expertise ou recrutez nos talents. Rejoignez notre réseau d'expertise, de talents émergents.
             </p>
-            <Link href="/instructeur/apply" className="btn-success py-3 px-6 text-sm relative z-10">
+            <Link href="/instructor/apply" className="btn-success py-3 px-6 text-sm relative z-10">
               Devenir Instructeur
             </Link>
             <div className="mt-6 flex flex-col gap-3 relative z-10">
