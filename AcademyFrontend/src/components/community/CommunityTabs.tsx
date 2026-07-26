@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Users, Trophy, Briefcase } from "lucide-react";
+import { Users, Trophy, Briefcase, Award } from "lucide-react";
 
 export type TabType = 'talents' | 'leaderboard' | 'jobs' | 'challenges';
 
@@ -9,41 +9,43 @@ interface CommunityTabsProps {
 }
 
 export function CommunityTabs({ activeTab, setActiveTab }: CommunityTabsProps) {
-  const tabs: { id: TabType; label: string; icon: any; countBadge?: string }[] = [
-    { id: 'talents', label: 'Talents', icon: Users },
-    { id: 'leaderboard', label: 'Classement', icon: Trophy },
-    { id: 'jobs', label: 'Recrutement', icon: Briefcase },
-    { id: 'challenges', label: 'Challenges', icon: Trophy },
+  const tabs: { id: TabType; label: string; icon: any }[] = [
+    { id: 'talents', label: 'TALENTS', icon: Users },
+    { id: 'leaderboard', label: 'CLASSEMENT', icon: Trophy },
+    { id: 'jobs', label: "OFFRES D'EMPLOI", icon: Briefcase },
+    { id: 'challenges', label: 'CHALLENGES', icon: Award },
   ];
 
   return (
-    <div id="community-tabs-container" className="flex flex-wrap items-center justify-center gap-2 mb-12 select-none">
-      {tabs.map((tab) => {
-        const Icon = tab.icon;
-        const isActive = activeTab === tab.id;
-        return (
-          <button
-            id={`tab-btn-${tab.id}`}
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`relative flex items-center gap-2.5 px-6 py-3.5 rounded-full text-xs font-bold tracking-wider uppercase transition-all duration-200 pointer-events-auto cursor-pointer border ${
-              isActive
-                ? 'text-[var(--text-inverse)] border-[var(--brand-500)] bg-[var(--brand-500)] shadow-md'
-                : 'text-[var(--text-secondary)] border-[var(--border-default)] bg-[var(--bg-primary)] hover:text-[var(--brand-500)] hover:border-[var(--brand-200)]'
-            }`}
-          >
-            {isActive && (
-              <motion.span
-                layoutId="active-tab-glow"
-                className="absolute inset-0 rounded-full border border-[var(--brand-400)] pointer-events-none"
-                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              />
-            )}
-            <Icon className={`w-4 h-4 ${isActive ? 'text-[var(--text-inverse)]' : 'text-[var(--text-tertiary)]'}`} />
-            <span>{tab.label}</span>
-          </button>
-        );
-      })}
-    </div>
+    <section className="max-w-6xl mx-auto px-6 lg:px-8 mb-12">
+      <div id="community-tabs-container" className="flex flex-wrap items-center justify-center gap-4 border-b border-white/10 pb-6">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              id={`tab-btn-${tab.id}`}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative flex items-center gap-2 px-8 py-3 rounded-full text-xs font-black tracking-widest uppercase transition-all duration-300 pointer-events-auto cursor-pointer ${
+                isActive
+                  ? 'bg-[#c0c1ff] text-[#07006c] shadow-[0_0_25px_rgba(99,102,241,0.35)] scale-105'
+                  : 'text-[#c7c4d7] hover:bg-white/5 hover:text-white border border-white/5'
+              }`}
+            >
+              {isActive && (
+                <motion.span
+                  layoutId="active-tab-glow"
+                  className="absolute inset-0 rounded-full border border-white/30 pointer-events-none"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
+              <Icon className={`w-4 h-4 ${isActive ? 'text-[#07006c]' : 'text-[#908fa0]'}`} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
