@@ -380,18 +380,17 @@ CORS_ALLOW_HEADERS = list(
     )
 )
 
-# Email Configuration (Brevo REST API v3 avec Fallback SMTP Automatique)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "MLBackend.email_backend.BrevoEmailBackend")
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
+# Email Configuration (Brevo SMTP Direct Relay - Option 2)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv("EMAIL_HOST")
+EMAIL_PORT = os.getenv("EMAIL_PORT")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS")
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", os.getenv("EMAIL_HOST_USER", "dtech.afrik@gmail.com"))
+EMAIL_HOST_PASSWORD = os.getenv("BREVO_SMTP_KEY")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
-EMAIL_TIMEOUT = 5  # Empêche le serveur de bloquer si la connexion met trop de temps
+EMAIL_TIMEOUT = 10  # Timeout de connexion SMTP (10 secondes)
 
 # Configuration Resend (Prêt pour quand vous aurez un domaine)
 # RESEND_API_KEY = os.getenv("RESEND_API_KEY")
