@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions, filters, status
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes
 from django.db import models as db_models
@@ -20,12 +22,26 @@ from .serializers import (
 
 User = get_user_model()
 
+def get_student_talents_queryset():
+    """
+    Retourne uniquement les profils des vrais apprenants/étudiants.
+    Exclut les recruteurs, instructeurs, administrateurs et responsables d'entreprises.
+    """
+    return User.objects.filter(
+        is_public_profile=True,
+        is_recruiter=False,
+        is_instructor=False,
+        is_staff=False,
+        is_superuser=False
+    ).exclude(managed_companies__isnull=False).distinct()
+
+
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def community_stats(request):
     """Retourne les vraies métriques de la plateforme."""
     return Response({
-        "totalTalents": User.objects.filter(is_public_profile=True).count(),
+        "totalTalents": get_student_talents_queryset().count(),
         "applicationsProcessed": JobApplication.objects.count(),
         "activeChallenges": SponsoredChallenge.objects.filter(is_approved=True, is_active=True).count(),
         "activeJobs": JobOffer.objects.filter(is_active=True).count()
@@ -102,7 +118,7 @@ class JobOfferViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()] # Devrait être IsRecruiter plus tard
+            return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
     @action(detail=True, methods=['post'], url_path='apply')
@@ -116,14 +132,14 @@ class JobOfferViewSet(viewsets.ModelViewSet):
 
 
 #  =============================================
-#  TALENT HUB (Vitrine des Profils)
+#  TALENT HUB (Vitrine des Profils Apprenants)
 # =============================================
 
-class TalentHubViewSet(viewsets.ReadOnlyModelViewSet):
+class TalentHubViewSet(viewsets.ModelViewSet):
     """
-    Interface pour les recruteurs (et talents) pour découvrir les profils.
+    Interface pour les recruteurs (et la communauté) pour découvrir uniquement les profils d'étudiants/apprenants.
+    Exclut les recruteurs, instructeurs, admins et représentants d'entreprise.
     """
-    queryset = User.objects.filter(is_public_profile=True).order_by('-date_joined')
     pagination_class = None
     serializer_class = TalentProfileSerializer
     permission_classes = [permissions.AllowAny]
@@ -131,12 +147,52 @@ class TalentHubViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['first_name', 'last_name', 'bio', 'level']
 
     def get_queryset(self):
-        # On peut filtrer par niveau (beginner, intermediate, advanced)
-        queryset = super().get_queryset()
+        queryset = get_student_talents_queryset().order_by('-date_joined')
         level = self.request.query_params.get('level')
         if level:
             queryset = queryset.filter(level=level)
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        """Enregistrement / Mise à jour du profil talent étudiant."""
+        data = request.data
+        email = data.get('email')
+        if not email and request.user.is_authenticated:
+            email = request.user.email
+
+        if not email:
+            return Response({"error": "L'email est requis pour créer un profil talent."}, status=400)
+
+        names = data.get('name', '').strip().split(' ', 1)
+        first_name = names[0] if names else ''
+        last_name = names[1] if len(names) > 1 else ''
+
+        # Récupérer ou créer l'utilisateur apprenant (jamais recruteur)
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': email.split('@')[0],
+                'first_name': first_name,
+                'last_name': last_name,
+                'is_recruiter': False,
+                'is_public_profile': True,
+                'bio': data.get('bio', ''),
+                'github_url': data.get('github', ''),
+                'linkedin_url': data.get('linkedin', ''),
+            }
+        )
+
+        if not created:
+            user.is_recruiter = False
+            user.is_public_profile = True
+            if data.get('bio'): user.bio = data.get('bio')
+            if data.get('github'): user.github_url = data.get('github')
+            if data.get('linkedin'): user.linkedin_url = data.get('linkedin')
+            user.save()
+
+        serializer = TalentProfileSerializer(user, context={'request': request})
+        return Response(serializer.data, status=201 if created else 200)
+
 
 class MyApplicationsViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -148,18 +204,17 @@ class MyApplicationsViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return JobApplication.objects.filter(user=self.request.user).order_by('-applied_at')
 
+
 class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Classement des meilleurs talents basés sur les points XP.
+    Classement des meilleurs talents (étudiants uniquement) basés sur les points XP.
     """
     serializer_class = TalentProfileSerializer
     pagination_class = None
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return User.objects.filter(
-            is_public_profile=True
-        ).order_by('-xp_points')[:100]
+        return get_student_talents_queryset().order_by('-xp_points')[:100]
 
 class MatchingViewSet(viewsets.ReadOnlyModelViewSet):
     """
