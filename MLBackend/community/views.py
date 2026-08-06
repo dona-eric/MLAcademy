@@ -10,15 +10,17 @@ from django.utils import timezone
 from .models import (
     Company, JobOffer, JobApplication, Category, Channel, ChannelMessage,
     SponsoredChallenge, ChallengeSubmission, MentorshipRelation,
-    DirectConversation, DirectMessage
+    DirectConversation, DirectMessage, Badge, UserBadge, UserStreak
 )
 from .serializers import (
     CompanySerializer, JobOfferSerializer, TalentProfileSerializer,
     JobApplicationSerializer, ChannelSerializer, CategorySerializer,
     ChannelMessageSerializer, SponsoredChallengeSerializer,
     ChallengeSubmissionSerializer, MentorshipSerializer,
-    DirectConversationSerializer, DirectMessageSerializer
+    DirectConversationSerializer, DirectMessageSerializer,
+    BadgeSerializer, UserBadgeSerializer, UserStreakSerializer
 )
+from community.gamification import update_user_streak
 
 User = get_user_model()
 
@@ -626,3 +628,47 @@ class DirectMessageViewSet(viewsets.ViewSet):
 
         serializer = DirectMessageSerializer(msg, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BadgeViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API pour consulter la liste de tous les badges et la progression de l'utilisateur.
+    """
+    queryset = Badge.objects.all()
+    serializer_class = BadgeSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = Badge.objects.all()
+        # Masquer les badges secrets non débloqués
+        user = self.request.user
+        if not user.is_authenticated:
+            return qs.filter(is_secret=False)
+        
+        unlocked_ids = UserBadge.objects.filter(user=user).values_list('badge_id', flat=True)
+        return qs.filter(db_models.Q(is_secret=False) | db_models.Q(id__in=unlocked_ids))
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated], url_path='my-badges')
+    def my_badges(self, request):
+        """Récupère tous les badges débloqués par l'utilisateur connecté."""
+        user_badges = UserBadge.objects.filter(user=request.user).select_related('badge')
+        serializer = UserBadgeSerializer(user_badges, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated], url_path='mark-seen')
+    def mark_seen(self, request):
+        """Marque tous les badges non vus comme vus après fermeture du popup de félicitations."""
+        UserBadge.objects.filter(user=request.user, is_seen=False).update(is_seen=True)
+        return Response({"status": "success", "message": "Badges marqués comme vus."})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_streak(request):
+    """
+    Récupère le statut de la série (Streak) et les protections de l'utilisateur connecté.
+    """
+    streak = update_user_streak(request.user)
+    serializer = UserStreakSerializer(streak)
+    return Response(serializer.data)
+

@@ -7,6 +7,33 @@ export interface CompanyMinimal {
   is_verified: boolean;
 }
 
+export interface Badge {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  category: 'learning' | 'challenge' | 'community' | 'streak' | 'rank' | 'secret';
+  xp_reward: number;
+  is_secret: boolean;
+  is_unlocked?: boolean;
+  awarded_at?: string | null;
+}
+
+export interface UserBadge {
+  id: number;
+  badge: Badge;
+  awarded_at: string;
+  is_seen: boolean;
+}
+
+export interface UserStreak {
+  current_streak: number;
+  max_streak: number;
+  last_activity_date: string | null;
+  streak_freezes_available: number;
+}
+
 export interface TalentProfile {
   id: number;
   username: string;
@@ -19,6 +46,16 @@ export interface TalentProfile {
   portfolio_url: string | null;
   level: 'beginner' | 'intermediate' | 'advanced';
   rank: number;
+  rankName?: string;
+  calculatedLevel?: number;
+  unlockedBadges?: {
+    id: number;
+    name: string;
+    icon: string;
+    description: string;
+    xp_reward: number;
+    awarded_at: string;
+  }[];
   xpPoints: number;
   skills: string[];
   joinedAt: string;

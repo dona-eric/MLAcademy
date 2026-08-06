@@ -4,13 +4,16 @@ import React, { useEffect, useState } from "react";
 import { Loader2, X, ArrowRight, CheckCircle, Users, Trophy, Briefcase } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchApi } from "@/lib/api";
-import { TalentProfile, JobOffer, SponsoredChallenge, CommunityGlobalStats } from "@/types/community";
+import { TalentProfile, JobOffer, SponsoredChallenge, CommunityGlobalStats, Badge, UserStreak } from "@/types/community";
 import { CommunityHero } from "@/components/community/CommunityHero";
 import { CommunityTabs, TabType } from "@/components/community/CommunityTabs";
 import { TalentCard } from "@/components/community/TalentCard";
 import { JobCard } from "@/components/community/JobCard";
 import { ChallengeCard } from "@/components/community/ChallengeCard";
 import { Leaderboard } from "@/components/community/Leaderboard";
+import { BadgeCard } from "@/components/community/BadgeCard";
+import { BadgeUnlockModal } from "@/components/community/BadgeUnlockModal";
+import { StreakWidget } from "@/components/community/StreakWidget";
 
 export default function CommunautePage() {
   const [activeTab, setActiveTab] = useState<TabType>('talents');
@@ -22,6 +25,9 @@ export default function CommunautePage() {
   const [jobs, setJobs] = useState<JobOffer[]>([]);
   const [challenges, setChallenges] = useState<SponsoredChallenge[]>([]);
   const [leaderboard, setLeaderboard] = useState<TalentProfile[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [streak, setStreak] = useState<UserStreak | null>(null);
+  const [unlockedModalBadge, setUnlockedModalBadge] = useState<Badge | null>(null);
   const [stats, setStats] = useState<CommunityGlobalStats | null>(null);
 
   // Registration Modal States
@@ -80,6 +86,20 @@ export default function CommunautePage() {
       } else if (activeTab === 'challenges') {
         const data = await fetchApi(`/api/community/challenges/?search=${encodeURIComponent(searchQuery)}`);
         setChallenges(Array.isArray(data) ? data : data.results || []);
+      } else if (activeTab === 'badges') {
+        const [badgesData, streakData] = await Promise.all([
+          fetchApi(`/api/community/badges/?search=${encodeURIComponent(searchQuery)}`),
+          fetchApi(`/api/community/my-streak/`).catch(() => null),
+        ]);
+        const badgeList = Array.isArray(badgesData) ? badgesData : badgesData.results || [];
+        setBadges(badgeList);
+        setStreak(streakData);
+
+        // Détecter un badge récemment débloqué (non vu)
+        const unseenBadge = badgeList.find((b: Badge) => b.is_unlocked);
+        if (unseenBadge && !unlockedModalBadge) {
+          // Possibilité d'afficher le modal si premier chargement
+        }
       }
     } catch (err) {
       console.error("Failed to fetch community data", err);
@@ -102,28 +122,26 @@ export default function CommunautePage() {
     try {
       const skillsArr = regSkills.split(',').map(s => s.trim()).filter(Boolean);
       await fetchApi('/api/community/talents/', {
-        method: "POST",
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: fullName,
-          role: regRole,
-          country: regCountry,
+          fullName,
           email: regEmail,
+          headline: regRole,
+          country: regCountry,
           bio: regBio,
-          skills: skillsArr,
-          github: regGithub,
-          linkedin: regLinkedin
+          github_url: regGithub,
+          linkedin_url: regLinkedin,
+          skills: skillsArr
         })
       });
-
       setRegisterSuccess(true);
-      loadStats();
-      if (activeTab === 'talents' || activeTab === 'leaderboard') { loadData(); }
-
       setTimeout(() => {
         setIsRegisterOpen(false);
         setRegisterSuccess(false);
-        setRegFirstName(""); setRegLastName(""); setRegRole("Machine Learning Engineer"); setRegBio(""); setRegSkills(""); setRegGithub(""); setRegLinkedin(""); setRegEmail("");
-      }, 2000);
+        loadData();
+        loadStats();
+      }, 1500);
     } catch (err) {
       console.error("Registration error", err);
     } finally {
@@ -187,6 +205,23 @@ export default function CommunautePage() {
             {challenges.map((challenge) => (
               <ChallengeCard key={challenge.id} challenge={challenge} onRegisterSuccess={loadStats} />
             ))}
+          </motion.div>
+        );
+
+      case 'badges':
+        return (
+          <motion.div key="badges" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
+            {/* Widget de Streak (Série consécutive) */}
+            <StreakWidget streak={streak} />
+
+            {/* Grille de Badges */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {badges.map((badge) => (
+                <div key={badge.id} onClick={() => badge.is_unlocked && setUnlockedModalBadge(badge)}>
+                  <BadgeCard badge={badge} />
+                </div>
+              ))}
+            </div>
           </motion.div>
         );
     }
@@ -414,6 +449,9 @@ export default function CommunautePage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* MODAL CÉLÉBRATION BADGE UNLOCKED */}
+      <BadgeUnlockModal badge={unlockedModalBadge} onClose={() => setUnlockedModalBadge(null)} />
     </div>
   );
 }

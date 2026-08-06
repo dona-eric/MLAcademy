@@ -4,7 +4,7 @@ from .views import (
     LessonProgressView, LessonNoteViewSet, LessonQuizView, LessonCodeSubmissionView,
     ProjectSubmissionViewSet, PeerReviewViewSet, NotificationViewSet, SubmitReviewView,
     EnrollView, MyCoursesView, PathEnrollView, MyPathsView, MyCertificatesView,
-    DashboardSummaryView, AiTutorChatView, UserBadgesView
+    CertificateViewSet, DashboardSummaryView, AiTutorChatView, UserBadgesView
 )
 
 router = DefaultRouter()
@@ -12,6 +12,7 @@ router.register(r'lessons/(?P<lesson_id>\d+)/notes', LessonNoteViewSet, basename
 router.register(r'submissions', ProjectSubmissionViewSet, basename='submission')
 router.register(r'peer-reviews', PeerReviewViewSet, basename='peer-review')
 router.register(r'notifications', NotificationViewSet, basename='notification')
+router.register(r'certificates', CertificateViewSet, basename='certificate')
 
 urlpatterns = [
     path('reviews/submit/', SubmitReviewView.as_view(), name='submit-review'),

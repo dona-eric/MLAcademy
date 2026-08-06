@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Users, Trophy, Briefcase, Award } from "lucide-react";
 
-export type TabType = 'talents' | 'leaderboard' | 'jobs' | 'challenges';
+export type TabType = 'talents' | 'leaderboard' | 'jobs' | 'challenges' | 'badges';
 
 interface CommunityTabsProps {
   activeTab: TabType;
@@ -14,6 +14,7 @@ export function CommunityTabs({ activeTab, setActiveTab }: CommunityTabsProps) {
     { id: 'leaderboard', label: 'CLASSEMENT', icon: Trophy },
     { id: 'jobs', label: "OFFRES D'EMPLOI", icon: Briefcase },
     { id: 'challenges', label: 'CHALLENGES', icon: Award },
+    { id: 'badges', label: 'BADGES & RANGS', icon: Award },
   ];
 
   return (

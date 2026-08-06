@@ -2,11 +2,56 @@ from rest_framework import serializers
 from .models import (
     Company, JobOffer, JobApplication, Category, Channel, ChannelMessage,
     SponsoredChallenge, ChallengeSubmission, MentorshipRelation,
-    DirectConversation, DirectMessage
+    DirectConversation, DirectMessage, Badge, UserBadge, UserStreak
 )
+from community.gamification import calculate_rank, calculate_level
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+
+class BadgeSerializer(serializers.ModelSerializer):
+    is_unlocked = serializers.SerializerMethodField()
+    awarded_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Badge
+        fields = [
+            'id', 'name', 'slug', 'description', 'icon', 'category', 
+            'xp_reward', 'is_secret', 'is_unlocked', 'awarded_at'
+        ]
+
+    def get_is_unlocked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return UserBadge.objects.filter(user=request.user, badge=obj).exists()
+        return False
+
+    def get_awarded_at(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            ub = UserBadge.objects.filter(user=request.user, badge=obj).first()
+            if ub:
+                return ub.awarded_at.isoformat()
+        return None
+
+
+class UserBadgeSerializer(serializers.ModelSerializer):
+    badge = BadgeSerializer(read_only=True)
+
+    class Meta:
+        model = UserBadge
+        fields = ['id', 'badge', 'awarded_at', 'is_seen']
+
+
+class UserStreakSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserStreak
+        fields = [
+            'current_streak', 'max_streak', 'last_activity_date', 
+            'streak_freezes_available'
+        ]
+
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,6 +83,9 @@ class TalentProfileSerializer(serializers.ModelSerializer):
     Serializer pour exposer le profil d'un talent (étudiant) aux recruteurs.
     Toutes les données sont dynamiques et issues du parcours réel de l'apprenant.
     """
+    rankName = serializers.SerializerMethodField()
+    calculatedLevel = serializers.SerializerMethodField()
+    unlockedBadges = serializers.SerializerMethodField()
     stats = serializers.SerializerMethodField()
     fullName = serializers.SerializerMethodField()
     headline = serializers.SerializerMethodField()
@@ -53,9 +101,28 @@ class TalentProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'fullName', 'avatarUrl', 'headline', 'bio', 'linkedin_url',
-            'github_url', 'portfolio_url', 'level', 'stats', 'rank', 'skills', 
-            'certificates', 'projects', 'joinedAt', 'xpPoints'
+            'github_url', 'portfolio_url', 'level', 'stats', 'rank', 'rankName', 
+            'calculatedLevel', 'unlockedBadges', 'skills', 'certificates', 'projects', 
+            'joinedAt', 'xpPoints'
         ]
+
+    def get_rankName(self, obj):
+        return calculate_rank(obj.xp_points)
+
+    def get_calculatedLevel(self, obj):
+        return calculate_level(obj.xp_points)
+
+    def get_unlockedBadges(self, obj):
+        user_badges = UserBadge.objects.filter(user=obj).select_related('badge')[:8]
+        return [{
+            "id": ub.badge.id,
+            "name": ub.badge.name,
+            "icon": ub.badge.icon,
+            "description": ub.badge.description,
+            "xp_reward": ub.badge.xp_reward,
+            "awarded_at": ub.awarded_at.isoformat()
+        } for ub in user_badges]
+
 
     def get_avatarUrl(self, obj):
         if obj.avatar:

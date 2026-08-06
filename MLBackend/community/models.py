@@ -423,3 +423,93 @@ class DirectMessage(models.Model):
 
     def __str__(self):
         return f"{self.sender.username}: {self.content[:50]}"
+
+
+# =============================================
+#  GAMIFICATION, BADGES & STREAKS
+# =============================================
+
+class Badge(models.Model):
+    """
+    Badge d'accomplissement débloquable par les apprenants.
+    """
+    CATEGORY_CHOICES = [
+        ('learning', 'Apprentissage'),
+        ('challenge', 'Challenges'),
+        ('community', 'Communauté'),
+        ('streak', 'Constance'),
+        ('rank', 'Rangs & Tiers'),
+        ('secret', 'Badges Secrets'),
+    ]
+
+    CONDITION_TYPE_CHOICES = [
+        ('lesson_completed', 'Leçons complétées'),
+        ('quiz_perfect', 'Score parfait au Quiz'),
+        ('challenge_submitted', 'Solution de Challenge soumise'),
+        ('streak_days', 'Série de jours d\'apprentissage'),
+        ('first_login', 'Première connexion'),
+        ('night_owl', 'Abeille du soir / Nuit'),
+        ('bug_hunter', 'Chasseur de bugs'),
+        ('top_leaderboard', 'Top Leaderboard'),
+        ('manual', 'Manuel / Spécial'),
+    ]
+
+    name = models.CharField(max_length=150, verbose_name="Nom du badge")
+    slug = models.SlugField(max_length=150, unique=True)
+    description = models.TextField(verbose_name="Conditions d'obtention")
+    icon = models.CharField(max_length=100, default="trophy", help_text="Nom d'icône Lucide (ex: trophy, flame, zap, award)")
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='learning')
+    xp_reward = models.IntegerField(default=100, verbose_name="Points XP accordés")
+    
+    condition_type = models.CharField(max_length=50, choices=CONDITION_TYPE_CHOICES, default='lesson_completed')
+    condition_value = models.IntegerField(default=1, help_text="Valeur nécessaire pour débloquer (ex: 5 leçons)")
+    is_secret = models.BooleanField(default=False, verbose_name="Badge masqué / secret")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Badge"
+        verbose_name_plural = "Badges"
+        ordering = ['category', 'name']
+
+    def __str__(self):
+        return f"{self.name} (+{self.xp_reward} XP)"
+
+
+class UserBadge(models.Model):
+    """
+    Association entre un utilisateur et un badge débloqué.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="unlocked_badges")
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name="awarded_users")
+    awarded_at = models.DateTimeField(auto_now_add=True)
+    is_seen = models.BooleanField(default=False, help_text="Indique si la popup de félicitations a été affichée")
+
+    class Meta:
+        verbose_name = "Badge Utilisateur"
+        verbose_name_plural = "Badges Utilisateurs"
+        unique_together = ('user', 'badge')
+        ordering = ['-awarded_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.badge.name}"
+
+
+class UserStreak(models.Model):
+    """
+    Suivi des jours consécutifs d'apprentissage et protections (Streak Freeze).
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="streak_info")
+    current_streak = models.IntegerField(default=0, verbose_name="Série actuelle (jours)")
+    max_streak = models.IntegerField(default=0, verbose_name="Record de série (jours)")
+    last_activity_date = models.DateField(null=True, blank=True, verbose_name="Dernier jour d'activité")
+    streak_freezes_available = models.IntegerField(default=1, verbose_name="Protections Streak Freeze disponibles")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Série d'apprentissage"
+        verbose_name_plural = "Séries d'apprentissage"
+
+    def __str__(self):
+        return f"{self.user.email} - 🔥 {self.current_streak} jours"
+

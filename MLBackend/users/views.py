@@ -121,7 +121,7 @@ class BetaTesterRegisterView(RegisterView):
                 "Nous vous tiendrons informé dès qu'elle sera disponible.\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email=[EMAIL_ADDRESS],
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=False,
         )

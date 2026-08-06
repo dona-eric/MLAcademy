@@ -21,11 +21,18 @@ export function TalentCard({ talent }: TalentCardProps) {
       className="bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center transition-all duration-500 hover:border-[#c0c1ff] hover:shadow-[0_0_30px_rgba(99,102,241,0.25)] group relative"
     >
       {/* Rank badge top left */}
-      {talent.rank && (
-        <span className="absolute top-4 left-4 bg-white/5 border border-white/10 text-[#c0c1ff] text-[10px] font-mono font-bold px-2.5 py-1 rounded-full">
-          #{talent.rank}
-        </span>
-      )}
+      <div className="absolute top-4 left-4 flex items-center gap-1.5">
+        {talent.rank && (
+          <span className="bg-white/5 border border-white/10 text-[#c0c1ff] text-[10px] font-mono font-bold px-2.5 py-1 rounded-full">
+            #{talent.rank}
+          </span>
+        )}
+        {talent.rankName && (
+          <span className="bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full tracking-wider">
+            {talent.rankName}
+          </span>
+        )}
+      </div>
 
       {/* Avatar with Gradient Border */}
       <div className="relative mb-6">
