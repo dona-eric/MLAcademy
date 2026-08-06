@@ -24,7 +24,7 @@ from .serializers import (
     UserLessonProgressSerializer, UserNoteSerializer, QuizQuestionSerializer,
     QuizSubmissionSerializer, UserCodeSubmissionSerializer,
     EnrollmentSerializer, ProjectSubmissionSerializer, ReviewSerializer,
-    PathEnrollmentSerializer, CertificateSerializer, NotificationSerializer,
+    PathEnrollmentSerializer, CertificateSerializer, CertificatePublicVerifySerializer, NotificationSerializer,
     SkillBadgeSerializer, UserBadgeSerializer
 )
 from users.models import Notification, Message
@@ -231,6 +231,48 @@ class MyCertificatesView(APIView):
         certificates = Certificate.objects.filter(user=request.user).order_by('-issued_at')
         serializer = CertificateSerializer(certificates, many=True)
         return Response(serializer.data)
+
+
+class CertificateViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet pour la vérification publique et la gestion des certificats."""
+    queryset = Certificate.objects.all()
+    serializer_class = CertificateSerializer
+    lookup_field = 'certificate_id'
+
+    def get_permissions(self):
+        if self.action in ['verify', 'retrieve']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny], url_path='verify')
+    def verify(self, request, certificate_id=None):
+        """Vérification publique de l'authenticité d'un certificat."""
+        cert = get_object_or_404(Certificate, certificate_id=certificate_id)
+        
+        # S'assurer que le PDF est généré si pas encore présent
+        if not cert.pdf_file:
+            from .certificates import build_certificate_pdf
+            build_certificate_pdf(cert)
+
+        serializer = CertificatePublicVerifySerializer(cert, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny], url_path='download')
+    def download(self, request, certificate_id=None):
+        """Téléchargement direct du fichier PDF du certificat."""
+        from django.http import FileResponse, Http404
+        cert = get_object_or_404(Certificate, certificate_id=certificate_id)
+        
+        if not cert.pdf_file:
+            from .certificates import build_certificate_pdf
+            build_certificate_pdf(cert)
+
+        if cert.pdf_file and os.path.exists(cert.pdf_file.path):
+            response = FileResponse(open(cert.pdf_file.path, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{cert.certificate_id}.pdf"'
+            return response
+        raise Http404("Fichier PDF introuvable.")
+
 
 
 # ═════════════════════════════════════════════

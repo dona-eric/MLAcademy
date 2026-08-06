@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions, filters, status
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes
 from django.db import models as db_models
@@ -8,24 +10,40 @@ from django.utils import timezone
 from .models import (
     Company, JobOffer, JobApplication, Category, Channel, ChannelMessage,
     SponsoredChallenge, ChallengeSubmission, MentorshipRelation,
-    DirectConversation, DirectMessage
+    DirectConversation, DirectMessage, Badge, UserBadge, UserStreak
 )
 from .serializers import (
     CompanySerializer, JobOfferSerializer, TalentProfileSerializer,
     JobApplicationSerializer, ChannelSerializer, CategorySerializer,
     ChannelMessageSerializer, SponsoredChallengeSerializer,
     ChallengeSubmissionSerializer, MentorshipSerializer,
-    DirectConversationSerializer, DirectMessageSerializer
+    DirectConversationSerializer, DirectMessageSerializer,
+    BadgeSerializer, UserBadgeSerializer, UserStreakSerializer
 )
+from community.gamification import update_user_streak
 
 User = get_user_model()
+
+def get_student_talents_queryset():
+    """
+    Retourne uniquement les profils des vrais apprenants/étudiants.
+    Exclut les recruteurs, instructeurs, administrateurs et responsables d'entreprises.
+    """
+    return User.objects.filter(
+        is_public_profile=True,
+        is_recruiter=False,
+        is_instructor=False,
+        is_staff=False,
+        is_superuser=False
+    ).exclude(managed_companies__isnull=False).distinct()
+
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def community_stats(request):
     """Retourne les vraies métriques de la plateforme."""
     return Response({
-        "totalTalents": User.objects.filter(is_public_profile=True).count(),
+        "totalTalents": get_student_talents_queryset().count(),
         "applicationsProcessed": JobApplication.objects.count(),
         "activeChallenges": SponsoredChallenge.objects.filter(is_approved=True, is_active=True).count(),
         "activeJobs": JobOffer.objects.filter(is_active=True).count()
@@ -102,7 +120,7 @@ class JobOfferViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()] # Devrait être IsRecruiter plus tard
+            return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
     @action(detail=True, methods=['post'], url_path='apply')
@@ -116,14 +134,14 @@ class JobOfferViewSet(viewsets.ModelViewSet):
 
 
 #  =============================================
-#  TALENT HUB (Vitrine des Profils)
+#  TALENT HUB (Vitrine des Profils Apprenants)
 # =============================================
 
-class TalentHubViewSet(viewsets.ReadOnlyModelViewSet):
+class TalentHubViewSet(viewsets.ModelViewSet):
     """
-    Interface pour les recruteurs (et talents) pour découvrir les profils.
+    Interface pour les recruteurs (et la communauté) pour découvrir uniquement les profils d'étudiants/apprenants.
+    Exclut les recruteurs, instructeurs, admins et représentants d'entreprise.
     """
-    queryset = User.objects.filter(is_public_profile=True).order_by('-date_joined')
     pagination_class = None
     serializer_class = TalentProfileSerializer
     permission_classes = [permissions.AllowAny]
@@ -131,12 +149,52 @@ class TalentHubViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['first_name', 'last_name', 'bio', 'level']
 
     def get_queryset(self):
-        # On peut filtrer par niveau (beginner, intermediate, advanced)
-        queryset = super().get_queryset()
+        queryset = get_student_talents_queryset().order_by('-date_joined')
         level = self.request.query_params.get('level')
         if level:
             queryset = queryset.filter(level=level)
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        """Enregistrement / Mise à jour du profil talent étudiant."""
+        data = request.data
+        email = data.get('email')
+        if not email and request.user.is_authenticated:
+            email = request.user.email
+
+        if not email:
+            return Response({"error": "L'email est requis pour créer un profil talent."}, status=400)
+
+        names = data.get('name', '').strip().split(' ', 1)
+        first_name = names[0] if names else ''
+        last_name = names[1] if len(names) > 1 else ''
+
+        # Récupérer ou créer l'utilisateur apprenant (jamais recruteur)
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={
+                'username': email.split('@')[0],
+                'first_name': first_name,
+                'last_name': last_name,
+                'is_recruiter': False,
+                'is_public_profile': True,
+                'bio': data.get('bio', ''),
+                'github_url': data.get('github', ''),
+                'linkedin_url': data.get('linkedin', ''),
+            }
+        )
+
+        if not created:
+            user.is_recruiter = False
+            user.is_public_profile = True
+            if data.get('bio'): user.bio = data.get('bio')
+            if data.get('github'): user.github_url = data.get('github')
+            if data.get('linkedin'): user.linkedin_url = data.get('linkedin')
+            user.save()
+
+        serializer = TalentProfileSerializer(user, context={'request': request})
+        return Response(serializer.data, status=201 if created else 200)
+
 
 class MyApplicationsViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -148,18 +206,17 @@ class MyApplicationsViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return JobApplication.objects.filter(user=self.request.user).order_by('-applied_at')
 
+
 class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Classement des meilleurs talents basés sur les points XP.
+    Classement des meilleurs talents (étudiants uniquement) basés sur les points XP.
     """
     serializer_class = TalentProfileSerializer
     pagination_class = None
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        return User.objects.filter(
-            is_public_profile=True
-        ).order_by('-xp_points')[:100]
+        return get_student_talents_queryset().order_by('-xp_points')[:100]
 
 class MatchingViewSet(viewsets.ReadOnlyModelViewSet):
     """
@@ -303,10 +360,22 @@ class ChallengeViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description', 'company__name']
 
     def get_queryset(self):
-        # Publiquement : uniquement les challenges approuvés et actifs
-        if self.action == 'list':
-            return SponsoredChallenge.objects.filter(is_approved=True, is_active=True)
-        return SponsoredChallenge.objects.all()
+        queryset = SponsoredChallenge.objects.filter(is_approved=True, is_active=True)
+        category = self.request.query_params.get('category')
+        difficulty = self.request.query_params.get('difficulty')
+        challenge_type = self.request.query_params.get('type')
+        status_param = self.request.query_params.get('status')
+
+        if category:
+            queryset = queryset.filter(category=category)
+        if difficulty:
+            queryset = queryset.filter(difficulty=difficulty)
+        if challenge_type:
+            queryset = queryset.filter(challenge_type=challenge_type)
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+
+        return queryset
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -320,7 +389,7 @@ class ChallengeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='participate')
     def participate(self, request, pk=None):
-        """Un talent s'inscrit à un challenge et crée une soumission brouillon."""
+        """Un talent s'inscrit à un challenge et crée une soumission."""
         challenge = self.get_object()
 
         if not challenge.is_published:
@@ -348,20 +417,17 @@ class ChallengeViewSet(viewsets.ModelViewSet):
         serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
         return Response(serializer.data)
 
-    @action(detail=True, methods=['put', 'patch'], url_path='update-submission')
+    @action(detail=True, methods=['put', 'patch', 'post'], url_path='update-submission')
     def update_submission(self, request, pk=None):
-        """Met à jour la soumission (repo_url, description, demo_url) tant qu'elle est en brouillon."""
+        """Met à jour la soumission (repo_url, notebook_url, demo_url, pdf_report_url, description)."""
         challenge = self.get_object()
-        submission = get_object_or_404(ChallengeSubmission, challenge=challenge, user=request.user)
+        submission, created = ChallengeSubmission.objects.get_or_create(challenge=challenge, user=request.user)
 
-        if submission.status not in ['draft', 'submitted']:
-            return Response({"error": "Impossible de modifier une soumission déjà évaluée."}, status=status.HTTP_403_FORBIDDEN)
-
-        for field in ['repo_url', 'description', 'demo_url']:
+        for field in ['repo_url', 'notebook_url', 'demo_url', 'pdf_report_url', 'description']:
             if field in request.data:
                 setattr(submission, field, request.data[field])
-        submission.save()
 
+        submission.submit()
         serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
         return Response(serializer.data)
 
@@ -369,15 +435,24 @@ class ChallengeViewSet(viewsets.ModelViewSet):
     def submit_solution(self, request, pk=None):
         """Soumet officiellement la solution du talent."""
         challenge = self.get_object()
-        submission = get_object_or_404(ChallengeSubmission, challenge=challenge, user=request.user)
+        submission, created = ChallengeSubmission.objects.get_or_create(challenge=challenge, user=request.user)
 
-        if submission.status != 'draft':
-            return Response({"error": "La soumission a déjà été envoyée."}, status=status.HTTP_400_BAD_REQUEST)
+        repo_url = request.data.get('repo_url', submission.repo_url)
+        notebook_url = request.data.get('notebook_url', submission.notebook_url)
+        demo_url = request.data.get('demo_url', submission.demo_url)
+        pdf_report_url = request.data.get('pdf_report_url', submission.pdf_report_url)
+        description = request.data.get('description', submission.description)
 
-        if not submission.repo_url and not submission.description:
-            return Response({"error": "Veuillez fournir un lien GitHub ou une description de votre solution."}, status=status.HTTP_400_BAD_REQUEST)
+        if not repo_url and not notebook_url and not description:
+            return Response({"error": "Veuillez fournir un lien GitHub, un Notebook ou une description."}, status=status.HTTP_400_BAD_REQUEST)
 
+        submission.repo_url = repo_url
+        submission.notebook_url = notebook_url
+        submission.demo_url = demo_url
+        submission.pdf_report_url = pdf_report_url
+        submission.description = description
         submission.submit()
+
         serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
         return Response(serializer.data)
 
@@ -553,3 +628,47 @@ class DirectMessageViewSet(viewsets.ViewSet):
 
         serializer = DirectMessageSerializer(msg, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class BadgeViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API pour consulter la liste de tous les badges et la progression de l'utilisateur.
+    """
+    queryset = Badge.objects.all()
+    serializer_class = BadgeSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = Badge.objects.all()
+        # Masquer les badges secrets non débloqués
+        user = self.request.user
+        if not user.is_authenticated:
+            return qs.filter(is_secret=False)
+        
+        unlocked_ids = UserBadge.objects.filter(user=user).values_list('badge_id', flat=True)
+        return qs.filter(db_models.Q(is_secret=False) | db_models.Q(id__in=unlocked_ids))
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated], url_path='my-badges')
+    def my_badges(self, request):
+        """Récupère tous les badges débloqués par l'utilisateur connecté."""
+        user_badges = UserBadge.objects.filter(user=request.user).select_related('badge')
+        serializer = UserBadgeSerializer(user_badges, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated], url_path='mark-seen')
+    def mark_seen(self, request):
+        """Marque tous les badges non vus comme vus après fermeture du popup de félicitations."""
+        UserBadge.objects.filter(user=request.user, is_seen=False).update(is_seen=True)
+        return Response({"status": "success", "message": "Badges marqués comme vus."})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_streak(request):
+    """
+    Récupère le statut de la série (Streak) et les protections de l'utilisateur connecté.
+    """
+    streak = update_user_streak(request.user)
+    serializer = UserStreakSerializer(streak)
+    return Response(serializer.data)
+

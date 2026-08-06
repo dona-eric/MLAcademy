@@ -23,10 +23,8 @@ from firebase_admin import credentials
 
 
 # Charger les variables d'environnement depuis le fichier .env
-load_dotenv(Path(__file__).resolve().parent.parent / '.env')
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env', override=True)
 
 
 # Quick-start development settings - unsuitable for production
@@ -380,18 +378,29 @@ CORS_ALLOW_HEADERS = list(
     )
 )
 
-# Email Configuration (Brevo REST API v3 avec Fallback SMTP Automatique)
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "MLBackend.email_backend.BrevoEmailBackend")
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() == "true"
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() == "true"
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", os.getenv("EMAIL_HOST_USER", "dtech.afrik@gmail.com"))
+# Helper pour nettoyer les guillemets superflus des variables d'environnement
+def _clean_env(key, default=""):
+    val = os.getenv(key)
+    if val is None or val == "":
+        return default
+    return str(val).strip("'\" \t\r\n")
+
+# Email Configuration (Brevo SMTP Direct Relay)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = _clean_env("EMAIL_HOST", "smtp-relay.brevo.com")
+try:
+    EMAIL_PORT = int(_clean_env("EMAIL_PORT", "587"))
+except (ValueError, TypeError):
+    EMAIL_PORT = 587
+
+EMAIL_USE_TLS = _clean_env("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
+EMAIL_USE_SSL = _clean_env("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
+
+EMAIL_HOST_USER = _clean_env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = _clean_env("BREVO_SMTP_KEY") or _clean_env("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = _clean_env("DEFAULT_FROM_EMAIL", "MLAcademy <dtech.afrik@gmail.com>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
-EMAIL_TIMEOUT = 5  # Empêche le serveur de bloquer si la connexion met trop de temps
+EMAIL_TIMEOUT = 30  # Timeout de connexion SMTP
 
 # Configuration Resend (Prêt pour quand vous aurez un domaine)
 # RESEND_API_KEY = os.getenv("RESEND_API_KEY")

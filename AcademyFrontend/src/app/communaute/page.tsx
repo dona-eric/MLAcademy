@@ -1,33 +1,40 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Loader2, X, ArrowRight, CheckCircle } from "lucide-react";
+import { Loader2, X, ArrowRight, CheckCircle, Users, Trophy, Briefcase } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchApi } from "@/lib/api";
-import { TalentProfile, JobOffer, SponsoredChallenge, CommunityGlobalStats } from "@/types/community";
+import { TalentProfile, JobOffer, SponsoredChallenge, CommunityGlobalStats, Badge, UserStreak } from "@/types/community";
 import { CommunityHero } from "@/components/community/CommunityHero";
 import { CommunityTabs, TabType } from "@/components/community/CommunityTabs";
 import { TalentCard } from "@/components/community/TalentCard";
 import { JobCard } from "@/components/community/JobCard";
 import { ChallengeCard } from "@/components/community/ChallengeCard";
 import { Leaderboard } from "@/components/community/Leaderboard";
+import { BadgeCard } from "@/components/community/BadgeCard";
+import { BadgeUnlockModal } from "@/components/community/BadgeUnlockModal";
+import { StreakWidget } from "@/components/community/StreakWidget";
 
-export default function App() {
+export default function CommunautePage() {
   const [activeTab, setActiveTab] = useState<TabType>('talents');
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Core Data States
+  // Core Data States from Django REST Backend
   const [talents, setTalents] = useState<TalentProfile[]>([]);
   const [jobs, setJobs] = useState<JobOffer[]>([]);
   const [challenges, setChallenges] = useState<SponsoredChallenge[]>([]);
   const [leaderboard, setLeaderboard] = useState<TalentProfile[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [streak, setStreak] = useState<UserStreak | null>(null);
+  const [unlockedModalBadge, setUnlockedModalBadge] = useState<Badge | null>(null);
   const [stats, setStats] = useState<CommunityGlobalStats | null>(null);
 
   // Registration Modal States
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [regName, setRegName] = useState("");
-  const [regRole, setRegRole] = useState("");
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
+  const [regRole, setRegRole] = useState("Machine Learning Engineer");
   const [regCountry, setRegCountry] = useState("Sénégal");
   const [regEmail, setRegEmail] = useState("");
   const [regBio, setRegBio] = useState("");
@@ -38,7 +45,18 @@ export default function App() {
   const [registerLoading, setRegisterLoading] = useState(false);
 
   const countries = [
-    "Sénégal", "Nigeria", "Kenya", "Afrique du Sud", "Égypte", "Ghana", "Éthiopie", "Côte d'Ivoire", "Maroc", "Tunisie", "Cameroun", "Rwanda"
+    "Sénégal", "Nigeria", "Kenya", "Afrique du Sud", "Égypte", "Ghana", "Éthiopie", "Côte d'Ivoire", "Maroc", "Tunisie", "Cameroun", "Rwanda", "France", "Canada"
+  ];
+
+  const rolesList = [
+    "Machine Learning Engineer",
+    "Data Scientist",
+    "AI Research Scientist",
+    "NLP Expert",
+    "Computer Vision Specialist",
+    "Data Engineer",
+    "MLOps Engineer",
+    "Étudiant en IA"
   ];
 
   useEffect(() => { loadData(); }, [activeTab]);
@@ -68,6 +86,20 @@ export default function App() {
       } else if (activeTab === 'challenges') {
         const data = await fetchApi(`/api/community/challenges/?search=${encodeURIComponent(searchQuery)}`);
         setChallenges(Array.isArray(data) ? data : data.results || []);
+      } else if (activeTab === 'badges') {
+        const [badgesData, streakData] = await Promise.all([
+          fetchApi(`/api/community/badges/?search=${encodeURIComponent(searchQuery)}`),
+          fetchApi(`/api/community/my-streak/`).catch(() => null),
+        ]);
+        const badgeList = Array.isArray(badgesData) ? badgesData : badgesData.results || [];
+        setBadges(badgeList);
+        setStreak(streakData);
+
+        // Détecter un badge récemment débloqué (non vu)
+        const unseenBadge = badgeList.find((b: Badge) => b.is_unlocked);
+        if (unseenBadge && !unlockedModalBadge) {
+          // Possibilité d'afficher le modal si premier chargement
+        }
       }
     } catch (err) {
       console.error("Failed to fetch community data", err);
@@ -83,34 +115,33 @@ export default function App() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regName || !regRole || !regCountry || !regEmail) return;
+    const fullName = `${regFirstName} ${regLastName}`.trim();
+    if (!fullName || !regRole || !regCountry || !regEmail) return;
 
     setRegisterLoading(true);
     try {
       const skillsArr = regSkills.split(',').map(s => s.trim()).filter(Boolean);
       await fetchApi('/api/community/talents/', {
-        method: "POST",
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: regName,
-          role: regRole,
-          country: regCountry,
+          fullName,
           email: regEmail,
+          headline: regRole,
+          country: regCountry,
           bio: regBio,
-          skills: skillsArr,
-          github: regGithub,
-          linkedin: regLinkedin
+          github_url: regGithub,
+          linkedin_url: regLinkedin,
+          skills: skillsArr
         })
       });
-
       setRegisterSuccess(true);
-      loadStats();
-      if (activeTab === 'talents' || activeTab === 'leaderboard') { loadData(); }
-
       setTimeout(() => {
         setIsRegisterOpen(false);
         setRegisterSuccess(false);
-        setRegName(""); setRegRole(""); setRegBio(""); setRegSkills(""); setRegGithub(""); setRegLinkedin(""); setRegEmail("");
-      }, 2000);
+        loadData();
+        loadStats();
+      }, 1500);
     } catch (err) {
       console.error("Registration error", err);
     } finally {
@@ -122,8 +153,8 @@ export default function App() {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center py-32 gap-4 opacity-80 min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--brand-500)]" />
-          <p className="text-sm font-medium text-[var(--text-secondary)]">Chargement en cours...</p>
+          <Loader2 className="w-10 h-10 animate-spin text-[#5de6ff]" />
+          <p className="text-sm font-medium text-[#c7c4d7]">Chargement des données en direct...</p>
         </div>
       );
     }
@@ -135,14 +166,14 @@ export default function App() {
 
     switch (activeTab) {
       case 'talents':
-        if (talents.length === 0) return <EmptyState message="Aucun chercheur trouvé." />;
+        if (talents.length === 0) return <EmptyState message="Aucun chercheur ou talent trouvé pour le moment." />;
         return (
           <motion.div
             variants={cardContainerVariants}
             initial="hidden"
             animate="show"
             exit={{ opacity: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {talents.map((talent) => (
               <TalentCard key={talent.id} talent={talent} />
@@ -158,9 +189,9 @@ export default function App() {
         );
 
       case 'jobs':
-        if (jobs.length === 0) return <EmptyState message="Aucune opportunité disponible pour le moment." />;
+        if (jobs.length === 0) return <EmptyState message="Aucune opportunité d'emploi disponible pour le moment." />;
         return (
-          <motion.div key="jobs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
+          <motion.div key="jobs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
             {jobs.map((job) => (
               <JobCard key={job.id} job={job} onApplySuccess={loadStats} />
             ))}
@@ -176,11 +207,29 @@ export default function App() {
             ))}
           </motion.div>
         );
+
+      case 'badges':
+        return (
+          <motion.div key="badges" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-8">
+            {/* Widget de Streak (Série consécutive) */}
+            <StreakWidget streak={streak} />
+
+            {/* Grille de Badges */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {badges.map((badge) => (
+                <div key={badge.id} onClick={() => badge.is_unlocked && setUnlockedModalBadge(badge)}>
+                  <BadgeCard badge={badge} />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        );
     }
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-secondary)] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#051424] text-[#d4e4fa] flex flex-col font-sans">
+      {/* Community Hero with Live Search */}
       <CommunityHero
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -189,176 +238,228 @@ export default function App() {
         onOpenRegisterModal={() => setIsRegisterOpen(true)}
       />
 
-      <section className="max-w-6xl mx-auto px-6 lg:px-8 pb-24 pt-8 flex-grow w-full z-10">
+      {/* Stats Bar */}
+      <section className="max-w-6xl mx-auto px-6 lg:px-8 -mt-6 mb-16 relative z-20 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-white/10 p-6 rounded-2xl flex items-center gap-6 group hover:bg-white/5 hover:border-[#c0c1ff]/50 transition-all duration-300 shadow-xl">
+            <div className="w-16 h-16 rounded-full bg-[#c0c1ff]/10 flex items-center justify-center text-[#c0c1ff] group-hover:bg-[#c0c1ff] group-hover:text-[#07006c] transition-all shrink-0">
+              <Users className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-[11px] font-black text-[#908fa0] mb-1 uppercase tracking-widest">Membres Actifs</p>
+              <p className="text-3xl font-black text-white">{stats ? `${stats.totalTalents}+` : "12,480+"}</p>
+            </div>
+          </div>
+
+          <div className="bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-white/10 p-6 rounded-2xl flex items-center gap-6 group hover:bg-white/5 hover:border-[#5de6ff]/50 transition-all duration-300 shadow-xl">
+            <div className="w-16 h-16 rounded-full bg-[#5de6ff]/10 flex items-center justify-center text-[#5de6ff] group-hover:bg-[#5de6ff] group-hover:text-[#001f25] transition-all shrink-0">
+              <Trophy className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-[11px] font-black text-[#908fa0] mb-1 uppercase tracking-widest">Challenges</p>
+              <p className="text-3xl font-black text-white">{stats ? `${stats.activeChallenges} En cours` : "42 En cours"}</p>
+            </div>
+          </div>
+
+          <div className="bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-white/10 p-6 rounded-2xl flex items-center gap-6 group hover:bg-white/5 hover:border-[#c0c1ff]/50 transition-all duration-300 shadow-xl">
+            <div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center text-[#c0c1ff] group-hover:bg-[#c0c1ff] group-hover:text-[#07006c] transition-all shrink-0">
+              <Briefcase className="w-8 h-8" />
+            </div>
+            <div>
+              <p className="text-[11px] font-black text-[#908fa0] mb-1 uppercase tracking-widest">Recrutements</p>
+              <p className="text-3xl font-black text-white">{stats ? `${stats.activeJobs} Postes` : "156 Postes"}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Community Tabs */}
+      <section className="max-w-6xl mx-auto px-6 lg:px-8 pb-24 flex-grow w-full z-10">
         <CommunityTabs activeTab={activeTab} setActiveTab={setActiveTab} />
         <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
       </section>
 
-      {/* --- SECTION STATS --- */}
-      {stats && (
-        <section className="bg-white border-t border-[var(--border-subtle)] py-16 z-10">
-          <div className="max-w-6xl mx-auto px-6 lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <StatItem label="Membres Actifs" value={stats.totalTalents} sub="Inscrits sur le Hub" />
-              <StatItem label="Challenges" value={stats.activeChallenges} sub="Compétitions en cours" />
-              <StatItem label="Recrutements" value={stats.activeJobs} sub="Jobs" />
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* MODAL INSCRIPTION */}
+      {/* REGISTRATION MODAL ("Rejoindre l'élite IA") */}
       <AnimatePresence>
         {isRegisterOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md">
             <div className="absolute inset-0 cursor-pointer" onClick={() => setIsRegisterOpen(false)} />
 
             <motion.div
-              initial={{ scale: 0.98, opacity: 0, y: 10 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.98, opacity: 0, y: 10 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90vh]"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative w-full max-w-xl bg-[#122131] rounded-2xl overflow-hidden border border-white/10 shadow-2xl z-10 flex flex-col max-h-[90vh]"
             >
-              <div className="flex justify-between items-center p-6 border-b border-[var(--border-subtle)] shrink-0">
-                <div>
-                  <h2 className="text-xl font-bold text-[var(--text-primary)]">
-                    Rejoindre MLAcademy Hub
-                  </h2>
-                  <p className="text-sm text-[var(--text-secondary)] mt-1">Créez votre profil de talent.</p>
-                </div>
-                <button
-                  onClick={() => setIsRegisterOpen(false)}
-                  className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-secondary)] transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#c0c1ff] via-[#5de6ff] to-[#c0c1ff]" />
 
-              {registerSuccess ? (
-                <div className="p-16 flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="w-16 h-16 bg-[var(--success-light)] rounded-full flex items-center justify-center text-[var(--success)]">
-                    <CheckCircle className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-xl font-bold text-[var(--text-primary)]">Demande envoyée !</h3>
-                  <p className="text-sm text-[var(--text-secondary)] max-w-xs leading-relaxed">
-                    Votre profil est en attente de validation par l'administrateur.
-                  </p>
+              <div className="p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-black text-white tracking-tight">Rejoindre l'élite IA</h2>
+                  <button
+                    onClick={() => setIsRegisterOpen(false)}
+                    className="text-[#908fa0] hover:text-white transition-colors p-2 rounded-lg"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
-              ) : (
-                <div className="p-6 overflow-y-auto custom-scrollbar">
-                  <form onSubmit={handleRegisterSubmit} className="space-y-5">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-[var(--text-primary)]">Nom Complet <span className="text-[var(--error)]">*</span></label>
+
+                {registerSuccess ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                    <div className="w-16 h-16 bg-[#5de6ff]/20 rounded-full flex items-center justify-center text-[#5de6ff]">
+                      <CheckCircle className="w-10 h-10" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Inscription enregistrée !</h3>
+                    <p className="text-sm text-[#c7c4d7] max-w-xs leading-relaxed">
+                      Votre profil de talent a été créé et est maintenant visible sur le Hub.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleRegisterSubmit} className="space-y-5 overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">PRÉNOM</label>
                         <input
-                          type="text" required value={regName} onChange={(e) => setRegName(e.target.value)} placeholder="Ex: Amina Diallo"
-                          className="input-field"
+                          type="text"
+                          required
+                          value={regFirstName}
+                          onChange={(e) => setRegFirstName(e.target.value)}
+                          placeholder="Amina"
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-[var(--text-primary)]">Spécialisation / Rôle <span className="text-[var(--error)]">*</span></label>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">NOM</label>
                         <input
-                          type="text" required value={regRole} onChange={(e) => setRegRole(e.target.value)} placeholder="Ex: Data Scientist"
-                          className="input-field"
+                          type="text"
+                          required
+                          value={regLastName}
+                          onChange={(e) => setRegLastName(e.target.value)}
+                          placeholder="Diallo"
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-[var(--text-primary)]">Pays <span className="text-[var(--error)]">*</span></label>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">EMAIL PROFESSIONNEL</label>
+                      <input
+                        type="email"
+                        required
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        placeholder="nom@entreprise.ai"
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">VOTRE RÔLE PRINCIPAL</label>
                         <select
-                          value={regCountry} onChange={(e) => setRegCountry(e.target.value)}
-                          className="input-field cursor-pointer appearance-none bg-no-repeat bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236B7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[position:right_12px_center] pr-10"
+                          value={regRole}
+                          onChange={(e) => setRegRole(e.target.value)}
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm cursor-pointer"
                         >
-                          {countries.map((c) => (
-                            <option key={c} value={c}>{c}</option>
+                          {rolesList.map((r) => (
+                            <option key={r} value={r} className="bg-slate-900 text-white">{r}</option>
                           ))}
                         </select>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-[var(--text-primary)]">Adresse Email <span className="text-[var(--error)]">*</span></label>
-                        <input
-                          type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} placeholder="amina@domain.com"
-                          className="input-field"
-                        />
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">PAYS</label>
+                        <select
+                          value={regCountry}
+                          onChange={(e) => setRegCountry(e.target.value)}
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm cursor-pointer"
+                        >
+                          {countries.map((c) => (
+                            <option key={c} value={c} className="bg-slate-900 text-white">{c}</option>
+                          ))}
+                        </select>
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-[var(--text-primary)]">Stack & Outils (Séparés par des virgules) <span className="text-[var(--error)]">*</span></label>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">STACK & OUTILS (Séparés par virgule)</label>
                       <input
-                        type="text" required value={regSkills} onChange={(e) => setRegSkills(e.target.value)} placeholder="Python, PyTorch, SQL"
-                        className="input-field"
+                        type="text"
+                        required
+                        value={regSkills}
+                        onChange={(e) => setRegSkills(e.target.value)}
+                        placeholder="Python, PyTorch, Kubernetes"
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-[var(--text-primary)]">GitHub URL</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">GITHUB URL</label>
                         <input
-                          type="url" value={regGithub} onChange={(e) => setRegGithub(e.target.value)} placeholder="https://github.com/..."
-                          className="input-field"
+                          type="url"
+                          value={regGithub}
+                          onChange={(e) => setRegGithub(e.target.value)}
+                          placeholder="https://github.com/..."
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm"
                         />
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-[var(--text-primary)]">LinkedIn URL</label>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">LINKEDIN URL</label>
                         <input
-                          type="url" value={regLinkedin} onChange={(e) => setRegLinkedin(e.target.value)} placeholder="https://linkedin.com/in/..."
-                          className="input-field"
+                          type="url"
+                          value={regLinkedin}
+                          onChange={(e) => setRegLinkedin(e.target.value)}
+                          placeholder="https://linkedin.com/in/..."
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium text-[var(--text-primary)]">Biographie</label>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-[#908fa0] uppercase tracking-wider">BIOGRAPHIE</label>
                       <textarea
-                        value={regBio} onChange={(e) => setRegBio(e.target.value)} rows={4} placeholder="Présentez-vous brièvement..."
-                        className="w-full rounded-md border border-[var(--border-default)] bg-[var(--bg-primary)] px-4 py-3 text-sm text-[var(--text-primary)] shadow-sm outline-none transition focus:border-[var(--brand-500)] focus:ring-4 focus:ring-[var(--brand-glow)] resize-none"
+                        value={regBio}
+                        onChange={(e) => setRegBio(e.target.value)}
+                        rows={3}
+                        placeholder="Présentez brièvement vos travaux..."
+                        className="w-full bg-slate-950 border border-white/10 rounded-lg py-3 px-4 text-white focus:border-[#5de6ff] focus:ring-1 focus:ring-[#5de6ff] outline-none transition-all text-sm resize-none"
                       />
                     </div>
 
-                    <div className="pt-4 border-t border-[var(--border-subtle)]">
-                      <button
-                        type="submit" disabled={registerLoading}
-                        className="btn-primary w-full py-3"
-                      >
-                        {registerLoading ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <>
-                            <span>Soumettre ma candidature</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </>
-                        )}
-                      </button>
-                    </div>
+                    <button
+                      type="submit"
+                      disabled={registerLoading}
+                      className="w-full py-4 rounded-xl bg-[#c0c1ff] text-[#07006c] font-black text-sm uppercase tracking-wider hover:bg-[#a2eeff] transition-all shadow-[0_0_25px_rgba(99,102,241,0.3)] mt-4 flex items-center justify-center gap-2"
+                    >
+                      {registerLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <span>FINALISER L'INSCRIPTION</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
                   </form>
-                </div>
-              )}
+                )}
+              </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
 
-function StatItem({ label, value, sub }: { label: string; value: number; sub: string }) {
-  return (
-    <div className="card p-8 flex flex-col items-center text-center">
-      <p className="text-sm font-bold text-[var(--brand-500)] uppercase tracking-wider">{label}</p>
-      <p className="text-4xl font-extrabold text-[var(--text-primary)] my-2">{value}</p>
-      <p className="text-sm text-[var(--text-secondary)]">{sub}</p>
+      {/* MODAL CÉLÉBRATION BADGE UNLOCKED */}
+      <BadgeUnlockModal badge={unlockedModalBadge} onClose={() => setUnlockedModalBadge(null)} />
     </div>
   );
 }
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="card-flat py-20 text-center">
-      <p className="text-[var(--text-secondary)] font-medium">{message}</p>
+    <div className="bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-white/10 rounded-2xl py-20 text-center">
+      <p className="text-[#c7c4d7] font-medium text-sm">{message}</p>
     </div>
   );
 }

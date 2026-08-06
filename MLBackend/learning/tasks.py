@@ -164,3 +164,25 @@ def auto_grade_project_submission(submission_id):
         logger.error(f"Erreur de communication avec MLSandbox pour la soumission {submission_id} : {e}")
         # En cas d'erreur de la Sandbox, on laisse en 'pending' pour correction manuelle
         return False
+
+
+@shared_task
+def generate_certificate_pdf_task(certificate_id):
+    """
+    Tâche Celery asynchrone pour la génération du diplôme PDF et notification par mail.
+    """
+    from learning.models import Certificate
+    from learning.certificates import build_certificate_pdf
+
+    try:
+        certificate = Certificate.objects.select_related('user', 'course', 'learning_path').get(id=certificate_id)
+        success = build_certificate_pdf(certificate)
+        if success:
+            logger.info(f"PDF généré et rattaché avec succès au certificat ID {certificate_id}")
+        return success
+    except Certificate.DoesNotExist:
+        logger.error(f"Certificat {certificate_id} introuvable.")
+        return False
+    except Exception as e:
+        logger.error(f"Erreur lors de l'exécution de generate_certificate_pdf_task pour {certificate_id}: {e}")
+        return False
