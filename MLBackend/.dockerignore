@@ -13,3 +13,7 @@ venv.bak/
 .sqlite3
 db.sqlite3
 media/
+.env.local
+AcademyDB
+*json
+docs/

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: mlbackend
-        image: mlacademy-backend:latest
+        image: dtechafrica/mlacademyhub:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000

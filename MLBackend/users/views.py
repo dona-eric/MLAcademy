@@ -21,7 +21,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authentication import SessionAuthentication
-from .models import BetaTesteur, InstructorApplication, InstructorProfile
+from .utils import send_mail_async
+from .models import BetaTesteur, InstructorApplication, InstructorProfile, FCMDevice
 from .serializers import (
     CustomTokenObtainPairSerializer,
     PasswordResetConfirmSerializer,
@@ -72,18 +73,17 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        frontend_url = getattr(settings, "FRONTEND_URL")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
-        send_mail(
+        send_mail_async(
             subject="Bienvenue sur MLAcademy! Confirmez votre email",
             message=(
                 f"Bonjour {user.first_name or user.email},\n\n"
                 f"Cliquez sur ce lien pour confirmer votre email :\n{verification_link}\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email="noreply@mlacademy.io",
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=True,
         )
 
         return Response(
@@ -108,7 +108,7 @@ class BetaTesterRegisterView(RegisterView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        frontend_url = getattr(settings, "FRONTEND_URL")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
         send_mail(
             subject="Bienvenue dans le programme Bêta-Testeurs MLAcademyHub",
@@ -121,9 +121,9 @@ class BetaTesterRegisterView(RegisterView):
                 "Nous vous tiendrons informé dès qu'elle sera disponible.\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email="noreply@mlacademy.io",
+            from_email=[EMAIL_ADDRESS],
             recipient_list=[user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
 
         return Response(
@@ -210,7 +210,7 @@ class ResendVerificationEmailView(APIView):
             )
         # ANTI-SPAM (Rate Limiting) : Limiter à 1 renvoi toutes les 2 minutes
         if user.verification_sent_at:
-            cooldown_time = user.verification_sent_at + timedelta(minutes=2)
+            cooldown_time = user.verification_sent_at + timezone.timedelta(minutes=2)
             if timezone.now() < cooldown_time:
                 return Response(
                     {
@@ -226,7 +226,7 @@ class ResendVerificationEmailView(APIView):
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
         verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
         
-        send_mail(
+        send_mail_async(
             subject="MLAcademy - Nouveau Lien d'activation",
             message=(
                 f"Bonjour {user.first_name or user.email},\n\n"
@@ -234,9 +234,8 @@ class ResendVerificationEmailView(APIView):
                 "Ce lien est valable 24 heures.\n\n"
                 "L'équipe MLAcademy"
             ),
-            from_email="noreply@mlacademy.io",
+            from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=True,
         )
 
         return Response(
@@ -346,28 +345,31 @@ class PasswordResetRequestView(APIView):
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        email = serializer.validated_data["email"]
+        email = serializer.validated_data["email"].strip().lower()
 
         try:
-            user = User.objects.get(email=email)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            reset_link = (
-                f"{settings.FRONTEND_URL}"
-                f"/password-reset/confirm/{uid}/{token}/"
-            )
-            send_mail(
-                subject="MLAcademy — Réinitialisation de votre mot de passe",
-                message=(
-                    f"Bonjour,\n\nCliquez sur ce lien pour réinitialiser votre mot de passe :\n"
-                    f"{reset_link}\n\nCe lien expire dans 24h.\n\nL'équipe MLAcademy"
-                ),
-                from_email="noreply@mlacademy.io",
-                recipient_list=[user.email],
-                fail_silently=True,
-            )
-        except User.DoesNotExist:
-            pass  # Sécurité : ne pas révéler si l'email existe
+            user = User.objects.filter(email__iexact=email).first()
+            if user:
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+                frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+                reset_link = (
+                    f"{frontend_url}"
+                    f"/password-reset/confirm/{uid}/{token}/"
+                )
+                send_mail_async(
+                    subject="MLAcademy — Réinitialisation de votre mot de passe",
+                    message=(
+                        f"Bonjour {user.first_name or 'cher membre'},\n\n"
+                        f"Cliquez sur ce lien pour réinitialiser votre mot de passe :\n"
+                        f"{reset_link}\n\nCe lien expire dans 24h.\n\nL'équipe MLAcademy"
+                    ),
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[user.email],
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Erreur réinitialisation mot de passe: {e}")
 
         return Response(
             {
@@ -493,6 +495,26 @@ class Verify2FAView(APIView):
         return Response(
             {"error": "Code OTP incorrect."}, status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class SaveFCMTokenView(APIView):
+    """
+    POST /api/private/users/save-fcm-token/
+    Enregistre le token FCM d'un appareil utilisateur pour les notifications Push.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        token = request.data.get("token")
+        if not token:
+            return Response(
+                {"error": "Le token FCM est requis."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Enregistre ou met à jour le token
+        FCMDevice.objects.get_or_create(user=request.user, token=token)
+        
+        return Response({"message": "Token FCM enregistré avec succès."})
 
 
 #  COMPTE — RGPD

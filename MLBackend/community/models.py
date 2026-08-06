@@ -148,43 +148,131 @@ class MentorshipRelation(models.Model):
 
 class SponsoredChallenge(models.Model):
     """
-    Défi technique sponsorisé par une entreprise pour repérer des talents.
-    Les entreprises vérifiées publient directement ; les nouvelles passent par validation admin.
+    Défi technique sponsorisé par une entreprise pour repérer des talents (Kaggle / Zindi Style).
     """
     DIFFICULTY_CHOICES = [
         ('beginner', 'Débutant'),
         ('intermediate', 'Intermédiaire'),
         ('advanced', 'Avancé'),
+        ('expert', 'Expert'),
+    ]
+
+    CATEGORY_CHOICES = [
+        ('machine_learning', 'Machine Learning'),
+        ('data_science', 'Data Science'),
+        ('deep_learning', 'Deep Learning'),
+        ('nlp', 'NLP / Traitement du Langage'),
+        ('computer_vision', 'Vision par Ordinateur'),
+        ('data_engineering', 'Data Engineering'),
+        ('mlops', 'MLOps'),
+        ('generative_ai', 'IA Générative'),
+        ('quantum_ml', 'Quantum ML'),
+        ('business_analytics', 'Business Analytics'),
+    ]
+
+    TYPE_CHOICES = [
+        ('challenge', 'Challenge'),
+        ('hackathon', 'Hackathon'),
+        ('competition', 'Compétition'),
+        ('sprint', 'Sprint'),
+        ('bootcamp', 'Bootcamp Challenge'),
+        ('kaggle', 'Kaggle Style'),
+    ]
+
+    EVALUATION_MODE_CHOICES = [
+        ('auto', 'Évaluation Automatique'),
+        ('jury', 'Évaluation par Jury'),
+        ('hybrid', 'Évaluation Mixte'),
+    ]
+
+    STATUS_CHOICES = [
+        ('draft', 'Brouillon'),
+        ('open', 'Ouvert'),
+        ('closed', 'Fermé'),
+        ('evaluating', 'En évaluation'),
+        ('completed', 'Terminé'),
+    ]
+
+    RANKING_TIER_CHOICES = [
+        ('bronze', 'Bronze'),
+        ('silver', 'Silver'),
+        ('gold', 'Gold'),
+        ('platinum', 'Platinum'),
+        ('diamond', 'Diamond'),
+        ('master', 'Master'),
+        ('grand_master', 'Grand Master'),
     ]
 
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name="challenges")
     title = models.CharField(max_length=255, verbose_name="Titre du challenge")
     slug = models.SlugField(max_length=280, unique=True, null=True, blank=True)
+    short_description = models.CharField(max_length=500, blank=True, verbose_name="Courte description (carte)")
     description = models.TextField(verbose_name="Description détaillée")
+    objective = models.TextField(blank=True, verbose_name="Objectif du challenge")
     rules = models.TextField(blank=True, verbose_name="Règles et contraintes")
     evaluation_criteria = models.TextField(blank=True, verbose_name="Critères d'évaluation")
+    
     difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default='intermediate')
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='machine_learning')
+    challenge_type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='competition')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
 
-    reward = models.CharField(max_length=255, blank=True, verbose_name="Récompense (ex: Offre de stage, Prize pool)")
+    # Planning & Dates
+    start_date = models.DateField(null=True, blank=True, verbose_name="Date d'ouverture")
+    deadline = models.DateField()
+    results_date = models.DateField(null=True, blank=True, verbose_name="Annonce des résultats")
+
+    # Équipe
+    allow_teams = models.BooleanField(default=False, verbose_name="Équipes autorisées")
+    max_team_size = models.PositiveIntegerField(default=1, verbose_name="Taille max par équipe")
+
+    # Dataset
+    dataset_url = models.URLField(blank=True, verbose_name="Lien vers le dataset public")
+    is_dataset_private = models.BooleanField(default=False, verbose_name="Dataset privé")
+    private_test_dataset_url = models.URLField(blank=True, verbose_name="Dataset de test privé")
+    dataset_size = models.CharField(max_length=50, blank=True, verbose_name="Taille du dataset (ex: 1.2 GB)")
+    dataset_license = models.CharField(max_length=100, blank=True, verbose_name="Licence (ex: MIT, CC BY 4.0)")
+
+    # Livrables & Tech Stack
+    deliverables = models.JSONField(default=list, blank=True, verbose_name="Livrables attendus (ex: Notebook, Code, PDF)")
+    recommended_tech = models.JSONField(default=list, blank=True, verbose_name="Technologies (ex: Python, PyTorch, XGBoost)")
+
+    # Evaluation & Leaderboard
+    evaluation_mode = models.CharField(max_length=20, choices=EVALUATION_MODE_CHOICES, default='hybrid')
+    has_auto_grading = models.BooleanField(default=False, verbose_name="Auto-grading activé")
+    enable_public_leaderboard = models.BooleanField(default=True, verbose_name="Activer Leaderboard public")
+
+    # Récompenses & Prizes
+    reward = models.CharField(max_length=255, blank=True, verbose_name="Récompense globale")
     prize_pool = models.DecimalField(max_digits=20, decimal_places=2, default=0.00, verbose_name="Montant du prix (FCFA)")
-    max_participants = models.PositiveIntegerField(default=0, verbose_name="Places (0 = illimité)")
-    dataset_url = models.URLField(blank=True, verbose_name="Lien vers le dataset")
+    first_prize = models.CharField(max_length=255, blank=True, verbose_name="Premier prix 🥇")
+    second_prize = models.CharField(max_length=255, blank=True, verbose_name="Deuxième prix 🥈")
+    third_prize = models.CharField(max_length=255, blank=True, verbose_name="Troisième prix 🥉")
+    other_perks = models.TextField(blank=True, verbose_name="Avantages (Stage, Mentorat, Goodies)")
 
+    # Organisateurs
+    mentor_name = models.CharField(max_length=255, blank=True, verbose_name="Mentor principal")
+    contact_email = models.EmailField(blank=True, verbose_name="Contact Email")
+    organizer_website = models.URLField(blank=True, verbose_name="Site web organisateur")
+
+    # Progression & Gamification (Parcours MLAcademy)
+    progression_order = models.IntegerField(default=0, verbose_name="Ordre dans le parcours")
+    prerequisite_challenge = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name="unlocked_challenges")
+    ranking_tier = models.CharField(max_length=30, choices=RANKING_TIER_CHOICES, default='bronze', verbose_name="Palier de niveau")
+    badge_reward = models.CharField(max_length=100, blank=True, verbose_name="Badge débloqué (ex: 🥇 Winner)")
+
+    max_participants = models.PositiveIntegerField(default=0, verbose_name="Places (0 = illimité)")
     is_active = models.BooleanField(default=True)
     is_open = models.BooleanField(default=True, verbose_name="Ouvert à tous")
     is_approved = models.BooleanField(default=False, verbose_name="Validé par MLAcademy")
 
-    has_auto_grading = models.BooleanField(default=False, verbose_name="Évaluation automatique activée")
-    private_test_dataset_url = models.URLField(blank=True, verbose_name="Dataset de test privé (auto-grading)")
-
-    deadline = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Challenge Sponsorisé"
         verbose_name_plural = "Challenges Sponsorisés"
-        ordering = ['-created_at']
+        ordering = ['progression_order', '-created_at']
 
     def save(self, *args, **kwargs):
         from django.utils.text import slugify
@@ -196,29 +284,27 @@ class SponsoredChallenge(models.Model):
                 slug = f"{original_slug}-{num}"
                 num += 1
             self.slug = slug
-        # Auto-approve pour les entreprises vérifiées
         if not self.pk and self.company.is_verified:
             self.is_approved = True
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.title} by {self.company.name}"
+        return f"{self.title} ({self.get_category_display()}) by {self.company.name}"
 
     @property
     def is_published(self):
-        """Un challenge est visible publiquement s'il est approuvé et actif."""
         return self.is_approved and self.is_active
 
     @property
     def spots_remaining(self):
         if self.max_participants == 0:
-            return None  # Illimité
+            return None
         return max(0, self.max_participants - self.submissions.count())
 
 
 class ChallengeSubmission(models.Model):
     """
-    Soumission d'un talent à un challenge sponsorisé.
+    Soumission d'un talent à un challenge sponsorisé (Kaggle style).
     """
     STATUS_CHOICES = [
         ('draft', 'Brouillon'),
@@ -230,16 +316,19 @@ class ChallengeSubmission(models.Model):
     challenge = models.ForeignKey(SponsoredChallenge, on_delete=models.CASCADE, related_name="submissions")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="challenge_submissions")
 
+    submission_number = models.PositiveIntegerField(default=1, verbose_name="N° de soumission")
     repo_url = models.URLField(blank=True, verbose_name="Lien GitHub / dépôt")
-    description = models.TextField(blank=True, verbose_name="Description de la solution")
-    demo_url = models.URLField(blank=True, verbose_name="Lien démo live")
+    notebook_url = models.URLField(blank=True, verbose_name="Lien Notebook / Kaggle / Colab")
+    demo_url = models.URLField(blank=True, verbose_name="Lien démo live / API")
+    pdf_report_url = models.URLField(blank=True, verbose_name="Lien Rapport PDF")
+    description = models.TextField(blank=True, verbose_name="Description de la solution & méthode")
 
-    score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, verbose_name="Score (jury)")
+    score = models.DecimalField(max_digits=8, decimal_places=5, null=True, blank=True, verbose_name="Score (métrique/jury)")
     rank = models.PositiveIntegerField(null=True, blank=True, verbose_name="Classement final")
     jury_feedback = models.TextField(blank=True, verbose_name="Commentaires du jury")
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    submitted_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
+    submitted_at = models.DateTimeField(default=timezone.now, blank=True)
     evaluated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -249,10 +338,10 @@ class ChallengeSubmission(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['challenge', 'user'], name='unique_challenge_user_submission')
         ]
-        ordering = ['rank', '-score']
+        ordering = ['rank', '-score', '-submitted_at']
 
     def __str__(self):
-        return f"{self.user.email} → {self.challenge.title} ({self.get_status_display()})"
+        return f"{self.user.email} → {self.challenge.title} (Score: {self.score})"
 
     def submit(self):
         self.status = 'submitted'

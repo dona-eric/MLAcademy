@@ -27,7 +27,8 @@ def community_stats(request):
     return Response({
         "totalTalents": User.objects.filter(is_public_profile=True).count(),
         "applicationsProcessed": JobApplication.objects.count(),
-        "activeChallenges": SponsoredChallenge.objects.filter(is_approved=True, is_active=True).count()
+        "activeChallenges": SponsoredChallenge.objects.filter(is_approved=True, is_active=True).count(),
+        "activeJobs": JobOffer.objects.filter(is_active=True).count()
     })
 
 
@@ -302,10 +303,22 @@ class ChallengeViewSet(viewsets.ModelViewSet):
     search_fields = ['title', 'description', 'company__name']
 
     def get_queryset(self):
-        # Publiquement : uniquement les challenges approuvés et actifs
-        if self.action == 'list':
-            return SponsoredChallenge.objects.filter(is_approved=True, is_active=True)
-        return SponsoredChallenge.objects.all()
+        queryset = SponsoredChallenge.objects.filter(is_approved=True, is_active=True)
+        category = self.request.query_params.get('category')
+        difficulty = self.request.query_params.get('difficulty')
+        challenge_type = self.request.query_params.get('type')
+        status_param = self.request.query_params.get('status')
+
+        if category:
+            queryset = queryset.filter(category=category)
+        if difficulty:
+            queryset = queryset.filter(difficulty=difficulty)
+        if challenge_type:
+            queryset = queryset.filter(challenge_type=challenge_type)
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+
+        return queryset
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -319,7 +332,7 @@ class ChallengeViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='participate')
     def participate(self, request, pk=None):
-        """Un talent s'inscrit à un challenge et crée une soumission brouillon."""
+        """Un talent s'inscrit à un challenge et crée une soumission."""
         challenge = self.get_object()
 
         if not challenge.is_published:
@@ -347,20 +360,17 @@ class ChallengeViewSet(viewsets.ModelViewSet):
         serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
         return Response(serializer.data)
 
-    @action(detail=True, methods=['put', 'patch'], url_path='update-submission')
+    @action(detail=True, methods=['put', 'patch', 'post'], url_path='update-submission')
     def update_submission(self, request, pk=None):
-        """Met à jour la soumission (repo_url, description, demo_url) tant qu'elle est en brouillon."""
+        """Met à jour la soumission (repo_url, notebook_url, demo_url, pdf_report_url, description)."""
         challenge = self.get_object()
-        submission = get_object_or_404(ChallengeSubmission, challenge=challenge, user=request.user)
+        submission, created = ChallengeSubmission.objects.get_or_create(challenge=challenge, user=request.user)
 
-        if submission.status not in ['draft', 'submitted']:
-            return Response({"error": "Impossible de modifier une soumission déjà évaluée."}, status=status.HTTP_403_FORBIDDEN)
-
-        for field in ['repo_url', 'description', 'demo_url']:
+        for field in ['repo_url', 'notebook_url', 'demo_url', 'pdf_report_url', 'description']:
             if field in request.data:
                 setattr(submission, field, request.data[field])
-        submission.save()
 
+        submission.submit()
         serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
         return Response(serializer.data)
 
@@ -368,15 +378,24 @@ class ChallengeViewSet(viewsets.ModelViewSet):
     def submit_solution(self, request, pk=None):
         """Soumet officiellement la solution du talent."""
         challenge = self.get_object()
-        submission = get_object_or_404(ChallengeSubmission, challenge=challenge, user=request.user)
+        submission, created = ChallengeSubmission.objects.get_or_create(challenge=challenge, user=request.user)
 
-        if submission.status != 'draft':
-            return Response({"error": "La soumission a déjà été envoyée."}, status=status.HTTP_400_BAD_REQUEST)
+        repo_url = request.data.get('repo_url', submission.repo_url)
+        notebook_url = request.data.get('notebook_url', submission.notebook_url)
+        demo_url = request.data.get('demo_url', submission.demo_url)
+        pdf_report_url = request.data.get('pdf_report_url', submission.pdf_report_url)
+        description = request.data.get('description', submission.description)
 
-        if not submission.repo_url and not submission.description:
-            return Response({"error": "Veuillez fournir un lien GitHub ou une description de votre solution."}, status=status.HTTP_400_BAD_REQUEST)
+        if not repo_url and not notebook_url and not description:
+            return Response({"error": "Veuillez fournir un lien GitHub, un Notebook ou une description."}, status=status.HTTP_400_BAD_REQUEST)
 
+        submission.repo_url = repo_url
+        submission.notebook_url = notebook_url
+        submission.demo_url = demo_url
+        submission.pdf_report_url = pdf_report_url
+        submission.description = description
         submission.submit()
+
         serializer = ChallengeSubmissionSerializer(submission, context={'request': request})
         return Response(serializer.data)
 

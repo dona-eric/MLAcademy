@@ -22,7 +22,7 @@ class MCPClient:
         # Configuration du serveur MCP natif (chemin vers server.py)
         # Assumons que ce script est exécuté depuis la racine de MLBackend ou du conteneur
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        server_path = os.path.join(base_dir, "mcp", "server.py")
+        server_path = os.path.join(base_dir, "MCP", "server.py")
         
         server_params = StdioServerParameters(
             command="python",

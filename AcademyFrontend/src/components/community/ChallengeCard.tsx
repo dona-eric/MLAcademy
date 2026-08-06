@@ -1,194 +1,152 @@
 import React, { useState } from "react";
 import { SponsoredChallenge } from "@/types/community";
-import { Calendar, Users, Trophy, ChevronRight, CheckCircle2, Loader2, Gauge } from "lucide-react";
+import {
+  Trophy, Calendar, Users, ArrowUpRight, Award, Sparkles, Database, ShieldCheck
+} from "lucide-react";
 import { motion } from "framer-motion";
-import { fetchApi } from "@/lib/api";
+import { ChallengeDetailModal } from "./ChallengeDetailModal";
 
 interface ChallengeCardProps {
   challenge: SponsoredChallenge;
   onRegisterSuccess?: () => void;
-  key?: string | number;
 }
 
 export function ChallengeCard({ challenge, onRegisterSuccess }: ChallengeCardProps) {
-  const [registering, setRegistering] = useState(false);
-  const [registered, setRegistered] = useState(false);
-  const [participantsCount, setParticipantsCount] = useState(challenge.submissions_count || 0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleRegister = async () => {
-    setRegistering(true);
-    try {
-      await fetchApi(`/api/community/challenges/${challenge.id}/participate/`, {
-        method: "POST",
-      });
-      setRegistered(true);
-      setParticipantsCount(prev => prev + 1);
-      if (onRegisterSuccess) {
-        onRegisterSuccess();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setRegistering(false);
-    }
+  const difficultyColors = {
+    beginner: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    intermediate: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
+    advanced: "bg-indigo-500/10 text-indigo-400 border-indigo-500/30",
+    expert: "bg-amber-500/10 text-amber-400 border-amber-500/30",
   };
-
-  const getDifficultyColor = (diff: string) => {
-    switch (diff) {
-      case "beginner":
-        return "badge-beginner";
-      case "intermediate":
-        return "badge-intermediate";
-      case "advanced":
-        return "badge-advanced";
-      default:
-        return "badge-neutral";
-    }
-  };
-
-  const getDifficultyLabel = (diff: string) => {
-    switch (diff) {
-      case "beginner": return "Débutant";
-      case "intermediate": return "Intermédiaire";
-      case "advanced": return "Avancé";
-      default: return diff;
-    }
-  };
-
-  const bannerUrl = "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=800&auto=format&fit=crop";
-  const challengeTags = [
-    challenge.difficulty === 'advanced' ? "Deep Tech" : "Data Science",
-    challenge.is_open ? "Ouvert à tous" : "Sélection"
-  ];
-
-  const formattedPrize = challenge.prize_pool && parseFloat(challenge.prize_pool) > 0
-    ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(parseFloat(challenge.prize_pool))
-    : challenge.reward || "Offre de Stage / Emploi";
-
-  const formattedDeadline = challenge.deadline
-    ? new Date(challenge.deadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-    : "Non spécifiée";
 
   return (
-    <motion.div
-      id={`challenge-card-${challenge.id}`}
-      initial={{ opacity: 0, y: 15 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="card flex flex-col md:flex-row gap-0 overflow-hidden"
-    >
-      {/* Banner / Graphic Section */}
-      <div className="relative w-full md:w-80 h-56 md:h-auto shrink-0 bg-[var(--bg-tertiary)] border-b md:border-b-0 md:border-r border-[var(--border-subtle)]">
-        <img
-          src={bannerUrl}
-          alt={challenge.title}
-          referrerPolicy="no-referrer"
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-        />
-        {/* Organizer Float glass badge */}
-        <div className="absolute top-4 left-4 px-3 py-1.5 bg-white/90 backdrop-blur-md rounded-md border border-[var(--border-default)] text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider shadow-sm">
-          {challenge.company_name}
-        </div>
-        {challenge.company_logo && (
-          <div className="absolute bottom-4 right-4 w-14 h-14 rounded-lg bg-white border border-[var(--border-default)] p-1.5 flex items-center justify-center overflow-hidden shadow-sm">
-            <img src={challenge.company_logo} alt={challenge.company_name} className="w-full h-full object-contain" />
-          </div>
-        )}
-      </div>
-
-      {/* Main Content Section */}
-      <div className="flex-grow p-6 md:p-8 flex flex-col justify-between">
+    <>
+      <motion.div
+        id={`challenge-card-${challenge.id}`}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[rgba(255,255,255,0.03)] backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 transition-all hover:border-[#5de6ff]/50 hover:shadow-[0_0_30px_rgba(93,230,255,0.15)] flex flex-col justify-between group"
+      >
         <div>
-          <div className="flex flex-wrap gap-2.5 items-center mb-4">
-            {/* Difficulty badge */}
-            <span className={`badge ${getDifficultyColor(challenge.difficulty)}`}>
-              <Gauge className="w-3.5 h-3.5" />
-              <span>{getDifficultyLabel(challenge.difficulty)}</span>
-            </span>
+          {/* Header Row: Company Logo + Meta Badges */}
+          <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              {challenge.company_logo ? (
+                <img
+                  src={challenge.company_logo}
+                  alt={challenge.company_name}
+                  className="w-14 h-14 rounded-2xl object-cover border border-white/10 bg-slate-950 shrink-0"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-2xl border border-white/10 bg-[#5de6ff]/10 flex items-center justify-center text-[#5de6ff] font-bold shrink-0">
+                  <Trophy className="w-6 h-6" />
+                </div>
+              )}
 
-            {challengeTags.map((tag, idx) => (
-              <span
-                key={idx}
-                className="badge badge-neutral"
-              >
-                {tag}
+              <div>
+                <span className="text-xs font-bold text-[#908fa0] uppercase tracking-wider block">
+                  Organisé par {challenge.company_name}
+                </span>
+                <h3 className="text-xl font-black text-white tracking-tight group-hover:text-[#5de6ff] transition-colors">
+                  {challenge.title}
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${difficultyColors[challenge.difficulty || 'intermediate']}`}>
+                {challenge.difficulty_display || challenge.difficulty}
               </span>
-            ))}
+              {challenge.category_display && (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-white/5 text-[#c7c4d7] border border-white/10">
+                  {challenge.category_display}
+                </span>
+              )}
+              {challenge.type_display && (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#c0c1ff]/10 text-[#c0c1ff] border border-[#c0c1ff]/20">
+                  {challenge.type_display}
+                </span>
+              )}
+            </div>
           </div>
 
-          <h3 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">{challenge.title}</h3>
-
-          <p className="text-[var(--text-secondary)] text-sm mt-3 leading-relaxed max-w-2xl">
-            {challenge.description}
+          {/* Description */}
+          <p className="text-[#c7c4d7] text-sm leading-relaxed mb-6 line-clamp-3">
+            {challenge.short_description || challenge.description}
           </p>
+
+          {/* Structured Prizes / Rewards */}
+          {(challenge.first_prize || challenge.second_prize || challenge.reward) && (
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-2 mb-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
+                <Award className="w-4 h-4" /> Récompenses & Prize Pool
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-[#d4e4fa]">
+                {challenge.first_prize ? (
+                  <div>🥇 <span className="font-bold text-white">1er:</span> {challenge.first_prize}</div>
+                ) : (
+                  <div>🏆 <span className="font-bold text-white">Prix:</span> {challenge.prize_pool ? `${challenge.prize_pool} FCFA` : challenge.reward}</div>
+                )}
+                {challenge.second_prize && (
+                  <div>🥈 <span className="font-bold text-white">2ème:</span> {challenge.second_prize}</div>
+                )}
+                {challenge.third_prize && (
+                  <div>🥉 <span className="font-bold text-white">3ème:</span> {challenge.third_prize}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tech stack pills */}
+          {challenge.recommended_tech && challenge.recommended_tech.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-6">
+              {challenge.recommended_tech.slice(0, 5).map((tech, i) => (
+                <span key={i} className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-950 border border-white/10 text-[#c7c4d7]">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div>
-          {/* Info Grid row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8 pt-6 border-t border-[var(--border-subtle)]">
-            {/* Prize Pool */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-                <Trophy className="w-5 h-5 text-amber-500" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider leading-none">Cagnotte</p>
-                <p className="text-sm font-bold text-[var(--text-primary)] mt-1">{formattedPrize}</p>
-              </div>
-            </div>
-
-            {/* Deadline */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[var(--brand-50)] flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5 text-[var(--brand-500)]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider leading-none">Date Limite</p>
-                <p className="text-sm font-semibold text-[var(--text-primary)] mt-1">{formattedDeadline}</p>
-              </div>
-            </div>
-
-            {/* Participants count */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[var(--info-light)] flex items-center justify-center shrink-0">
-                <Users className="w-5 h-5 text-[var(--info)]" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider leading-none">Inscriptions</p>
-                <p className="text-sm font-bold text-[var(--text-primary)] mt-1">{participantsCount} Hackers</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions bar */}
-          <div id="challenge-action-row" className="mt-8 flex items-center gap-4">
-            {registered ? (
-              <div className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-[var(--success-light)] border border-[var(--success)] text-[var(--success)] text-xs font-bold uppercase tracking-wider rounded-md">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Inscrit · Commencer le Hack</span>
-              </div>
-            ) : (
-              <button
-                id={`register-challenge-btn-${challenge.id}`}
-                onClick={handleRegister}
-                disabled={registering}
-                className="btn-primary w-full sm:w-auto px-8 py-3 uppercase tracking-wider text-xs"
-              >
-                {registering ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    <span>Traitement...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>S'inscrire au Challenge</span>
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </>
-                )}
-              </button>
+        {/* Footer info & CTA */}
+        <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-4 text-xs text-[#908fa0]">
+            <span className="flex items-center gap-1.5 text-white font-medium">
+              <Calendar className="w-4 h-4 text-[#5de6ff]" />
+              {challenge.deadline}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-[#c0c1ff]" />
+              {challenge.submissions_count} participants
+            </span>
+            {challenge.dataset_size && (
+              <span className="flex items-center gap-1.5">
+                <Database className="w-4 h-4 text-[#5de6ff]" />
+                {challenge.dataset_size}
+              </span>
             )}
           </div>
+
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="w-full sm:w-auto bg-[#5de6ff] hover:bg-[#a2eeff] text-[#001f25] font-black py-3 px-6 rounded-full text-xs uppercase tracking-wider transition-all hover:scale-105 flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(93,230,255,0.2)]"
+          >
+            <span>Détails & Leaderboard</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </button>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      {/* Challenge Detail Modal */}
+      <ChallengeDetailModal
+        challenge={challenge}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmissionSuccess={onRegisterSuccess}
+      />
+    </>
   );
 }

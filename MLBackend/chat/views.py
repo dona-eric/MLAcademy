@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
+from rest_framework.throttling import ScopedRateThrottle
 from .services.mcp_client import MCPClient
 
 class CopilotAutocompleteView(APIView):
@@ -9,6 +10,8 @@ class CopilotAutocompleteView(APIView):
     Fournit l'autocomplétion contextuelle (style Copilot).
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai_chat'
 
     def post(self, request):
         text = request.data.get('text')
@@ -53,6 +56,8 @@ class GlobalAssistantView(APIView):
     Assistant global pour la plateforme (Widget).
     """
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'ai_chat'
     
     def post(self, request):
         message = request.data.get('message')
