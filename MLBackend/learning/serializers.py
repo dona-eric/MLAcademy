@@ -207,15 +207,50 @@ class CertificateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Certificate
-        fields = ['id', 'certificate_id', 'cert_type', 'target_name', 'final_score', 'issued_at', 'pdf_file']
-        read_only_fields = ['certificate_id', 'issued_at', 'pdf_file']
+        fields = ['id', 'certificate_id', 'verification_hash', 'cert_type', 'target_name', 'final_score', 'issued_at', 'pdf_file']
+        read_only_fields = ['certificate_id', 'verification_hash', 'issued_at', 'pdf_file']
 
     def get_target_name(self, obj):
-        if obj.learning_path:
+        if obj.learning_path and hasattr(obj.learning_path, 'title'):
             return obj.learning_path.title
-        if obj.course:
+        if obj.course and hasattr(obj.course, 'title'):
             return obj.course.title
         return "—"
+
+
+class CertificatePublicVerifySerializer(serializers.ModelSerializer):
+    valid = serializers.BooleanField(default=True, read_only=True)
+    student_name = serializers.SerializerMethodField()
+    target_title = serializers.SerializerMethodField()
+    cert_type_display = serializers.CharField(source='get_cert_type_display', read_only=True)
+    pdf_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Certificate
+        fields = [
+            'valid', 'certificate_id', 'verification_hash', 'cert_type',
+            'cert_type_display', 'student_name', 'target_title',
+            'final_score', 'issued_at', 'pdf_url'
+        ]
+
+    def get_student_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username
+
+    def get_target_title(self, obj):
+        if obj.learning_path and hasattr(obj.learning_path, 'title'):
+            return obj.learning_path.title
+        if obj.course and hasattr(obj.course, 'title'):
+            return obj.course.title
+        return "Programme MLAcademy"
+
+    def get_pdf_url(self, obj):
+        request = self.context.get('request')
+        if obj.pdf_file and hasattr(obj.pdf_file, 'url'):
+            if request:
+                return request.build_absolute_uri(obj.pdf_file.url)
+            return obj.pdf_file.url
+        return None
+
 
 
 class NotificationSerializer(serializers.ModelSerializer):

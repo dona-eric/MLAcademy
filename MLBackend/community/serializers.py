@@ -2,11 +2,56 @@ from rest_framework import serializers
 from .models import (
     Company, JobOffer, JobApplication, Category, Channel, ChannelMessage,
     SponsoredChallenge, ChallengeSubmission, MentorshipRelation,
-    DirectConversation, DirectMessage
+    DirectConversation, DirectMessage, Badge, UserBadge, UserStreak
 )
+from community.gamification import calculate_rank, calculate_level
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+
+class BadgeSerializer(serializers.ModelSerializer):
+    is_unlocked = serializers.SerializerMethodField()
+    awarded_at = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Badge
+        fields = [
+            'id', 'name', 'slug', 'description', 'icon', 'category', 
+            'xp_reward', 'is_secret', 'is_unlocked', 'awarded_at'
+        ]
+
+    def get_is_unlocked(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return UserBadge.objects.filter(user=request.user, badge=obj).exists()
+        return False
+
+    def get_awarded_at(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            ub = UserBadge.objects.filter(user=request.user, badge=obj).first()
+            if ub:
+                return ub.awarded_at.isoformat()
+        return None
+
+
+class UserBadgeSerializer(serializers.ModelSerializer):
+    badge = BadgeSerializer(read_only=True)
+
+    class Meta:
+        model = UserBadge
+        fields = ['id', 'badge', 'awarded_at', 'is_seen']
+
+
+class UserStreakSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserStreak
+        fields = [
+            'current_streak', 'max_streak', 'last_activity_date', 
+            'streak_freezes_available'
+        ]
+
 
 class CompanySerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,6 +83,9 @@ class TalentProfileSerializer(serializers.ModelSerializer):
     Serializer pour exposer le profil d'un talent (étudiant) aux recruteurs.
     Toutes les données sont dynamiques et issues du parcours réel de l'apprenant.
     """
+    rankName = serializers.SerializerMethodField()
+    calculatedLevel = serializers.SerializerMethodField()
+    unlockedBadges = serializers.SerializerMethodField()
     stats = serializers.SerializerMethodField()
     fullName = serializers.SerializerMethodField()
     headline = serializers.SerializerMethodField()
@@ -53,9 +101,28 @@ class TalentProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'fullName', 'avatarUrl', 'headline', 'bio', 'linkedin_url',
-            'github_url', 'portfolio_url', 'level', 'stats', 'rank', 'skills', 
-            'certificates', 'projects', 'joinedAt', 'xpPoints'
+            'github_url', 'portfolio_url', 'level', 'stats', 'rank', 'rankName', 
+            'calculatedLevel', 'unlockedBadges', 'skills', 'certificates', 'projects', 
+            'joinedAt', 'xpPoints'
         ]
+
+    def get_rankName(self, obj):
+        return calculate_rank(obj.xp_points)
+
+    def get_calculatedLevel(self, obj):
+        return calculate_level(obj.xp_points)
+
+    def get_unlockedBadges(self, obj):
+        user_badges = UserBadge.objects.filter(user=obj).select_related('badge')[:8]
+        return [{
+            "id": ub.badge.id,
+            "name": ub.badge.name,
+            "icon": ub.badge.icon,
+            "description": ub.badge.description,
+            "xp_reward": ub.badge.xp_reward,
+            "awarded_at": ub.awarded_at.isoformat()
+        } for ub in user_badges]
+
 
     def get_avatarUrl(self, obj):
         if obj.avatar:
@@ -211,15 +278,28 @@ class SponsoredChallengeSerializer(serializers.ModelSerializer):
     company_logo = serializers.SerializerMethodField()
     spots_remaining = serializers.ReadOnlyField()
     submissions_count = serializers.SerializerMethodField()
+    category_display = serializers.CharField(source='get_category_display', read_only=True)
+    difficulty_display = serializers.CharField(source='get_difficulty_display', read_only=True)
+    type_display = serializers.CharField(source='get_challenge_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = SponsoredChallenge
         fields = [
             'id', 'company', 'company_name', 'company_logo', 'title', 'slug',
-            'description', 'rules', 'evaluation_criteria', 'difficulty',
-            'reward', 'prize_pool', 'max_participants', 'spots_remaining',
-            'dataset_url', 'is_active', 'is_open', 'is_approved',
-            'deadline', 'submissions_count', 'created_at'
+            'short_description', 'description', 'objective', 'rules', 'evaluation_criteria',
+            'difficulty', 'difficulty_display', 'category', 'category_display',
+            'challenge_type', 'type_display', 'status', 'status_display',
+            'start_date', 'deadline', 'results_date',
+            'allow_teams', 'max_team_size',
+            'dataset_url', 'is_dataset_private', 'dataset_size', 'dataset_license',
+            'deliverables', 'recommended_tech',
+            'evaluation_mode', 'has_auto_grading', 'enable_public_leaderboard',
+            'reward', 'prize_pool', 'first_prize', 'second_prize', 'third_prize', 'other_perks',
+            'mentor_name', 'contact_email', 'organizer_website',
+            'progression_order', 'prerequisite_challenge', 'ranking_tier', 'badge_reward',
+            'max_participants', 'spots_remaining', 'is_active', 'is_open', 'is_approved',
+            'submissions_count', 'created_at', 'updated_at'
         ]
 
     def get_company_logo(self, obj):
@@ -234,16 +314,18 @@ class SponsoredChallengeSerializer(serializers.ModelSerializer):
 
 
 class ChallengeSubmissionSerializer(serializers.ModelSerializer):
-    user_name = serializers.ReadOnlyField(source='user.username')
+    user_name = serializers.ReadOnlyField(source='user.get_full_name')
+    username = serializers.ReadOnlyField(source='user.username')
     user_avatar = serializers.SerializerMethodField()
     challenge_title = serializers.ReadOnlyField(source='challenge.title')
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = ChallengeSubmission
         fields = [
-            'id', 'challenge', 'challenge_title', 'user', 'user_name', 'user_avatar',
-            'repo_url', 'description', 'demo_url',
-            'score', 'rank', 'jury_feedback', 'status',
+            'id', 'challenge', 'challenge_title', 'user', 'user_name', 'username', 'user_avatar',
+            'submission_number', 'repo_url', 'notebook_url', 'demo_url', 'pdf_report_url', 'description',
+            'score', 'rank', 'jury_feedback', 'status', 'status_display',
             'submitted_at', 'evaluated_at', 'created_at'
         ]
         read_only_fields = ['user', 'score', 'rank', 'jury_feedback', 'status', 'submitted_at', 'evaluated_at']

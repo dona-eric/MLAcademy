@@ -1,4 +1,5 @@
 import uuid
+import hashlib
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -74,6 +75,21 @@ class Enrollment(models.Model):
 
         if self.is_completed and not was_completed:
             self.completed_at = timezone.now()
+            cert, created = Certificate.objects.get_or_create(
+                user=self.user,
+                course=self.course,
+                defaults={
+                    'cert_type': 'course_completion',
+                    'final_score': 100
+                }
+            )
+            if created:
+                try:
+                    from .tasks import generate_certificate_pdf_task
+                    generate_certificate_pdf_task.delay(cert.id)
+                except Exception:
+                    from .certificates import build_certificate_pdf
+                    build_certificate_pdf(cert)
             
         self.save(update_fields=["progress_percentage", "is_completed", "completed_at"])
 
@@ -486,7 +502,9 @@ class CertificationExamAttempt(models.Model):
         ordering = ["-started_at"]
 
     def __str__(self):
-        return f"{self.user.email} - {self.exam.title} ({self.score}%) {'Réussi' if self.passed else 'Échoué'}"
+        user_str = getattr(self.user, 'email', str(self.user_id)) if self.user_id and self.user else "Utilisateur"
+        exam_str = getattr(self.exam, 'title', "Examen") if self.exam_id and self.exam else "Examen"
+        return f"{user_str} - {exam_str} ({self.score}%) {'Réussi' if self.passed else 'Échoué'}"
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -522,6 +540,7 @@ class Certificate(models.Model):
     issued_at = models.DateTimeField(auto_now_add=True)
     certificate_id = models.CharField(max_length=100, unique=True, blank=True)
     final_score = models.PositiveIntegerField(default=0)
+    verification_hash = models.CharField(max_length=64, blank=True, null=True, verbose_name="Signature Cryptographique SHA-256")
     pdf_file = models.FileField(upload_to="certificates/", null=True, blank=True, verbose_name="Fichier PDF")
 
     class Meta:
@@ -529,14 +548,26 @@ class Certificate(models.Model):
         verbose_name_plural = "Certificats"
 
     def __str__(self):
-        target = self.learning_path.title if self.learning_path else self.course.title
-        return f"{self.certificate_id} - {self.user.email} - {target}"
+        target = "Programme"
+        if self.learning_path_id and self.learning_path:
+            target = getattr(self.learning_path, 'title', "Parcours")
+        elif self.course_id and self.course:
+            target = getattr(self.course, 'title', "Cours")
+        user_str = getattr(self.user, 'email', str(self.user_id)) if self.user_id and self.user else "Utilisateur"
+        return f"{self.certificate_id or 'CERT'} - {user_str} - {target}"
 
     def save(self, *args, **kwargs):
         if not self.certificate_id:
             prefix = "CERT" if self.cert_type == "path_certification" else "ATT"
             self.certificate_id = f"{prefix}-{str(uuid.uuid4())[:8].upper()}"
+        
+        if not self.verification_hash:
+            target_id = self.course_id if self.course_id else (self.learning_path_id if self.learning_path_id else 0)
+            raw_payload = f"{self.user_id}:{target_id}:{self.certificate_id}:{settings.SECRET_KEY}"
+            self.verification_hash = hashlib.sha256(raw_payload.encode('utf-8')).hexdigest()[:16].upper()
+
         super().save(*args, **kwargs)
+
 
 
 # ═════════════════════════════════════════════

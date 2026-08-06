@@ -4,7 +4,7 @@ from .views import (
     JobOfferViewSet, TalentHubViewSet, MyApplicationsViewSet, 
     LeaderboardViewSet, MatchingViewSet, ChannelViewSet, CategoryViewSet,
     RecruitmentDashboardViewSet, ChallengeViewSet, MentorshipViewSet,
-    DirectMessageViewSet, community_stats, community_chat
+    DirectMessageViewSet, BadgeViewSet, my_streak, community_stats, community_chat
 )
 
 router = DefaultRouter()
@@ -16,13 +16,14 @@ router.register(r'channels', ChannelViewSet, basename='channel')
 router.register(r'categories', CategoryViewSet, basename='category')
 router.register(r'my-applications', MyApplicationsViewSet, basename='my-application')
 router.register(r'recruitment', RecruitmentDashboardViewSet, basename='recruitment')
-# Nouveaux endpoints
 router.register(r'challenges', ChallengeViewSet, basename='challenge')
 router.register(r'mentorship', MentorshipViewSet, basename='mentorship')
 router.register(r'dm', DirectMessageViewSet, basename='direct-message')
+router.register(r'badges', BadgeViewSet, basename='badge')
 
 urlpatterns = [
     path('stats/', community_stats, name='community-stats'),
     path('chat/', community_chat, name='community-chat'),
+    path('my-streak/', my_streak, name='my-streak'),
     path('', include(router.urls)),
 ]
