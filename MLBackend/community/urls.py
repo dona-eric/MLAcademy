@@ -1,13 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    JobOfferViewSet, TalentHubViewSet, MyApplicationsViewSet, 
+    CompanyViewSet, JobOfferViewSet, TalentHubViewSet, MyApplicationsViewSet, 
     LeaderboardViewSet, MatchingViewSet, ChannelViewSet, CategoryViewSet,
     RecruitmentDashboardViewSet, ChallengeViewSet, MentorshipViewSet,
     DirectMessageViewSet, BadgeViewSet, my_streak, community_stats, community_chat
 )
 
 router = DefaultRouter()
+router.register(r'companies', CompanyViewSet, basename='company')
 router.register(r'jobs', JobOfferViewSet, basename='job-offer')
 router.register(r'talents', TalentHubViewSet, basename='talent-hub')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
