@@ -30,6 +30,7 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+sqlite.db
 
 # Misc
 docs/

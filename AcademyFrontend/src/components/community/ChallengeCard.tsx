@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { SponsoredChallenge } from "@/types/community";
-import {
-  Trophy, Calendar, Users, ArrowUpRight, Award, Sparkles, Database, ShieldCheck
-} from "lucide-react";
+import {Trophy, Calendar, Users, ArrowUpRight, Award, Database} from "lucide-react";
 import { motion } from "framer-motion";
 import { ChallengeDetailModal } from "./ChallengeDetailModal";
 

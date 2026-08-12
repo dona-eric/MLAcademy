@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { Loader2, X, ArrowRight, CheckCircle, Users, Trophy, Briefcase } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -247,7 +246,7 @@ export default function CommunautePage() {
             </div>
             <div>
               <p className="text-[11px] font-black text-[#908fa0] mb-1 uppercase tracking-widest">Membres Actifs</p>
-              <p className="text-3xl font-black text-white">{stats ? `${stats.totalTalents}+` : "12,480+"}</p>
+              <p className="text-3xl font-black text-white">{stats ? `${stats.totalTalents}+` : ""}</p>
             </div>
           </div>
 
@@ -257,7 +256,7 @@ export default function CommunautePage() {
             </div>
             <div>
               <p className="text-[11px] font-black text-[#908fa0] mb-1 uppercase tracking-widest">Challenges</p>
-              <p className="text-3xl font-black text-white">{stats ? `${stats.activeChallenges} En cours` : "42 En cours"}</p>
+              <p className="text-3xl font-black text-white">{stats ? `${stats.activeChallenges}` : ""}</p>
             </div>
           </div>
 
@@ -267,7 +266,7 @@ export default function CommunautePage() {
             </div>
             <div>
               <p className="text-[11px] font-black text-[#908fa0] mb-1 uppercase tracking-widest">Recrutements</p>
-              <p className="text-3xl font-black text-white">{stats ? `${stats.activeJobs} Postes` : "156 Postes"}</p>
+              <p className="text-3xl font-black text-white">{stats ? `${stats.activeJobs} Postes` : ""}</p>
             </div>
           </div>
         </div>
