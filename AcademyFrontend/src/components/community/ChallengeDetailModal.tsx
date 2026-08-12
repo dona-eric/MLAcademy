@@ -1,11 +1,7 @@
-"use client";
-
+"use client"; 
 import React, { useState, useEffect } from "react";
 import { SponsoredChallenge, ChallengeSubmission } from "@/types/community";
-import {
-  X, Trophy, Calendar, Users, ExternalLink, ShieldCheck, Database,
-  FileCode, Award, CheckCircle2, Loader2, Send, Clock, Layers, Sparkles, AlertCircle
-} from "lucide-react";
+import {X, Trophy, Calendar, Users, ExternalLink, ShieldCheck, Database, FileCode, Award, CheckCircle2, Loader2, Send, Sparkles, AlertCircle} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchApi } from "@/lib/api";
 
@@ -16,12 +12,7 @@ interface ChallengeDetailModalProps {
   onSubmissionSuccess?: () => void;
 }
 
-export function ChallengeDetailModal({
-  challenge,
-  isOpen,
-  onClose,
-  onSubmissionSuccess,
-}: ChallengeDetailModalProps) {
+export function ChallengeDetailModal({challenge, isOpen, onClose, onSubmissionSuccess,}: ChallengeDetailModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'dataset' | 'leaderboard' | 'submit'>('overview');
   const [leaderboard, setLeaderboard] = useState<ChallengeSubmission[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);

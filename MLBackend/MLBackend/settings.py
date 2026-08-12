@@ -43,6 +43,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://mlacademie.vercel.app",
     "https://mlacademy.onrender.com",
     "http://localhost:3000",
+    "http://127.0.0.1:8000",
 ]
 if os.getenv("FRONTEND_PROD_URL"):
     CSRF_TRUSTED_ORIGINS.append(os.getenv("FRONTEND_PROD_URL"))
@@ -160,7 +161,7 @@ else:
 # DATABASES = {
 #     "default": {
 #         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "AcademyDB",
+#         "NAME": BASE_DIR / "sqlite.db",
 #     }
 # }
 

@@ -1,11 +1,13 @@
 # pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions, filters, status
 # pyrefly: ignore [missing-import]
+import os
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes
 from django.db import models as db_models
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from openai import OpenAI
 from django.utils import timezone
 from .models import (
     Company, JobOffer, JobApplication, Category, Channel, ChannelMessage,
@@ -26,10 +28,12 @@ User = get_user_model()
 
 def get_student_talents_queryset():
     """
-    Retourne uniquement les profils des vrais apprenants/étudiants.
-    Exclut les recruteurs, instructeurs, administrateurs et responsables d'entreprises.
+    Retourne uniquement les profils des vrais apprenants/étudiants actifs et vérifiés.
+    Exclut les comptes non vérifiés par email, recruteurs, instructeurs, administrateurs et responsables d'entreprises.
     """
     return User.objects.filter(
+        is_active=True,
+        email_verified=True,
         is_public_profile=True,
         is_recruiter=False,
         is_instructor=False,
@@ -56,7 +60,6 @@ def community_chat(request):
     """
     Kibo AI Career Coach - Orientation et orientation professionnelle en ML.
     """
-    import os
     message = request.data.get('message')
     chat_history = request.data.get('chatHistory', [])
     
@@ -64,7 +67,6 @@ def community_chat(request):
         return Response({"error": "Message is required"}, status=400)
         
     try:
-        from openai import OpenAI
         api_key = os.environ.get("API_AFRI_KEY") or os.environ.get("OPENAI_API_KEY", "")
         if not api_key:
             raise ValueError("Neither API_AFRI_KEY nor OPENAI_API_KEY is set in the environment.")
@@ -107,6 +109,34 @@ def community_chat(request):
 #  JOB BOARD
 # =============================================
 
+class CompanyViewSet(viewsets.ModelViewSet):
+    """
+    Gestion des entreprises (Recruteurs).
+    """
+    queryset = Company.objects.all().order_by('-created_at')
+    serializer_class = CompanySerializer
+    pagination_class = None
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        company = serializer.save()
+        company.admins.add(self.request.user)
+        self.request.user.is_recruiter = True
+        self.request.user.save(update_fields=['is_recruiter'])
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated], url_path='my-company')
+    def my_company(self, request):
+        company = request.user.managed_companies.first()
+        if not company:
+            return Response({"detail": "Aucune entreprise gérée."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = self.get_serializer(company, context={'request': request})
+        return Response(serializer.data)
+
+
 class JobOfferViewSet(viewsets.ModelViewSet):
     """
     Gestion des offres d'emploi.
@@ -122,6 +152,17 @@ class JobOfferViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        company_id = self.request.data.get('company')
+        if company_id:
+            company = get_object_or_404(Company, pk=company_id, admins=self.request.user)
+        else:
+            company = self.request.user.managed_companies.first()
+            if not company:
+                from rest_framework.exceptions import ValidationError
+                raise ValidationError({"company": "Vous devez créer votre entreprise avant de publier une offre."})
+        serializer.save(company=company)
 
     @action(detail=True, methods=['post'], url_path='apply')
     def apply(self, request, pk=None):

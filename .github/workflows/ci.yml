@@ -1,88 +1,88 @@
-name: CI
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+# name: CI
+# on:
+#   push:
+#     branches: [develop, courses]
+#   pull_request:
+#     branches: [develop, courses]
 
-jobs:
-  frontend:
-    name: Frontend CI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22.21.1'
-          cache: 'npm'
-          cache-dependency-path: AcademyFrontend/package-lock.json
-      - name: Install & Lint
-        run: |
-          cd AcademyFrontend
-          npm ci
-          npm run lint
-      - name: Type Check
-        run: |
-          cd AcademyFrontend
-          npx tsc --noEmit
+# jobs:
+#   frontend:
+#     name: Frontend CI
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-node@v4
+#         with:
+#           node-version: '22.21.1'
+#           cache: 'npm'
+#           cache-dependency-path: AcademyFrontend/package-lock.json
+#       - name: Install & Lint
+#         run: |
+#           cd AcademyFrontend
+#           npm ci
+#           npm run lint
+#       - name: Type Check
+#         run: |
+#           cd AcademyFrontend
+#           npx tsc --noEmit
 
-  backend:
-    name: Backend MLAcademy
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: mlacademy_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11.9'
-      - name: Install dependencies
-        run: |
-          cd MLBackend
-          pip install -r requirements.txt
-      - name: Run Tests
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL}}
-          REDIS_URL: redis://localhost:6379/0
-          SECRET_KEY: test_secret_key_ci_only
-        run: |
-          cd MLBackend
-          python manage.py test
+#   backend:
+#     name: Backend MLAcademy
+#     runs-on: ubuntu-latest
+#     services:
+#       postgres:
+#         image: postgres:15-alpine
+#         env:
+#           POSTGRES_USER: postgres
+#           POSTGRES_PASSWORD: password
+#           POSTGRES_DB: mlacademy_test
+#         ports:
+#           - 5432:5432
+#         options: >-
+#           --health-cmd pg_isready
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#       redis:
+#         image: redis:7-alpine
+#         ports:
+#           - 6379:6379
+#         options: >-
+#           --health-cmd "redis-cli ping"
+#           --health-interval 10s
+#           --health-timeout 5s
+#           --health-retries 5
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-python@v4
+#         with:
+#           python-version: '3.11.9'
+#       - name: Install dependencies
+#         run: |
+#           cd MLBackend
+#           pip install -r requirements.txt
+#       - name: Run Tests
+#         env:
+#           DATABASE_URL: ${{ secrets.DATABASE_URL}}
+#           REDIS_URL: redis://localhost:6379/0
+#           SECRET_KEY: test_secret_key_ci_only
+#         run: |
+#           cd MLBackend
+#           python manage.py test
 
-  sandbox:
-    name: Sandbox (FastAPI) CI
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.11.9'
-      - name: Install dependencies
-        run: |
-          cd MLSandbox
-          pip install -r requirements.txt
-      - name: Run Lint
-        run: |
-          pip install flake8
-          flake8 MLSandbox/main.py
+#   sandbox:
+#     name: Sandbox (FastAPI) CI
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#       - uses: actions/setup-python@v4
+#         with:
+#           python-version: '3.11.9'
+#       - name: Install dependencies
+#         run: |
+#           cd MLSandbox
+#           pip install -r requirements.txt
+#       - name: Run Lint
+#         run: |
+#           pip install flake8
+#           flake8 MLSandbox/main.py

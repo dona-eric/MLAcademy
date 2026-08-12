@@ -59,6 +59,7 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'website', 'logo', 'location', "position_geographique",'is_verified']
 
 class JobOfferSerializer(serializers.ModelSerializer):
+    company = serializers.PrimaryKeyRelatedField(queryset=Company.objects.all(), required=False)
     company_name = serializers.ReadOnlyField(source='company.name')
     company_position = serializers.ReadOnlyField(source="company.position_geographique")
     company_logo = serializers.SerializerMethodField()
@@ -70,6 +71,7 @@ class JobOfferSerializer(serializers.ModelSerializer):
             'description', 'requirements', 'location', 'contract_type', 
             'salary_range', 'posted_at', 'deadline', "company_position",
         ]
+        read_only_fields = ['company_name', 'company_position', 'posted_at']
 
     def get_company_logo(self, obj):
         if obj.company.logo:
@@ -135,7 +137,9 @@ class TalentProfileSerializer(serializers.ModelSerializer):
         return obj.get_full_name()
 
     def get_headline(self, obj):
-        level_map = {"beginner": "Débutant", "intermediate": "Intermédiaire", "advanced": "Avancé"}
+        level_map = {"beginner": "Débutant", 
+        "intermediate": "Intermédiaire",
+        "advanced": "Avancé", "expert":"Expert"}
         return f"Talent {level_map.get(obj.level, 'Débutant')} en IA & Machine Learning"
 
     def get_joinedAt(self, obj):
@@ -231,14 +235,31 @@ class TalentProfileSerializer(serializers.ModelSerializer):
 class JobApplicationSerializer(serializers.ModelSerializer):
     job_title = serializers.ReadOnlyField(source='job.title')
     company_name = serializers.ReadOnlyField(source='job.company.name')
+    user_id = serializers.ReadOnlyField(source='user.id')
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.ReadOnlyField(source='user.email')
+    user_avatar = serializers.SerializerMethodField()
+    user_xp = serializers.ReadOnlyField(source='user.xp_points')
+    user_level = serializers.ReadOnlyField(source='user.level')
 
     class Meta:
         model = JobApplication
         fields = [
-            'id', 'job', 'job_title', 'company_name', 'cover_letter', 
+            'id', 'job', 'job_title', 'company_name', 'user_id', 'user_name', 
+            'user_email', 'user_avatar', 'user_xp', 'user_level', 'cover_letter', 
             'cv_url', 'status', 'applied_at'
         ]
         read_only_fields = ['status', 'applied_at']
+
+    def get_user_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username or obj.user.email
+
+    def get_user_avatar(self, obj):
+        if obj.user.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.user.avatar.url)
+        return None
 
 class ChannelSerializer(serializers.ModelSerializer):
     class Meta:
