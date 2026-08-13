@@ -1,7 +1,22 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "mlbackend"
-version = "0.1.0"
-description = "Add your description here"
+name = "MLAcademy"
+version = "1.0.0"
+description = "Une plateforme d'apprentissage, de recherche et de collaboration pour les passionnés de l'intelligence artificielle, de la data et du machine learning et du quantique"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[project.optional-dependencies]
+
+dev = [
+    'pytest',
+    'black',
+    "flake8",
+]
