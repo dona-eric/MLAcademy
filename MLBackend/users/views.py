@@ -79,7 +79,9 @@ class RegisterView(generics.CreateAPIView):
         result = response.json()
         
         if not result.get("success"):
-            return Response({"error": "Validation reCAPTCHA échouée. Êtes-vous un robot ?"}, status=status.HTTP_400_BAD_REQUEST)
+            import logging
+            logging.error(f"reCAPTCHA failed: {result}")
+            return Response({"error": f"Validation reCAPTCHA échouée. Raison: {result.get('error-codes', 'inconnue')}"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -229,7 +231,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         result = response.json()
         
         if not result.get("success"):
-            return Response({"error": "Validation reCAPTCHA échouée. Êtes-vous un robot ?"}, status=status.HTTP_400_BAD_REQUEST)
+            import logging
+            logging.error(f"reCAPTCHA failed: {result}")
+            return Response({"error": f"Validation reCAPTCHA échouée. Raison: {result.get('error-codes', 'inconnue')}"}, status=status.HTTP_400_BAD_REQUEST)
         
         return super().post(request, *args, **kwargs)
 
