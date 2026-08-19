@@ -198,6 +198,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id", "email", "email_verified", "otp_enabled", "date_joined", "last_login", "stats", "xp_points"
             ]
+        extra_kwargs = {
+            "avatar": {"write_only": True, "required": False},  # #18 : déplacé de la méthode get_stats() vers Meta où il doit être
+        }
 
     def update(self, instance, validated_data):
         student_profile_data = validated_data.pop('student_profile', None)
@@ -221,7 +224,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         from learning.models import Enrollment, Certificate, UserLessonProgress
         courses_completed = Enrollment.objects.filter(user=obj, is_completed=True).count()
         certificates = Certificate.objects.filter(user=obj).count()
-        lessons_completed = UserLessonProgress.objects.filter(user=obj).count()
+        lessons_completed = UserLessonProgress.objects.filter(user=obj, is_completed=True).count()  # #17 : ajout de is_completed=True
         
         # Simulation d'heures (30 mins par leçon en moyenne)
         learning_hours = round(lessons_completed * 0.5, 1)
@@ -236,9 +239,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "learningHours": learning_hours,
             "points": points,
             "levelNumber": level_number
-        }
-        extra_kwargs = {
-            "avatar": {"write_only": True, "required": False},
         }
 
     def get_avatar_url(self, obj):

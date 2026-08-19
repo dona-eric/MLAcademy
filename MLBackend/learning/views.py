@@ -161,6 +161,16 @@ class EnrollView(APIView):
             return Response({"detail": "Vous êtes déjà inscrit à ce cours."}, status=status.HTTP_200_OK)
             
         Course.objects.filter(pk=course.pk).update(enrolled_count=models.F('enrolled_count') + 1)
+
+        # #9 : Création d'une Transaction pour les cours payants
+        if course.price and float(course.price) > 0:
+            from management.models import Transaction
+            Transaction.objects.create(
+                user=request.user,
+                course=course,
+                amount=course.price,
+                status='completed'
+            )
         
         serializer = EnrollmentSerializer(enrollment, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -285,20 +295,41 @@ class LessonProgressView(APIView):
 
     def post(self, request, lesson_id):
         lesson = get_object_or_404(Lesson, pk=lesson_id)
+
+        # #28 : Vérification que l'utilisateur est bien inscrit au cours parent
+        is_enrolled = Enrollment.objects.filter(
+            user=request.user,
+            course__course_modules__module=lesson.module
+        ).exists()
+        if not is_enrolled:
+            return Response(
+                {"error": "Vous devez être inscrit au cours pour enregistrer votre progression."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         progress, _ = UserLessonProgress.objects.get_or_create(user=request.user, lesson=lesson)
 
         is_completed = request.data.get('is_completed')
         last_watched_position = request.data.get('last_watched_position')
 
-        if is_completed is not None:
-            progress.is_completed = is_completed
         if last_watched_position is not None:
             progress.last_watched_position = last_watched_position
+            progress.save(update_fields=['last_watched_position'])
 
-        progress.save()
+        # #5 : On passe systématiquement par mark_as_complete() pour assurer
+        # la mise à jour atomique de completed_at et le déclenchement correct des signaux XP
+        if is_completed:
+            progress.mark_as_complete()
+        elif is_completed is False and progress.is_completed:
+            # Permet la dé-validation si nécessaire
+            progress.is_completed = False
+            progress.completed_at = None
+            progress.save(update_fields=['is_completed', 'completed_at'])
 
-        # Cascade événementielle : mise à jour asynchrone/directe de la progression globale du cours
-        enrollment = Enrollment.objects.filter(user=request.user, course=lesson.module.course).first()
+        # Cascade : mise à jour de la progression globale du cours
+        enrollment = Enrollment.objects.filter(
+            user=request.user, course__course_modules__module=lesson.module
+        ).first()
         if enrollment:
             enrollment.update_progress()
 

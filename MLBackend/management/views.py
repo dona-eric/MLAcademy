@@ -146,15 +146,15 @@ class AdminInstructorApplicationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         application = self.get_object()
-        application.status = 'approved'
-        application.reviewed_by = request.user
-        application.reviewed_at = timezone.now()
-        application.save()
-        
-        # Promouvoir l'utilisateur
+
+        # #11 : On utilise la méthode métier approve() qui génère le token d'activation
+        # et l'expiration (7 jours) pour que l'instructeur puisse activer son compte.
+        application.approve(reviewed_by=request.user)
         user = application.user
+
+        # Promouvoir l'utilisateur
         user.is_instructor = True
-        user.save()
+        user.save(update_fields=['is_instructor'])
 
         # Audit Log
         AuditLog.objects.create(
@@ -340,7 +340,7 @@ class AdminTeamViewSet(viewsets.ModelViewSet):
             user.verification_token = uuid.uuid4()
             user.save(update_fields=['verification_token'])
 
-        activation_link = f"{settings.FRONTEND_URL}/admin/activate/?token={user.verification_token}"
+        activation_link = f"{django_settings.FRONTEND_URL}/admin/activate/?token={user.verification_token}"  # #6 : corrige le shadow import
         
         try:
             send_mail(

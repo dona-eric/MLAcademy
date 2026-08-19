@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
@@ -10,7 +11,6 @@ class CustomUser(AbstractUser):
     Modèle utilisateur étendu pour MLAcademy.
     Remplace le modèle User par défaut de Django.
     """
-
     # --- Champs d'identification ---
     email = models.EmailField(unique=True, verbose_name="Adresse email")
 
@@ -19,8 +19,8 @@ class CustomUser(AbstractUser):
         default=False, verbose_name="Email vérifié"
     )
     verification_token = models.UUIDField(
-        default=uuid.uuid4, editable=False, unique=True,
-        verbose_name="Token de vérification"
+        default=uuid.uuid4, editable=False, unique=True, null=True, blank=True,
+        verbose_name="Token de vérification"  # #30 : null=True pour permettre la réinitialisation après vérification
     )
     verification_sent_at = models.DateTimeField(
         auto_now=True, verbose_name="Date d'envoi de la vérification"
@@ -165,7 +165,7 @@ class InstructorApplication(models.Model):
 
     @property
     def full_name(self):
-        return f"{self.first_name} {self.last_name}"
+        return self.user.get_full_name()
  
     @property
     def is_pending(self):
@@ -184,7 +184,7 @@ class InstructorApplication(models.Model):
         # Token valable 7 jours pour que l'instructeur définisse son mdp
         self.activation_token = secrets.token_urlsafe(48)
         self.activation_token_sent = timezone.now()
-        self.activation_expires_at = timezone.now() + timezone.timedelta(days=7)
+        self.activation_expires_at = timezone.now() + timedelta(days=7)  # #36 : datetime.timedelta, pas timezone.timedelta
         self.save(update_fields=[
             "status", "reviewed_by", "reviewed_at",
             "activation_token", "activation_token_sent", "activation_expires_at",
