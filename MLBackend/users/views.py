@@ -5,12 +5,15 @@ import qrcode
 import requests
 import qrcode.image.svg
 from django.conf import settings
+from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from django.contrib.auth import logout as django_logout
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.contrib.auth.password_validation import validate_password
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django_otp.plugins.otp_totp.models import TOTPDevice
@@ -22,7 +25,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.authentication import SessionAuthentication
 from .utils import send_mail_async
-from .models import BetaTesteur, InstructorApplication, InstructorProfile, FCMDevice
+from .models import BetaTesteur, InstructorApplication, InstructorProfile, FCMDevice, CustomUser
 from .serializers import (
     CustomTokenObtainPairSerializer,
     PasswordResetConfirmSerializer,
@@ -33,14 +36,12 @@ from .serializers import (
     UserRegisterSerializer,
     InstructorApplicationSerializer,
     InstructorApplicationStatusSerializer,
-    StudentProfileSerializer,
-    InstructorProfileSerializer
-)
+    StudentProfileSerializer, InstructorProfileSerializer)
 
 User = get_user_model()
 
 
-#  INSCRIPTION
+#===================INSCRIPTION==========================
 
 class CheckEmailView(APIView):
     """
@@ -48,12 +49,10 @@ class CheckEmailView(APIView):
     Vérifie si un utilisateur existe avec l'e-mail fourni.
     """
     permission_classes = [permissions.AllowAny]
-
     def post(self, request, *args, **kwargs):
         email = request.data.get("email")
         if not email:
             return Response({"error": "L'email est requis."}, status=status.HTTP_400_BAD_REQUEST)
-        
         exists = User.objects.filter(email=email).exists()
         return Response({"exists": exists}, status=status.HTTP_200_OK)
 
@@ -69,6 +68,18 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        recaptcha_token = request.data.get("recaptcha_token")
+        if not recaptcha_token:
+            return Response({"error": "Veuillez valider le reCAPTCHA."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verify reCAPTCHA
+        recaptcha_secret = getattr(settings, "RECAPTCHA_PRIVATE_KEY", "")
+        verify_url = "https://www.google.com/recaptcha/api/siteverify"
+        response = requests.post(verify_url, data={"secret": recaptcha_secret, "response": recaptcha_token})
+        result = response.json()
+        
+        if not result.get("success"):
+            return Response({"error": "Validation reCAPTCHA échouée. Êtes-vous un robot ?"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -93,51 +104,7 @@ class RegisterView(generics.CreateAPIView):
             },
             status=status.HTTP_201_CREATED,
         )
-
-
-class BetaTesterRegisterView(RegisterView):
-    """
-    POST /api/public/users/programme-testeurs/
-    Inscription directe au programme des bêta-testeurs.
-    """
-
-    def create(self, request, *args, **kwargs):
-        request_data = request.data.copy()
-        request_data["register_as_beta_tester"] = True
-        serializer = self.get_serializer(data=request_data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-
-        frontend_url = getattr(settings, "FRONTEND_URL")
-        verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
-        send_mail(
-            subject="Bienvenue dans le programme Bêta-Testeurs MLAcademyHub",
-            message=(
-                f"Bonjour {user.first_name or user.email},\n\n"
-                "Votre inscription en tant que bêta-testeur a bien été enregistrée. "
-                "Un administrateur va examiner votre candidature et valider votre statut.\n\n"
-                f"Pour finaliser votre compte, confirmez votre email ici :\n{verification_link}\n\n"
-                "La date de lancement du programme est encore en cours de définition. "
-                "Nous vous tiendrons informé dès qu'elle sera disponible.\n\n"
-                "L'équipe MLAcademy"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-
-        return Response(
-            {
-                "message": "Votre demande de bêta-testeur a été enregistrée. Confirmez votre email pour activer votre compte.",
-                "email": user.email,
-                "betaTesterStatus": "pending",
-            },
-            status=status.HTTP_201_CREATED,
-        )
-
-
 #  CONFIRMATION EMAIL
-
 
 class VerifyEmailView(APIView):
     """
@@ -164,10 +131,8 @@ class VerifyEmailView(APIView):
                     {"error": "Le lien de vérification a expiré."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-
         if user.email_verified:
             return Response({"message": "Email déjà vérifié."})
-
         user.email_verified = True
         user.verification_token = None
         user.save(update_fields=["email_verified", "verification_token"])
@@ -252,6 +217,22 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
     serializer_class = CustomTokenObtainPairSerializer
 
+    def post(self, request, *args, **kwargs):
+        recaptcha_token = request.data.get("recaptcha_token")
+        if not recaptcha_token:
+            return Response({"error": "Veuillez valider le reCAPTCHA."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verify reCAPTCHA
+        recaptcha_secret = getattr(settings, "RECAPTCHA_PRIVATE_KEY", "")
+        verify_url = "https://www.google.com/recaptcha/api/siteverify"
+        response = requests.post(verify_url, data={"secret": recaptcha_secret, "response": recaptcha_token})
+        result = response.json()
+        
+        if not result.get("success"):
+            return Response({"error": "Validation reCAPTCHA échouée. Êtes-vous un robot ?"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        return super().post(request, *args, **kwargs)
+
 
 class CookieTokenRefreshView(TokenRefreshView):
     """
@@ -289,7 +270,16 @@ class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        refresh_token = request.data.get("refresh")
         django_logout(request)
+
+        # #20 : Révocation du refresh token pour invalider la session côté serveur
+        if refresh_token:
+            try:
+                from rest_framework_simplejwt.tokens import RefreshToken as RT
+                RT(refresh_token).blacklist()
+            except Exception:
+                pass  # Token déjà invalide ou expiré, on continue proprement
 
         response = Response({"message": "Déconnexion réussie."})
         return response
@@ -332,8 +322,6 @@ class SocialJWTCompleteView(APIView):
 
 
 #  RESET DE MOT DE PASSE
-
-
 class PasswordResetRequestView(APIView):
     """
     POST /api/users/password-reset/
@@ -360,7 +348,7 @@ class PasswordResetRequestView(APIView):
                 send_mail_async(
                     subject="MLAcademy — Réinitialisation de votre mot de passe",
                     message=(
-                        f"Bonjour {user.first_name or 'cher membre'},\n\n"
+                        f"Bonjour {user.first_name or user.email},\n\n"
                         f"Cliquez sur ce lien pour réinitialiser votre mot de passe :\n"
                         f"{reset_link}\n\nCe lien expire dans 24h.\n\nL'équipe MLAcademy"
                     ),
@@ -376,7 +364,6 @@ class PasswordResetRequestView(APIView):
                 "message": "Si cet email est associé à un compte, un lien de réinitialisation a été envoyé."
             }
         )
-
 
 class PasswordResetConfirmView(APIView):
     """
@@ -467,6 +454,7 @@ class Verify2FAView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [TwoFactorRateThrottle]  # #35 : anti brute-force OTP
 
     def post(self, request):
         otp_token = request.data.get("otp_token") # Aligné avec le frontend
@@ -482,8 +470,6 @@ class Verify2FAView(APIView):
                 {"error": "Aucun dispositif 2FA configuré."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        from django.conf import settings
         if device.verify_token(otp_token) or (settings.DEBUG and otp_token == "000000"):
             if not device.confirmed:
                 device.confirmed = True
@@ -726,7 +712,6 @@ class PublicInstructorStatusView(APIView):
             return Response({"error": "L'adresse e-mail et le numéro de dossier sont requis."}, status=400)
         
         try:
-            from django.contrib.auth import get_user_model
             User = get_user_model()
             user = User.objects.get(email=email.strip().lower())
             application = InstructorApplication.objects.get(user=user, id=dossier_id)
@@ -760,7 +745,7 @@ class SocialView(APIView):
             if resp.status_code == 200:
                 data = resp.json()
                 if not data.get("email_verified"):
-                    return None
+                    return Response({"error": "L'adresse email n'est pas vérifiée par Google. Connexion refusée."}, status=400)  # #7 : évitait un crash 500 (return None)
                 user_email = data.get("email")
                 user_first_name = data.get("given_name", "")
                 user_last_name = data.get("family_name", "")
@@ -802,7 +787,6 @@ class SocialView(APIView):
                 'is_active': True
             }
         )
-
         # Génération du JWT
         refresh = RefreshToken.for_user(user)
         return Response({
@@ -814,7 +798,6 @@ class SocialView(APIView):
                 "is_new": created
             }
         })
-
 
 class InstructorProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -843,9 +826,6 @@ class ChangePasswordView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        from django.contrib.auth.password_validation import validate_password
-        from django.core.exceptions import ValidationError
-
         old_password = request.data.get("old_password")
         new_password = request.data.get("new_password")
         new_password_confirm = request.data.get("new_password_confirm")
@@ -868,8 +848,7 @@ class ChangePasswordView(APIView):
         request.user.save()
         return Response({"message": "Mot de passe modifié avec succès."})
 
-
-from rest_framework import permissions
+###===================GESTION DES TESTEURS========================
 
 class IsApprovedBetaTesterOrAdmin(permissions.BasePermission):
     """
@@ -886,5 +865,46 @@ class IsApprovedBetaTesterOrAdmin(permissions.BasePermission):
         # Vérifie si l'utilisateur a un profil bêta ET s'il est approuvé
         try:
             return request.user.beta_profile.is_approved
-        except BetaTester.DoesNotExist:
+        except BetaTesteur.DoesNotExist:
             return False
+
+class BetaTesterRegisterView(RegisterView):
+    """
+    POST /api/public/users/programme-testeurs/
+    Inscription directe au programme des bêta-testeurs.
+    """
+
+    def create(self, request, *args, **kwargs):
+        request_data = request.data.copy()
+        request_data["register_as_beta_tester"] = True
+        serializer = self.get_serializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        frontend_url = getattr(settings, "FRONTEND_URL")
+        verification_link = f"{frontend_url}/verify-email/{user.verification_token}"
+        send_mail(
+            subject="Bienvenue dans le programme Bêta-Testeurs MLAcademyHub",
+            message=(
+                f"Bonjour {user.first_name or user.email},\n\n"
+                "Votre inscription en tant que bêta-testeur a bien été enregistrée. "
+                "Un administrateur va examiner votre candidature et valider votre statut.\n\n"
+                f"Pour finaliser votre compte, confirmez votre email ici :\n{verification_link}\n\n"
+                "La date de lancement du programme est encore en cours de définition. "
+                "Nous vous tiendrons informé dès qu'elle sera disponible.\n\n"
+                "L'équipe MLAcademy"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
+        return Response(
+            {
+                "message": "Votre demande de bêta-testeur a été enregistrée. Confirmez votre email pour activer votre compte.",
+                "email": user.email,
+                "betaTesterStatus": "pending",
+            },
+            status=status.HTTP_201_CREATED,
+        )
+

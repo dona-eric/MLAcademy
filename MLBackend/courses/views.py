@@ -134,9 +134,15 @@ class CourseViewSet(viewsets.ReadOnlyModelViewSet):
         Permet à un étudiant connecté de noter et d'évaluer un cours.
         """
         course = self.get_object()
-        
-        # 💡 CORRECTIF : On clone les données pour injecter l'id du cours ciblé
-        # afin de nourrir proprement le système anti-collision du sérialiseur.
+
+        # #29 : Vérification que l'utilisateur est inscrit au cours avant de noter
+        from learning.models import Enrollment
+        if not Enrollment.objects.filter(user=request.user, course=course).exists():
+            return Response(
+                {"error": "Vous devez être inscrit au cours pour laisser un avis."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         data = request.data.copy()
         data['course'] = course.id
         

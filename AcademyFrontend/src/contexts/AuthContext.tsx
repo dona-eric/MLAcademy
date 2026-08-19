@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { fetchApi } from '@/lib/api';
 import type { UserProfile } from '@/types/user';
 import { initFcm } from '@/utils/pushNotification';
@@ -11,134 +11,165 @@ interface AuthContextType {
   loading: boolean;
   isTwoFactorVerified: boolean;
   setTwoFactorVerified: (val: boolean) => void;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: any) => Promise<void>;
+  login: (email: string, password: string, recaptchaToken?: string) => Promise<UserProfile | null>;
+  register: (data: Record<string, any>) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<UserProfile | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const PUBLIC_ROUTES = ['/login', '/register', '/instructor/login', '/2fa', '/forgot-password'];
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isTwoFactorVerified, setIsTwoFactorVerified] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isTwoFactorVerified, setIsTwoFactorVerified] = useState<boolean>(false);
   const router = useRouter();
+  const pathname = usePathname();
 
-  // On mount, hydrate 2FA state from sessionStorage
+  // 1. Hydratation du statut 2FA au montage
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored2FA = sessionStorage.getItem('2fa_verified');
-      if (stored2FA === 'true') {
-        setIsTwoFactorVerified(true);
+      setIsTwoFactorVerified(stored2FA === 'true');
+    }
+  }, []);
+
+  // 2. Gestionnaire 2FA
+  const setTwoFactorVerified = useCallback((val: boolean) => {
+    setIsTwoFactorVerified(val);
+    if (typeof window !== 'undefined') {
+      if (val) {
+        sessionStorage.setItem('2fa_verified', 'true');
+      } else {
+        sessionStorage.removeItem('2fa_verified');
       }
     }
   }, []);
 
-  const setTwoFactorVerified = (val: boolean) => {
-    setIsTwoFactorVerified(val);
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('2fa_verified', val.toString());
-    }
-  };
-
-  const checkAuth = async (): Promise<UserProfile | null> => {
-    // Éviter l'exécution côté serveur
+  // 3. Vérification de la session
+  const checkAuth = useCallback(async (): Promise<UserProfile | null> => {
     if (typeof window === 'undefined') return null;
 
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return null;
+    }
+
     try {
-      setLoading(true);
       const userData = (await fetchApi('/api/private/users/me/')) as UserProfile;
       setUser(userData);
-      
-      // Verification 2FA Obligatoire (Sauf pour les instructeurs pour le moment)
-      const verified = sessionStorage.getItem('2fa_verified') === 'true';
-      if (!verified && !window.location.pathname.includes('/2fa') && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/instructor/login')) {
-          // Si l'utilisateur est un instructeur, on ne le force pas tout de suite sur /2fa (rappel dans le studio)
-          if (!userData.is_instructor) {
-              router.push('/2fa');
-          }
+
+      // Vérification 2FA pour les non-instructeurs sur routes privées
+      const isVerified2FA = sessionStorage.getItem('2fa_verified') === 'true';
+      const isPublicRoute = PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+
+      if (!userData.is_instructor && !isVerified2FA && !isPublicRoute) {
+        router.push('/2fa');
       }
-      
-      // Initialisation des notifications Push Firebase si l'utilisateur est connecté
+
+      // Initialisation FCM
       if (userData) {
         initFcm();
       }
-      
+
       return userData;
     } catch (error: any) {
-      // On nettoie l'utilisateur si l'appel échoue (non connecté ou session expirée)
-      setUser(null);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      sessionStorage.removeItem('2fa_verified');
-      
-      // On ne log en "error" que ce qui n'est pas une simple absence de session (401 Unauthorized)
-      if (error?.status !== 401 && !error?.message?.includes("authentification") && !error?.message?.includes("401") && !error?.message?.includes("jeton")) {
-        console.error("Erreur d'authentification inattendue:", error);
+      // Ne purger les tokens QUE si l'erreur est un problème d'authentification explicite (401/403)
+      const isAuthError =
+        error?.status === 401 ||
+        error?.status === 403 ||
+        error?.message?.includes('authentification') ||
+        error?.message?.includes('jeton');
+
+      if (isAuthError) {
+        setUser(null);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        sessionStorage.removeItem('2fa_verified');
+      } else {
+        console.error('Erreur réseau ou serveur lors de la vérification auth:', error);
       }
+
       return null;
     } finally {
       setLoading(false);
     }
-  };
+  }, [pathname, router]);
 
-  // Lancer la vérification au premier montage du composant
+  // Lancement unique au montage
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
-  const login = async (email: string, password: string) => {
+  // 4. Fonction de Connexion
+  const login = async (email: string, password: string, recaptchaToken?: string): Promise<UserProfile | null> => {
+    setLoading(true);
     try {
+      const body: Record<string, any> = { email, password };
+      if (recaptchaToken) body.recaptcha_token = recaptchaToken;
+
       const data: any = await fetchApi('/api/public/users/token/', {
         method: 'POST',
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
-      
-      // Stockage des tokens JWT
+
       if (data.access) localStorage.setItem('access_token', data.access);
       if (data.refresh) localStorage.setItem('refresh_token', data.refresh);
 
-      // Le 2FA est OBLIGATOIRE pour les apprenants. Les instructeurs ont un rappel dans le studio.
+      // Réinitialiser la 2FA pour la nouvelle session
       setTwoFactorVerified(false);
+
+      // Récupérer le profil mis à jour
       const userData = await checkAuth();
-      
+
       if (userData?.is_instructor) {
-        const redirect = sessionStorage.getItem("post_2fa_redirect") || '/studio';
+        const redirect = sessionStorage.getItem('post_2fa_redirect') || '/studio';
         router.push(redirect);
       } else {
         router.push('/2fa');
       }
-      
+
+      return userData;
     } catch (error) {
-      throw error; // On laisse le composant Login gérer l'affichage de l'erreur
+      setLoading(false);
+      throw error;
     }
   };
 
-  const register = async (data: any) => {
+  // 5. Inscription
+  const register = async (data: Record<string, any>) => {
     await fetchApi('/api/public/users/register/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   };
 
+  // 6. Déconnexion
   const logout = async () => {
+    setLoading(true);
     try {
       await fetchApi('/api/private/users/logout/', { method: 'POST' });
     } catch (error) {
-      console.error('Erreur lors de la déconnexion', error);
+      console.warn('Erreur lors de la déconnexion sur le serveur:', error);
     } finally {
       setUser(null);
       setTwoFactorVerified(false);
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       sessionStorage.removeItem('2fa_verified');
+      setLoading(false);
       router.push('/login');
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, isTwoFactorVerified, setTwoFactorVerified, login, register, logout, checkAuth }}>
+    <AuthContext.Provider
+      value={{user,loading,isTwoFactorVerified,setTwoFactorVerified,login,register,logout,checkAuth}}
+    >
       {children}
     </AuthContext.Provider>
   );

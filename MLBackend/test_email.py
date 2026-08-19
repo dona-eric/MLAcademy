@@ -7,7 +7,7 @@ django.setup()
 
 from django.core.mail import send_mail
 from django.conf import settings
-target_email = sys.argv[1] if len(sys.argv) > 1 else "lowej93471@copawoke.com"
+target_email = sys.argv[1] if len(sys.argv) > 1 else "copeda3113@novelv.com"
 
 print("--- DIAGNOSTIC SMTP BREVO DIRECT ---")
 print("EMAIL_BACKEND:", settings.EMAIL_BACKEND)
