@@ -488,6 +488,6 @@ AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 
 # reCAPTCHA Configuration
-RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY", "dummy_public_key")
-RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY", "dummy_private_key")
+RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
+RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY")
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
