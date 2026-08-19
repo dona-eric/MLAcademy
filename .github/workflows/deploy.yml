@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy-frontend:
-    name: Deploy Frontend (Next.js)
+    name: DEPLOYMENT FRONTEND
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.7
@@ -22,7 +22,7 @@ jobs:
           npm run build
 
   deploy-backend:
-    name: Deploy Backend to Render
+    name: DEPLOYMENT BACKEND TO RENDER
     runs-on: ubuntu-latest
     needs: [deploy-frontend]
     steps:

@@ -152,6 +152,11 @@ class Project(models.Model):
         default=80, verbose_name="Score minimum pour validation (%)",
         validators=[MinValueValidator(1), MaxValueValidator(100)]
     )
+    required_review_count = models.PositiveIntegerField(
+        default=2,
+        verbose_name="Nombre de correcteurs requis",
+        help_text="Nombre d'évaluations nécessaires avant la décision finale (pair review ou instructeur)."
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

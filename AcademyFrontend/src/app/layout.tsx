@@ -10,6 +10,8 @@ export const metadata: Metadata = {
     "La plateforme de référence francophone pour se former en Machine Learning, Data Science et IA. Cours, notebooks interactifs et certifications.",
 };
 
+import ReCaptchaWrapper from "@/components/ReCaptchaWrapper";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -18,12 +20,14 @@ export default function RootLayout({
   return (
     <html lang="fr" className="antialiased font-sans">
       <body className="bg-[var(--bg-base)] text-[var(--text-primary)] min-h-screen flex flex-col">
-        <AuthProvider>
-          <ConditionalHeader />
-          <MainWrapper>{children}</MainWrapper>
-          <GlobalAIAssistant />
-          <ConditionalFooter />
-        </AuthProvider>
+        <ReCaptchaWrapper>
+          <AuthProvider>
+            <ConditionalHeader />
+            <MainWrapper>{children}</MainWrapper>
+            <GlobalAIAssistant />
+            <ConditionalFooter />
+          </AuthProvider>
+        </ReCaptchaWrapper>
       </body>
     </html>
   );
