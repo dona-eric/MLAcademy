@@ -68,20 +68,20 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
-        recaptcha_token = request.data.get("recaptcha_token")
-        if not recaptcha_token:
-            return Response({"error": "Veuillez valider le reCAPTCHA."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Verify reCAPTCHA
-        recaptcha_secret = getattr(settings, "RECAPTCHA_PRIVATE_KEY", "")
-        verify_url = "https://www.google.com/recaptcha/api/siteverify"
-        response = requests.post(verify_url, data={"secret": recaptcha_secret, "response": recaptcha_token})
-        result = response.json()
-        
-        if not result.get("success"):
-            import logging
-            logging.error(f"reCAPTCHA failed: {result}")
-            return Response({"error": f"Validation reCAPTCHA échouée. Raison: {result.get('error-codes', 'inconnue')}"}, status=status.HTTP_400_BAD_REQUEST)
+        # recaptcha_token = request.data.get("recaptcha_token")
+        # if not recaptcha_token:
+        #     return Response({"error": "Veuillez valider le reCAPTCHA."}, status=status.HTTP_400_BAD_REQUEST)
+        # 
+        # # Verify reCAPTCHA
+        # recaptcha_secret = getattr(settings, "RECAPTCHA_PRIVATE_KEY", "")
+        # verify_url = "https://www.google.com/recaptcha/api/siteverify"
+        # response = requests.post(verify_url, data={"secret": recaptcha_secret, "response": recaptcha_token})
+        # result = response.json()
+        # 
+        # if not result.get("success"):
+        #     import logging
+        #     logging.error(f"reCAPTCHA failed: {result}")
+        #     return Response({"error": f"Validation reCAPTCHA échouée. Raison: {result.get('error-codes', 'inconnue')}"}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -220,20 +220,20 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
-        recaptcha_token = request.data.get("recaptcha_token")
-        if not recaptcha_token:
-            return Response({"error": "Veuillez valider le reCAPTCHA."}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Verify reCAPTCHA
-        recaptcha_secret = getattr(settings, "RECAPTCHA_PRIVATE_KEY", "")
-        verify_url = "https://www.google.com/recaptcha/api/siteverify"
-        response = requests.post(verify_url, data={"secret": recaptcha_secret, "response": recaptcha_token})
-        result = response.json()
-        
-        if not result.get("success"):
-            import logging
-            logging.error(f"reCAPTCHA failed: {result}")
-            return Response({"error": f"Validation reCAPTCHA échouée. Raison: {result.get('error-codes', 'inconnue')}"}, status=status.HTTP_400_BAD_REQUEST)
+        # recaptcha_token = request.data.get("recaptcha_token")
+        # if not recaptcha_token:
+        #     return Response({"error": "Veuillez valider le reCAPTCHA."}, status=status.HTTP_400_BAD_REQUEST)
+        # 
+        # # Verify reCAPTCHA
+        # recaptcha_secret = getattr(settings, "RECAPTCHA_PRIVATE_KEY", "")
+        # verify_url = "https://www.google.com/recaptcha/api/siteverify"
+        # response = requests.post(verify_url, data={"secret": recaptcha_secret, "response": recaptcha_token})
+        # result = response.json()
+        # 
+        # if not result.get("success"):
+        #     import logging
+        #     logging.error(f"reCAPTCHA failed: {result}")
+        #     return Response({"error": f"Validation reCAPTCHA échouée. Raison: {result.get('error-codes', 'inconnue')}"}, status=status.HTTP_400_BAD_REQUEST)
         
         return super().post(request, *args, **kwargs)
 

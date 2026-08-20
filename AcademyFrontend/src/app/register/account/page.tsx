@@ -81,13 +81,13 @@ function UnifiedAuthPageContent() {
       }
 
       let token = undefined;
-      if (executeRecaptcha) {
-        token = await executeRecaptcha('login');
-      } else {
-        setError("La validation de sécurité n'est pas prête. Veuillez réessayer.");
-        setLoading(false);
-        return;
-      }
+      // if (executeRecaptcha) {
+      //   token = await executeRecaptcha('login');
+      // } else {
+      //   setError("La validation de sécurité n'est pas prête. Veuillez réessayer.");
+      //   setLoading(false);
+      //   return;
+      // }
 
       await login(formData.email, formData.password, token);
     } catch (err: any) {
@@ -109,13 +109,13 @@ function UnifiedAuthPageContent() {
     setLoading(true);
     try {
       let token = undefined;
-      if (executeRecaptcha) {
-        token = await executeRecaptcha('register');
-      } else {
-        setError("La validation de sécurité n'est pas prête. Veuillez réessayer.");
-        setLoading(false);
-        return;
-      }
+      // if (executeRecaptcha) {
+      //   token = await executeRecaptcha('register');
+      // } else {
+      //   setError("La validation de sécurité n'est pas prête. Veuillez réessayer.");
+      //   setLoading(false);
+      //   return;
+      // }
 
       await register({
         username: formData.username,
