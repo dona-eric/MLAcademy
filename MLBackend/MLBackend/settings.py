@@ -13,9 +13,9 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 import os
+import logging
 from dotenv import load_dotenv
 import dj_database_url
-import os
 import firebase_admin
 from firebase_admin import credentials
 
@@ -31,8 +31,7 @@ load_dotenv(BASE_DIR / '.env', override=True)
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-l#g$%id**%kk5q-tdxw)&89jdx&gbi+#s!ny71^fd(27o82s+6"
-
+SECRET_KEY=os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
@@ -81,8 +80,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",  # #16 : révocation des refresh tokens
     "drf_spectacular",
-    'rest_framework_simplejwt',
     "django_filters",
     "corsheaders",
     "allauth",
@@ -100,6 +100,8 @@ INSTALLED_APPS = [
     "community",
     "notifications",
     "chat",
+    "axes",
+    "django_recaptcha",
 ]
 
 MIDDLEWARE = [
@@ -114,7 +116,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
+    "axes.middleware.AxesMiddleware",
 ]
 
 ROOT_URLCONF = "MLBackend.urls"
@@ -349,7 +351,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": False,
+    "BLACKLIST_AFTER_ROTATION": True,  # #16 : révoque les anciens refresh tokens
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
     "USER_ID_FIELD": "id",
@@ -359,6 +361,12 @@ SIMPLE_JWT = {
     "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
     "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
     "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
+    # Clés pour CookieTokenRefreshView (#3)
+    "AUTH_COOKIE": "access_token",
+    "AUTH_COOKIE_REFRESH": "refresh_token",
+    "AUTH_COOKIE_SECURE": not os.getenv("DEBUG", "True").lower() == "true",
+    "AUTH_COOKIE_HTTP_ONLY": True,
+    "AUTH_COOKIE_SAMESITE": "Lax",
 }
 
 # CORS Configuration for development
@@ -406,15 +414,17 @@ EMAIL_TIMEOUT = 30  # Timeout de connexion SMTP
 # Configuration Resend (Prêt pour quand vous aurez un domaine)
 # RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 
-# Celery Configuration
-CELERY_BROKER_URL = "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+# Celery Configuration (#2 : utilise REDIS_URL si défini, localhost en dev)
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+CELERY_BROKER_URL = _redis_url
+CELERY_RESULT_BACKEND = _redis_url
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 # django-allauth Configuration
 AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesBackend",
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
@@ -469,4 +479,15 @@ cred_path = os.path.join(os.path.dirname(__file__), 'mlacademy-82d8b-firebase-ad
 if os.path.exists(cred_path):
     cred = credentials.Certificate(cred_path)
     firebase_admin.initialize_app(cred)
-    print("Firebase Admin initialisé avec succès !")
+    logging.getLogger(__name__).info("Firebase Admin initialisé avec succès !")  # #25 : print() → logging
+
+# Django Axes Configuration
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = 1  # 1 hour
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+
+# reCAPTCHA Configuration
+RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
+RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY")
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']

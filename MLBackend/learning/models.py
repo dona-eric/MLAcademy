@@ -20,7 +20,17 @@ class Enrollment(models.Model):
         "courses.Course", on_delete=models.CASCADE,
         related_name="enrollments", verbose_name="Cours"
     )
+    PAYMENT_STATUS_CHOICES = [
+        ("pending", "En attente"),
+        ("paid", "Payé"),
+        ("refunded", "Remboursé"),
+        ("free_tier", "Accès Gratuit / Bêta"),
+    ]
+
     enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription")
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default="pending", verbose_name="Statut de paiement")
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name="Montant payé")
+    expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Date d'expiration")
     progress_percentage = models.PositiveIntegerField(default=0, verbose_name="Progression (%)")
     is_completed = models.BooleanField(default=False, verbose_name="Cours terminé")
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Date de complétion")
@@ -181,6 +191,7 @@ class UserLessonProgress(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="lesson_progress")
     lesson = models.ForeignKey("courses.Lesson", on_delete=models.CASCADE, related_name="user_progress")
     is_completed = models.BooleanField(default=False, verbose_name="Terminée")
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name="Date de complétion")
     last_watched_position = models.PositiveIntegerField(default=0, verbose_name="Position vidéo (secondes)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -193,6 +204,18 @@ class UserLessonProgress(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.lesson.title} ({'Terminée' if self.is_completed else 'En cours'})"
+
+    def mark_as_complete(self):
+        if not self.is_completed:
+            self.is_completed = True
+            self.completed_at = timezone.now()
+            self.save(update_fields=['is_completed', 'completed_at'])
+            # NOTE #4 : Les XP sont distribués exclusivement par le signal
+            # `award_xp_for_lesson` dans learning/signals.py (+50 XP).
+            # Ne pas distribuer d'XP ici pour éviter le double-award.
+            enrollment = Enrollment.objects.filter(user=self.user, course__course_modules__module=self.lesson.module).first()
+            if enrollment:
+                enrollment.update_progress()
 
 
 class UserNote(models.Model):
@@ -349,7 +372,7 @@ class ProjectSubmission(models.Model):
         if self.status not in ['pending', 'in_review']:
             return False
 
-        required = self.project.required_review_count
+        required = getattr(self.project, 'required_review_count', 2)  # #21 : champ manquant, fallback à 2
         completed_count = self.reviews.filter(status='completed').count()
 
         if completed_count < required:
@@ -371,14 +394,17 @@ class ProjectSubmission(models.Model):
     def trigger_certification_success(self):
         """Génère les attestations ou diplômes d'études et notifie par email."""
         if self.project.is_final:
-            Certificate.objects.get_or_create(
-                user=self.user,
-                course=self.project.module.course,
-                defaults={
-                    'cert_type': 'course_completion',
-                    'final_score': int(self.final_grade)
-                }
-            )
+                # #13 : Module est lié à Course via CourseModule, pas en FK directe
+                course_binding = self.project.module.course_modules.select_related('course').first()
+                if course_binding:
+                    Certificate.objects.get_or_create(
+                        user=self.user,
+                        course=course_binding.course,
+                        defaults={
+                            'cert_type': 'course_completion',
+                            'final_score': int(self.final_grade)
+                        }
+                    )
 
         if self.project.is_capstone:
             from courses.models import CertificationExam
@@ -542,6 +568,7 @@ class Certificate(models.Model):
     final_score = models.PositiveIntegerField(default=0)
     verification_hash = models.CharField(max_length=64, blank=True, null=True, verbose_name="Signature Cryptographique SHA-256")
     pdf_file = models.FileField(upload_to="certificates/", null=True, blank=True, verbose_name="Fichier PDF")
+    certificate_url = models.URLField(blank=True, help_text="Lien du PDF généré (externe)")
 
     class Meta:
         verbose_name = "Certificat"

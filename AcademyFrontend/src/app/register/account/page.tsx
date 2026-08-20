@@ -8,11 +8,13 @@ import { Mail, Lock, User, ArrowRight, Zap, Loader2, ShieldCheck, ChevronLeft, E
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FiGithub } from "react-icons/fi";
 import { FcGoogle } from "react-icons/fc";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 function UnifiedAuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, register } = useAuth();
+  const { executeRecaptcha } = useGoogleReCaptcha();
   
   // Step: 1 (Email), 2 (Login or Register), 3 (Success)
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -77,7 +79,17 @@ function UnifiedAuthPageContent() {
       if (redirect) {
         sessionStorage.setItem("post_2fa_redirect", redirect);
       }
-      await login(formData.email, formData.password);
+
+      let token = undefined;
+      // if (executeRecaptcha) {
+      //   token = await executeRecaptcha('login');
+      // } else {
+      //   setError("La validation de sécurité n'est pas prête. Veuillez réessayer.");
+      //   setLoading(false);
+      //   return;
+      // }
+
+      await login(formData.email, formData.password, token);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -96,13 +108,23 @@ function UnifiedAuthPageContent() {
 
     setLoading(true);
     try {
+      let token = undefined;
+      // if (executeRecaptcha) {
+      //   token = await executeRecaptcha('register');
+      // } else {
+      //   setError("La validation de sécurité n'est pas prête. Veuillez réessayer.");
+      //   setLoading(false);
+      //   return;
+      // }
+
       await register({
         username: formData.username,
         email: formData.email,
         password: formData.password,
         password_confirm: formData.passwordConfirm,
         first_name: '',
-        last_name: ''
+        last_name: '',
+        recaptcha_token: token
       });
       setStep(3); // Success step
     } catch (err: any) {
@@ -209,13 +231,12 @@ function UnifiedAuthPageContent() {
       <div className={`w-full lg:w-1/2 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden transition-opacity duration-500 ${isForgotPasswordOpen ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
         {/* Orbs */}
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-[var(--brand-50)] blur-[120px] rounded-full -translate-y-1/2 -translate-x-1/4"></div>
-
         <div className="w-full max-w-md relative z-10">
           
           <div className="mb-8">
             {step === 1 && (
               <>
-                <h1 className="text-3xl md:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight mb-2 uppercase">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-[var(--text-primary)] tracking-tight mb-2 lowercase">
                   Commencez votre dossier
                 </h1>
                 <p className="text-[var(--text-secondary)] font-medium text-sm md:text-base">Connexion ou création de compte en 1 minute.</p>
