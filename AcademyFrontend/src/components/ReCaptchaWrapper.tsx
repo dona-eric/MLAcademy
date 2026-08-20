@@ -3,7 +3,7 @@
 import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 
 export default function ReCaptchaWrapper({ children }: { children: React.ReactNode }) {
-  const siteKey = <process className="env NEXT_PUBLIC_RECAPTCHA_SITE_KEY"></process>;
+  const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
   return (
     <GoogleReCaptchaProvider reCaptchaKey={siteKey}>
