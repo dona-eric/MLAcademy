@@ -19,9 +19,6 @@ import dj_database_url
 import firebase_admin
 from firebase_admin import credentials
 
-# Chemin vers votre fichier JSON de clé privée téléchargé
-
-
 # Charger les variables d'environnement depuis le fichier .env
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env', override=True)
@@ -33,16 +30,17 @@ load_dotenv(BASE_DIR / '.env', override=True)
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY=os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-allowed_hosts_env = os.getenv("ALLOWED_HOSTS", "*")
-ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+# ALLOWED_HOSTS ne doit contenir QUE les noms de domaine, JAMAIS de https://
+ALLOWED_HOSTS = ["mlacademy.onrender.com", "localhost", "127.0.0.1"]
 
+# CSRF_TRUSTED_ORIGINS doit contenir les origines complètes (AVEC https://) du frontend et du backend
 CSRF_TRUSTED_ORIGINS = [
     "https://mlacademie.vercel.app",
     "https://mlacademy.onrender.com",
-    "http://localhost:3000",
     "http://127.0.0.1:8000",
+    "http://localhost:3000",
 ]
 if os.getenv("FRONTEND_PROD_URL"):
     CSRF_TRUSTED_ORIGINS.append(os.getenv("FRONTEND_PROD_URL"))
@@ -136,15 +134,20 @@ TEMPLATES = [
     },
 ]
 
+# ═════════════════════════════════════════════
+#  ASGI & WEBSOCKETS (DJANGO CHANNELS)
+# ═════════════════════════════════════════════
 WSGI_APPLICATION = "MLBackend.wsgi.application"
 ASGI_APPLICATION = "MLBackend.asgi.application"
 
-if os.getenv("REDIS_URL"):
+_redis_url = os.getenv("REDIS_URL")
+
+if _redis_url:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [os.getenv("REDIS_URL")],
+                "hosts": [_redis_url],
             },
         }
     }
@@ -159,18 +162,10 @@ else:
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "sqlite.db",
-#     }
-# }
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        # "NAME": "postgres",
+        "NAME": "MLACADEMIE",
     }
 }
 
@@ -371,8 +366,7 @@ SIMPLE_JWT = {
 
 # CORS Configuration for development
 CORS_ALLOW_CREDENTIALS = True
-cors_allowed_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "https://mlacademie.vercel.app,https://mlacademy.onrender.com,http://localhost:3000")
-CORS_ALLOWED_ORIGINS = [orig.strip() for orig in cors_allowed_origins_env.split(",") if orig.strip()]
+CORS_ALLOWED_ORIGINS = ["https://mlacademie.vercel.app"]
 CORS_ALLOW_HEADERS = list(
     (
         "accept",
@@ -404,28 +398,44 @@ except (ValueError, TypeError):
 
 EMAIL_USE_TLS = _clean_env("EMAIL_USE_TLS", "True").lower() in ("true", "1", "yes")
 EMAIL_USE_SSL = _clean_env("EMAIL_USE_SSL", "False").lower() in ("true", "1", "yes")
-
 EMAIL_HOST_USER = _clean_env("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = _clean_env("BREVO_SMTP_KEY") or _clean_env("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = _clean_env("DEFAULT_FROM_EMAIL", "MLAcademy <dtech.afrik@gmail.com>")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 EMAIL_TIMEOUT = 30  # Timeout de connexion SMTP
 
-# Configuration Resend (Prêt pour quand vous aurez un domaine)
-# RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+# ═════════════════════════════════════════════
+#  CACHE & CELERY (REDIS)
+# ═════════════════════════════════════════════
+if _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": _redis_url,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "IGNORE_EXCEPTIONS": True,
+            },
+            "TIMEOUT": 300
+        }
+    }
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+    SESSION_CACHE_ALIAS = "default"
 
-# Celery Configuration (#2 : utilise REDIS_URL si défini, localhost en dev)
-_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-CELERY_BROKER_URL = _redis_url
-CELERY_RESULT_BACKEND = _redis_url
+    CELERY_BROKER_URL = _redis_url
+    CELERY_RESULT_BACKEND = _redis_url
+else:
+    CELERY_BROKER_URL = "memory://"
+    CELERY_RESULT_BACKEND = "cache+memory://"
+
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 # django-allauth Configuration
 AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesBackend",
     "django.contrib.auth.backends.ModelBackend",
+    "axes.backends.AxesBackend",  # Protection contre les attaques par force brute
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 SITE_ID = 1
@@ -481,13 +491,20 @@ if os.path.exists(cred_path):
     firebase_admin.initialize_app(cred)
     logging.getLogger(__name__).info("Firebase Admin initialisé avec succès !")  # #25 : print() → logging
 
-# Django Axes Configuration
+
+# ═════════════════════════════════════════════
+#  SECURITE ANTI BRUTE-FORCE (DJANGO AXES)
+# ═════════════════════════════════════════════
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # 1 hour
 AXES_RESET_ON_SUCCESS = True
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
+if _redis_url:
+    AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler'  # Utilise Redis
 
-# reCAPTCHA Configuration
+# ═════════════════════════════════════════════
+#  RECAPTCHA
+# ═════════════════════════════════════════════
 RECAPTCHA_PUBLIC_KEY = os.getenv("RECAPTCHA_PUBLIC_KEY")
 RECAPTCHA_PRIVATE_KEY = os.getenv("RECAPTCHA_PRIVATE_KEY")
-SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
+SILENCED_SYSTEM_CHECKS = ['django_recaptcha.recaptcha_test_key_error']

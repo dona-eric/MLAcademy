@@ -1,32 +1,21 @@
 import os
 from datetime import timedelta
 import httpx
-
 from django.shortcuts import get_object_or_404
 from django.db import models
 from django.db.models import Avg
 from django.db.models.functions import TruncDate
 from django.utils import timezone
-
 from rest_framework import permissions, status, viewsets, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from .models import (
-    ProjectSubmission, Review, UserLessonProgress, UserNote,
-    QuizQuestion, UserCodeSubmission, UserQuizAttempt,
-    Enrollment, PathEnrollment, Certificate, SkillBadge, UserBadge
-)
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from .models import ProjectSubmission, Review, UserLessonProgress, UserNote, QuizQuestion, UserCodeSubmission, UserQuizAttempt, Enrollment, PathEnrollment, Certificate, SkillBadge, UserBadge
 from .permissions import IsAuthorizedReviewer
 from courses.models import Lesson, Course, LearningPath
-from .serializers import (
-    UserLessonProgressSerializer, UserNoteSerializer, QuizQuestionSerializer,
-    QuizSubmissionSerializer, UserCodeSubmissionSerializer,
-    EnrollmentSerializer, ProjectSubmissionSerializer, ReviewSerializer,
-    PathEnrollmentSerializer, CertificateSerializer, CertificatePublicVerifySerializer, NotificationSerializer,
-    SkillBadgeSerializer, UserBadgeSerializer
-)
+from .serializers import UserLessonProgressSerializer, UserNoteSerializer, QuizQuestionSerializer, QuizSubmissionSerializer, UserCodeSubmissionSerializer, EnrollmentSerializer, ProjectSubmissionSerializer, ReviewSerializer, PathEnrollmentSerializer, CertificateSerializer, CertificatePublicVerifySerializer, NotificationSerializer, SkillBadgeSerializer, UserBadgeSerializer
 from users.models import Notification, Message
 
 
@@ -63,6 +52,7 @@ class DashboardSummaryView(APIView):
     """Vue agrégée pour alimenter l'ensemble des widgets du tableau de bord étudiant."""
     permission_classes = [permissions.IsAuthenticated]
 
+    @method_decorator(cache_page(60 * 15))  # Mise en cache de 15 minutes
     def get(self, request):
         user = request.user
 
