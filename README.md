@@ -1,3 +1,22 @@
+
+
+
+ #                                  CE PROJET A ÉTÉ DÉLOCALISÉ VERS GITLAB.
+
+#                        ET EST TOUJOURS EN PLEINE EVOLUTION ET AMÉLIORATION PERSPECTIVES 
+
+#                                     MERCI DE PRENDRE EN COMPTE CE MESSAGE
+
+
+
+
+
+
+
+
+
+
+
 <p align="center">
   <img src="AcademyFrontend/public/mlacademy_logo.png" alt="MLAcademy" width="120" />
 </p>
